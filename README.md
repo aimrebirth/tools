@@ -3,7 +3,7 @@ This repository contains different tools for A.I.M. games.
 
 # List of tools
 1. AIM 1 unpaker. Unpacks any .pak archive from AIM1 game.
-2. DB extractor. Converts (db|quest) databases from any AIM game into .sql file to be loaded with sqlite3 DBMS.
+2. DB extractor. Converts (db|quest) databases from any AIM game into .sql file to be executed with sqlite3 DBMS.
 3. OBJ extractor. Extracts all data about objects on the map from .mmo file. Tested only with AIM1 game.
 
 # Build instructions
