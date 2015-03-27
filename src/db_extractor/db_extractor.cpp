@@ -85,9 +85,21 @@ void create_sql(string path, const db &db)
     ofstream ofile(path + ".sql");
     if (!ofile)
         return;
-
+    
+    string master_table_name = "DB_TABLE_LIST";
     const string id = "ID";
     const string row_type = "TEXT_ID";
+
+    // db master table
+    ofile << "drop table if exists " << master_table_name << ";\n";
+    ofile << "create table \"" << master_table_name << "\"\n";
+    ofile << "(\n";
+    ofile << "  \"" + str2utf8(id) + "\" INTEGER,\n";
+    ofile << "  \"" + str2utf8(row_type) + "\" TEXT\n";
+    ofile << ");\n";
+    ofile << "\n";
+
+    // db tables
     for (auto &table : db.t.tables)
     {
         auto &t = table.second;
@@ -110,6 +122,17 @@ void create_sql(string path, const db &db)
         ofile << "\n";
     }
 
+    // db master table
+    for (auto &table : db.t.tables)
+    {
+        static int idx = 1;
+        ofile << "insert into \"" << master_table_name << "\" values (";
+        ofile << "'" << idx++ << "', ";
+        ofile << "'" << str2utf8(table.second.name) << "'";
+        ofile << ");\n";
+    }
+
+    // db tables
     map<int,int> idx;
     for (auto &v : db.values)
     {
