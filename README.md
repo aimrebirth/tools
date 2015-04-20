@@ -1,6 +1,11 @@
 # A.I.M. Tools
 This repository contains different tools for A.I.M. games.
 
+# List of tools
+1. AIM 1 unpaker. Unpacks any .pak archive from AIM1 game.
+2. DB extractor. Converts (db|quest) databases from any AIM game into .sql file to be executed with sqlite3 DBMS.
+3. OBJ extractor. Extracts all data about objects on the map from .mmo file. Tested only with AIM1 game.
+
 # Build instructions
 1. Download and install latest CMake http://www.cmake.org/download/
 2. Clone this repository
