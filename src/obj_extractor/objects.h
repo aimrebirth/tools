@@ -91,21 +91,23 @@ struct SegmentObjects : public Segment
     }
 };
 
+struct Vector4
+{
+    float x;
+    float y;
+    float z;
+    float w;
+};
+
 struct Common
 {
-    float       unk2[2];
-    uint32_t    unk3[2];
-    float       unk4[2];
-    uint32_t    unk5[2];
-    float       unk6[8];
+    Vector4     m_rotate_z[3];
+    Vector4     position;
     
     void load(FILE *f)
     {
-        FREAD(unk2);
-        FREAD(unk3);
-        FREAD(unk4);
-        FREAD(unk5);
-        FREAD(unk6);
+        FREAD(m_rotate_z);
+        FREAD(position);
     }
 };
 
