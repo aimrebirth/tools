@@ -15,4 +15,7 @@ if (MSVC)
     #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 endif(MSVC)
 
+include_directories(dep/dbmgr/include)
+add_subdirectory(dep/dbmgr)
+
 add_subdirectory(src)

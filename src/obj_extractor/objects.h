@@ -33,8 +33,8 @@ enum class SegmentType : uint32_t
 {
     TEXTURE         =   0x1,
     MODEL,
-    SURFACE,
-    STONE,
+    SURFACE, // stones
+    STONE, // trees
     TREE,
 
     GLIDER,
@@ -43,9 +43,9 @@ enum class SegmentType : uint32_t
     WEAPON,
     CONFIG,
 
-    SHELL, // (AMMO,BULLET)
+    SHELL, // buildings
     IMAGE,
-    EXPLOSION,
+    EXPLOSION, // road lights
     EQUIPMENT,
     ORGANIZATION,
 
