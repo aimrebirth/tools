@@ -33,6 +33,7 @@ using namespace std;
 
 struct storage
 {
+    string name;
     Objects objects;
     MechGroups mgs;
     MapGoods mg;
@@ -43,6 +44,7 @@ struct storage
 storage read_mmo(string fn)
 {
     storage s;
+    s.name = fn;
     FILE *f = fopen(fn.c_str(), "rb");
     if (!f)
         return s;
@@ -69,7 +71,30 @@ void write_mmo(string db, const storage &s)
     auto storage = initStorage(db);
     storage->load();
 
-    int map_id = 1;
+    auto p1 = s.name.rfind('\\');
+    if (p1 == -1)
+        p1 = 0;
+    auto p2 = s.name.rfind('/');
+    if (p2 == -1)
+        p2 = 0;
+    int p = max(p1, p2);
+    string map_name = s.name.substr(p + 1);
+    map_name = map_name.substr(0, map_name.find('.'));
+
+    int map_id = 0;
+    for (auto &m : storage->maps)
+    {
+        if (m.second->text_id == map_name)
+        {
+            map_id = m.first;
+            break;
+        }
+    }
+
+    if (map_id == 0)
+        return;
+
+    auto this_map = storage->maps[map_id];
 
     for (auto &seg : s.objects.segments)
     {
@@ -78,7 +103,6 @@ void write_mmo(string db, const storage &s)
             SegmentObjects<Shell> *segment = (SegmentObjects<Shell> *)seg;
             set<string> objs;
             std::map<string, int> bld_ids;
-            std::map<string, int> coord_ids;
             for (auto &object : segment->objects)
                 objs.insert(object.name1);
             for (auto &o : objs)
@@ -101,24 +125,13 @@ void write_mmo(string db, const storage &s)
                 MapBuilding mb;
                 mb.text_id = object.name2;
                 mb.building = storage->buildings[bld_ids[object.name1]];
-                auto iter = find_if(storage->coordinates.begin(), storage->coordinates.end(), [&](const decltype(Storage::coordinates)::value_type &p)
-                {
-                    Coordinate c;
-                    c.x = object.position.x;
-                    c.y = object.position.y;
-                    c.z = object.position.z;
-                    return *p.second.get() == c;
-                });
-                if (iter == storage->coordinates.end())
-                {
-                    auto c = storage->addCoordinate();
-                    c->x = object.position.x;
-                    c->y = object.position.y;
-                    c->z = object.position.z;
-                    mb.coordinate = c;
-                }
-                else
-                    mb.coordinate = iter->second;
+                mb.map = this_map;
+                mb.x = object.position.x * 100.0;
+                mb.y = object.position.y * 100.0;
+                mb.z = object.position.z * 100.0;
+                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
+                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
+                mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const decltype(Storage::mapBuildings)::value_type &p)
                 {
                     return *p.second.get() == mb;
@@ -138,7 +151,6 @@ void write_mmo(string db, const storage &s)
             SegmentObjects<Surface> *segment = (SegmentObjects<Surface> *)seg;
             set<string> objs;
             std::map<string, int> bld_ids;
-            std::map<string, int> coord_ids;
             for (auto &object : segment->objects)
                 objs.insert(object.name1);
             for (auto &o : objs)
@@ -160,25 +172,14 @@ void write_mmo(string db, const storage &s)
             {
                 detail::MapObject mb;
                 //mb.text_id = object.name2;
+                mb.map = this_map;
                 mb.object = storage->objects[bld_ids[object.name1]];
-                auto iter = find_if(storage->coordinates.begin(), storage->coordinates.end(), [&](const decltype(Storage::coordinates)::value_type &p)
-                {
-                    Coordinate c;
-                    c.x = object.position.x;
-                    c.y = object.position.y;
-                    c.z = object.position.z;
-                    return *p.second.get() == c;
-                });
-                if (iter == storage->coordinates.end())
-                {
-                    auto c = storage->addCoordinate();
-                    c->x = object.position.x;
-                    c->y = object.position.y;
-                    c->z = object.position.z;
-                    mb.coordinate = c;
-                }
-                else
-                    mb.coordinate = iter->second;
+                mb.x = object.position.x * 100.0;
+                mb.y = object.position.y * 100.0;
+                mb.z = object.position.z * 100.0;
+                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
+                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
+                mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const decltype(Storage::mapObjects)::value_type &p)
                 {
                     return *p.second.get() == mb;

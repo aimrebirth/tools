@@ -10,3 +10,6 @@ target_link_libraries(obj_extractor DatabaseManager)
 
 file(GLOB script2txt_src "script2txt/*")
 add_executable(script2txt ${script2txt_src})
+
+file(GLOB mmp_extractor_src "mmp_extractor/*")
+add_executable(mmp_extractor ${mmp_extractor_src})
