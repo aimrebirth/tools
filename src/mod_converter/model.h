@@ -19,6 +19,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 #include <vector>
 
 struct s_file
@@ -74,6 +75,10 @@ struct vertex
     float t2;
 
     void load(s_file &s, uint32_t flags);
+
+    std::string printVertex() const;
+    std::string printNormal() const;
+    std::string printTex() const;
 };
 
 typedef uint16_t triangle;
@@ -185,4 +190,5 @@ struct model
     std::vector<fragment> fragments;
 
     void load(FILE *f);
+    void writeObj(std::string fn);
 };

@@ -18,7 +18,13 @@
 
 #include "model.h"
 
+#include <fstream>
 #include <string>
+#include <time.h>
+
+using namespace std;
+
+std::string version();
 
 #define FREAD(var) fread(&var, 1, sizeof(var), f)
 #define SREAD(var) s.read(&var, sizeof(var))
@@ -39,6 +45,27 @@ void vertex::load(s_file &s, uint32_t flags)
     
     SREAD(t1);
     SREAD(t2);
+}
+
+std::string vertex::printVertex() const
+{
+    string s;
+    s = "v  " + to_string(-vX) + " " + to_string(vY) + " " + to_string(-vZ);
+    return s;
+}
+
+std::string vertex::printNormal() const
+{
+    string s;
+    s = "vn " + to_string(-nX) + " " + to_string(nY) + " " + to_string(-nZ);
+    return s;
+}
+
+std::string vertex::printTex() const
+{
+    string s;
+    s = "vt " + to_string(t1) + " " + to_string(1 - t2) + " " + to_string(0);
+    return s;
 }
 
 void fragment::load(FILE *f)
@@ -187,5 +214,39 @@ void model::load(FILE *f)
         fragments[i].load(f);
         if (!fragments[i].extract())
             throw std::logic_error("extraction error: fragment #" + std::to_string(i));
+    }
+}
+
+void model::writeObj(std::string fn)
+{
+    ofstream o(fn);
+    o << "# " << "\n";
+    o << "# A.I.M. Model Converter (ver. " << version() << ")\n";
+    o << "# " << "\n";
+    o << "\n";
+
+    if (fragments.empty())
+        return;
+
+    const auto &f = fragments[0];
+    for (auto &v : f.vertices)
+        o << v.printVertex() << "\n";
+    o << "\n";
+    for (auto &v : f.vertices)
+        o << v.printNormal() << "\n";
+    o << "\n";
+    for (auto &v : f.vertices)
+        o << v.printTex() << "\n";
+    o << "\n";
+
+    for (int i = 0; i <= f.n_triangles - 3; i += 3)
+    {
+        auto x = to_string(f.triangles[i] + 1);
+        auto y = to_string(f.triangles[i + 2] + 1);
+        auto z = to_string(f.triangles[i + 1] + 1);
+        x += "/" + x;
+        y += "/" + y;
+        z += "/" + z;
+        o << "f " << x << " " << y << " " << z << "\n";
     }
 }

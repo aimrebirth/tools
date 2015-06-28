@@ -16,11 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <set>
+#include <sstream>
 #include <stdio.h>
 #include <stdint.h>
 #include <string>
@@ -29,32 +25,51 @@ using namespace std;
 
 #include "model.h"
 
-model read_model(string fn)
+const int build_version =
+#include <version.h.in>
+;
+
+std::string version()
+{
+    string s;
+    s = to_string(0) + "." +
+        to_string(1) + "." +
+        to_string(0) + "." +
+        to_string(build_version);
+    return s;
+}
+
+void convert_model(string fn)
 {
     model m;
     FILE *f = fopen(fn.c_str(), "rb");
     if (!f)
-        return m;
+        return;
     try
     {
         m.load(f);
+
+        auto p = ftell(f);
+        fseek(f, 0, SEEK_END);
+        auto end = ftell(f);
+        fclose(f);
+
+        if (p != end)
+        {
+            stringstream ss;
+            ss << hex << p << " != " << hex << end;
+            throw std::logic_error(ss.str());
+        }
     }
     catch (std::exception &e)
     {
         printf("error: %s\n", fn.c_str());
         printf("%s\n", e.what());
-        return m;
+        fclose(f);
+        return;
     }
-    auto p = ftell(f);
-    fseek(f, 0, SEEK_END);
-    auto end = ftell(f);
-    if (p != ftell(f))
-    {
-        printf("error: %s\n", fn.c_str());
-        printf("     : %x != %x\n", p, end);
-    }
-    fclose(f);
-    return m;
+
+    m.writeObj(fn + ".obj");
 }
 
 int main(int argc, char *argv[])
@@ -67,6 +82,20 @@ int main(int argc, char *argv[])
     }
     read_model(argv[1]);
 #else
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_M1_A_ATTACKER");
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_M1_B_BASE");
+
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_BLD_BASE1");
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_S4_SINIGR");
+    
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_FIRE");
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_FARA");
+
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_FX_ANTI_MATER_GUN");
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_UNFL_STONE01");
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_L1_KUST");
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_L6_KUST_12");
+    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_M1_A_ATTACKER_DAMAGED");
 #endif
     return 0;
 }
