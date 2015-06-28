@@ -13,3 +13,6 @@ add_executable(script2txt ${script2txt_src})
 
 file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
+
+file(GLOB mod_converter_src "mod_converter/*")
+add_executable(mod_converter ${mod_converter_src})
