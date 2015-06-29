@@ -20,31 +20,28 @@
 
 #include <fstream>
 #include <string>
-#include <time.h>
+
+#include <common.h>
 
 using namespace std;
 
 std::string version();
 
-#define FREAD(var) fread(&var, 1, sizeof(var), f)
-#define SREAD(var) s.read(&var, sizeof(var))
-#define SREAD_N(var, sz) s.read(&var, sz)
-
-void vertex::load(s_file &s, uint32_t flags)
+void vertex::load(buffer &b, uint32_t flags)
 {
-    SREAD(vX);
-    SREAD(vZ);
-    SREAD(vY);
+    READ(b, vX);
+    READ(b, vZ);
+    READ(b, vY);
 
     if (flags & F_WIND)
-        SREAD(wind);
+        READ(b, wind);
     
-    SREAD(nX);
-    SREAD(nZ);
-    SREAD(nY);
+    READ(b, nX);
+    READ(b, nZ);
+    READ(b, nY);
     
-    SREAD(t1);
-    SREAD(t2);
+    READ(b, t1);
+    READ(b, t2);
 }
 
 std::string vertex::printVertex() const
@@ -68,50 +65,46 @@ std::string vertex::printTex() const
     return s;
 }
 
-void fragment::load(FILE *f)
+void fragment::load(buffer &b)
 {
-    FREAD(type);
-    FREAD(name0);
-    FREAD(name1);
-    FREAD(name2);
-    FREAD(name3);
-    FREAD(name4);
-    FREAD(unk0);
-    FREAD(unk1);
-    FREAD(unk2);
-    FREAD(unk3);
-    FREAD(size);
-    FREAD(unk4);
-    data.resize(size);
-    data_offset = ftell(f);
-    fread(data.data(), 1, size, f);
-}
+    // header
+    READ(b, type);
+    READ(b, name0);
+    READ(b, name1);
+    READ(b, name2);
+    READ(b, name3);
+    READ(b, name4);
+    READ(b, unk0);
+    READ(b, unk1);
+    READ(b, unk2);
+    READ(b, unk3);
+    READ(b, size);
+    READ(b, unk4);
 
-bool fragment::extract()
-{
-    s_file s(data, data_offset);
-    
-    SREAD(n_segments);
+    // data
+    buffer data(b, size);
+    READ(data, n_segments);
     segments.resize(n_segments);
-    SREAD(header);
-    SREAD(triangles_mult_7);
-    SREAD(unk10);
-    SREAD(flags);
-    SREAD(n_vertex);
+    READ(data, header);
+    READ(data, triangles_mult_7);
+    READ(data, unk10);
+    READ(data, flags);
+    READ(data, n_vertex);
     vertices.resize(n_vertex);
-    SREAD(n_triangles);
+    READ(data, n_triangles);
     if (triangles_mult_7)
         n_triangles *= 7;
     triangles.resize(n_triangles);
     for (auto &v : vertices)
-        v.load(s, flags);
+        v.load(data, flags);
     for (auto &t : triangles)
-        SREAD(t);
+        READ(data, t);
 
+    // segments
     for (auto &seg : segments)
     {
         uint32_t type;
-        SREAD(type);
+        READ(data, type);
         switch (type)
         {
         case 1:
@@ -127,94 +120,91 @@ bool fragment::extract()
             throw std::logic_error("unknown segment type " + std::to_string(type));
         }
         seg->type = type;
-        seg->extract(s);
+        seg->load(data);
     }
 
-    return s.eof();
+    if (!data.eof())
+        throw std::logic_error("extraction error: fragment #" + std::string(name0));
 }
 
-void segment1::extract(s_file &s)
+void segment1::load(buffer &b)
 {
-    SREAD(name);
-    SREAD(unk0);
+    READ(b, name);
+    READ(b, unk0);
     triangles.resize(unk0[0][0]);
     unk1.resize(unk0[0][0]);
     for (int i = 0; i < 2; i++)
     {
         for (auto &t : triangles)
-            SREAD(t);
+            READ(b, t);
         for (auto &unk: unk1)
-            SREAD(unk);
+            READ(b, unk);
     }
 }
 
-void segment2::extract(s_file &s)
+void segment2::load(buffer &b)
 {
-    SREAD(name);
-    SREAD(unk0);
+    READ(b, name);
+    READ(b, unk0);
     triangles.resize(unk0[0][0]);
     unk1.resize(unk0[0][0]);
     unk1_1.resize(unk0[0][0]);
     for (auto &t : triangles)
-        SREAD(t);
+        READ(b, t);
     for (auto &unk : unk1)
-        SREAD(unk);
+        READ(b, unk);
     for (auto &unk : unk1_1)
-        SREAD(unk);
-    while (!s.eof())
+        READ(b, unk);
+    while (!b.eof())
     {
         repeater r;
-        r.extract(s);
+        r.load(b);
         unk2.push_back(r);
     }
 }
 
-void segment2::repeater::extract(s_file &s)
+void segment2::repeater::load(buffer &b)
 {
-    SREAD(unk2);
+    READ(b, unk2);
     triangles2.resize(unk2);
-    SREAD(unk8);
-    SREAD(unk3);
+    READ(b, unk8);
+    READ(b, unk3);
     for (auto &t : triangles2)
-        SREAD(t);
-    SREAD(unk6);
-    SREAD(flags);
-    SREAD(n_vertex);
+        READ(b, t);
+    READ(b, unk6);
+    READ(b, flags);
+    READ(b, n_vertex);
     vertices.resize(n_vertex);
-    SREAD(n_triangles);
+    READ(b, n_triangles);
     triangles.resize(n_triangles);
     for (auto &v : vertices)
-        v.load(s, flags);
+        v.load(b, flags);
     for (auto &t : triangles)
-        SREAD(t);
+        READ(b, t);
 }
 
-void segment6::extract(s_file &s)
+void segment6::load(buffer &b)
 {
-    SREAD(name);
-    SREAD(unk0);
+    READ(b, name);
+    READ(b, unk0);
     triangles.resize(unk0[0][0]);
     for (int i = 0; i < 1; i++)
     {
         for (auto &t : triangles)
-            SREAD(t);
+            READ(b, t);
         char unk1[0x30]; // some 6 floats
         for (int i = 0; i < unk0[0][0]; i++)
-            SREAD(unk1);
+            READ(b, unk1);
     }
 }
 
-void model::load(FILE *f)
+void model::load(buffer &b)
 {
-    FREAD(n_fragments);
-    FREAD(header);
+    READ(b, n_fragments);
+    READ(b, header);
     fragments.resize(n_fragments);
-    for (int i = 0; i < fragments.size(); i++)
-    {
-        fragments[i].load(f);
-        if (!fragments[i].extract())
-            throw std::logic_error("extraction error: fragment #" + std::to_string(i));
-    }
+    for (auto &f : fragments)
+        f.load(b);
 }
 
 void model::writeObj(std::string fn)

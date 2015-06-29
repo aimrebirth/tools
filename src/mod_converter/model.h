@@ -22,37 +22,7 @@
 #include <string>
 #include <vector>
 
-struct s_file
-{
-    uint32_t index = 0;
-    const std::vector<uint8_t> &buf;
-    uint8_t *ptr;
-    uint32_t data_offset;
-
-    s_file(const std::vector<uint8_t> &buf, uint32_t data_offset)
-        : buf(buf), data_offset(data_offset)
-    {}
-    uint32_t read(void *dst, uint32_t size)
-    {
-        if (index >= buf.size())
-            throw std::logic_error("s_file: out of range");
-        if (index + size > buf.size())
-            size = buf.size() - index;
-        memcpy(dst, buf.data() + index, size);
-        skip(size);
-        return size;
-    }
-    void skip(int n)
-    {
-        index += n;
-        data_offset += n;
-        ptr = (uint8_t *)buf.data() + index;
-    }
-    bool eof() const
-    {
-        return index == buf.size();
-    }
-};
+class buffer;
 
 enum
 {
@@ -74,7 +44,7 @@ struct vertex
     float t1;
     float t2;
 
-    void load(s_file &s, uint32_t flags);
+    void load(buffer &b, uint32_t flags);
 
     std::string printVertex() const;
     std::string printNormal() const;
@@ -97,7 +67,7 @@ struct segment
 {
     uint32_t type;
 
-    virtual void extract(s_file &s) = 0;
+    virtual void load(buffer &b) = 0;
 };
 
 struct segment1 : public segment
@@ -107,7 +77,7 @@ struct segment1 : public segment
     std::vector<triangle> triangles;
     std::vector<unk_float3x4> unk1;
     
-    virtual void extract(s_file &s);
+    virtual void load(buffer &b);
 };
 
 struct segment2 : public segment
@@ -125,7 +95,7 @@ struct segment2 : public segment
         std::vector<vertex> vertices;
         std::vector<uint16_t> triangles;
         
-        virtual void extract(s_file &s);
+        virtual void load(buffer &b);
     };
 
     char name[0xC];
@@ -135,17 +105,17 @@ struct segment2 : public segment
     std::vector<unk_float6> unk1_1;
     std::vector<repeater> unk2;
     
-    virtual void extract(s_file &s);
+    virtual void load(buffer &b);
 };
 
 struct segment6 : public segment1
 {
-    virtual void extract(s_file &s);
+    virtual void load(buffer &b);
 };
 
 struct fragment
 {
-    // main header
+    // header
     uint32_t type;
     char name0[0x20];
     char name1[0x20];
@@ -159,10 +129,7 @@ struct fragment
     uint32_t size;
     uint32_t unk4[10];
 
-    // data buffer
-    std::vector<uint8_t> data;
-
-    // main data
+    // data
     uint32_t n_segments;
     char header[0x68];
     uint32_t triangles_mult_7;
@@ -176,11 +143,7 @@ struct fragment
     // segments
     std::vector<segment *> segments;
 
-    // internal vars
-    uint32_t data_offset;
-
-    void load(FILE *f);
-    bool extract();
+    void load(buffer &b);
 };
 
 struct model
@@ -189,6 +152,6 @@ struct model
     char header[0x40];
     std::vector<fragment> fragments;
 
-    void load(FILE *f);
+    void load(buffer &b);
     void writeObj(std::string fn);
 };

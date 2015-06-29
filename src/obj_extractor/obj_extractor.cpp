@@ -29,6 +29,8 @@
 
 #include <Polygon4/Storage.h>
 
+#include <common.h>
+
 using namespace std;
 
 struct storage
@@ -39,27 +41,31 @@ struct storage
     MapGoods mg;
     MapMusic mm;
     MapSounds ms;
+
+    void load(buffer &b)
+    {
+        objects.load(b);
+        mgs.load(b);
+        if (b.eof()) // custom maps
+            return;
+        mg.load(b);
+        mm.load(b);
+        ms.load(b);
+        
+        if (!b.eof())
+        {
+            stringstream ss;
+            ss << hex << b.getIndex() << " != " << hex << b.getSize();
+            throw std::logic_error(ss.str());
+        }
+    }
 };
 
 storage read_mmo(string fn)
 {
     storage s;
     s.name = fn;
-    FILE *f = fopen(fn.c_str(), "rb");
-    if (!f)
-        return s;
-    s.objects.load(f);
-    s.mgs.load(f);
-    if (feof(f))
-    {
-        // custom maps?
-        fclose(f);
-        return s;
-    }
-    s.mg.load(f);
-    s.mm.load(f);
-    s.ms.load(f);
-    fclose(f);
+    s.load(buffer(readFile(fn)));
     return s;
 }
 
@@ -197,6 +203,7 @@ void write_mmo(string db, const storage &s)
 }
 
 int main(int argc, char *argv[])
+try
 {
     if (argc != 3)
     {
@@ -206,4 +213,14 @@ int main(int argc, char *argv[])
     storage s = read_mmo(argv[2]);
     write_mmo(argv[1], s);
     return 0;
+}
+catch (std::exception &e)
+{
+    printf("error: %s\n", e.what());
+    return 1;
+}
+catch (...)
+{
+    printf("error: unknown exception\n");
+    return 1;
 }

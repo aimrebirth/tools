@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include <common.h>
+
 using namespace std;
 
 enum FieldType
@@ -43,7 +45,7 @@ struct table
     uint32_t unk3;
     uint32_t unk4;
 
-    void load(FILE *f);
+    void load(buffer &b);
 };
 
 struct field
@@ -56,7 +58,7 @@ struct field
     uint32_t unk3;
     uint32_t type;
 
-    void load(FILE *f);
+    void load(buffer &b);
 };
 
 struct tab
@@ -67,7 +69,7 @@ struct tab
     map<uint32_t, table> tables;
     map<uint32_t, field> fields;
 
-    void load(FILE *f);
+    void load(buffer &b);
 };
 
 struct field_value
@@ -82,30 +84,6 @@ struct field_value
 
 struct value
 {
-    struct s_file
-    {
-        uint32_t index = 0;
-        const vector<char> buf;
-
-        s_file(const vector<char> &buf)
-            : buf(buf)
-        {}
-        uint32_t read(void *dst, uint32_t size)
-        {
-            if (index >= buf.size())
-                return 0;
-            if (index + size > buf.size())
-                size = buf.size() - index;
-            memcpy(dst, buf.data() + index, size);
-            index += size;
-            return size;
-        }
-        void skip(int n)
-        {
-            index += n;
-        }
-    };
-
     uint32_t table_id;
     char name[0x14];
     uint32_t unk1;
@@ -113,17 +91,14 @@ struct value
     uint32_t unk3;
     uint32_t offset;
     uint32_t data_size;
-
-    //
-    vector<char> buf;
-    //
+    buffer data;
     uint32_t number_of_fields;
     vector<field_value> fields;
 
     void extract_fields(const tab &tab);
 
-    void load_index(FILE *f);
-    void load_data(FILE *f);
+    void load_index(buffer &b);
+    void load_data(buffer &b);
 };
 
 struct db
@@ -133,5 +108,5 @@ struct db
     tab t;
     vector<value> values;
 
-    void load(FILE *f);
+    void load(buffer &b);
 };

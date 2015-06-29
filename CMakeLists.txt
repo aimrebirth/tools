@@ -21,6 +21,8 @@ endif(MSVC)
 
 include_directories(dep/dbmgr/include)
 add_subdirectory(dep/dbmgr)
+set_target_properties(sqlite3 PROPERTIES FOLDER Extern)
+set_target_properties(DatabaseManager PROPERTIES FOLDER Extern)
 
 add_custom_target(version ALL
     COMMAND git rev-list HEAD --count > ${CMAKE_CURRENT_BINARY_DIR}/version.h_

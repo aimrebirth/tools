@@ -24,8 +24,7 @@
 #include <string>
 #include <vector>
 
-#define FREAD(var) fread(&var, 1, sizeof(var), f)
-#define FREAD_N(var, n) fread(&var, 1, n, f)
+#include <common.h>
 
 using namespace std;
 
@@ -71,8 +70,8 @@ struct Segment
     uint32_t    n_objects;
 
     virtual ~Segment(){}
-    static Segment *create_segment(FILE *f);
-    virtual void load(FILE *f) = 0;
+    static Segment *create_segment(buffer &b);
+    virtual void load(buffer &b) = 0;
 };
 
 template <class T>
@@ -80,12 +79,12 @@ struct SegmentObjects : public Segment
 {
     vector<T> objects;
 
-    virtual void load(FILE *f)
+    virtual void load(buffer &b)
     {
         for (int i = 0; i < n_objects; i++)
         {
             T r;
-            r.load(f);
+            r.load(b);
             objects.push_back(r);
         }
     }
@@ -104,10 +103,10 @@ struct Common
     Vector4     m_rotate_z[3];
     Vector4     position;
     
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(m_rotate_z);
-        FREAD(position);
+        READ(b, m_rotate_z);
+        READ(b, position);
     }
 };
 
@@ -116,12 +115,12 @@ struct MapObject : public Common
     char name1[0x20];
     char name2[0x20];
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        Common::load(f);
+        Common::load(b);
 
-        FREAD(name1);
-        FREAD(name2);
+        READ(b, name1);
+        READ(b, name2);
     }
 };
 
@@ -130,14 +129,14 @@ struct MapObjectWithArray : public MapObject
     uint32_t len;
     vector<uint32_t> unk7;
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        MapObject::load(f);
+        MapObject::load(b);
 
-        FREAD(len);
+        READ(b, len);
         unk7.resize(len);
         for (int i = 0; i < len; i++)
-            FREAD(unk7[i]);
+            READ(b, unk7[i]);
     }
 };
 
@@ -146,12 +145,12 @@ struct Sound : public Common
     uint32_t unk1[11];
     char name1[0x14];
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        Common::load(f);
+        Common::load(b);
         
-        FREAD(unk1);
-        FREAD(name1);
+        READ(b, unk1);
+        READ(b, name1);
     }
 };
 
@@ -172,7 +171,7 @@ KNOWN_OBJECT(Anomaly);
 KNOWN_OBJECT(Boundary);
 
 #define UNKNOWN_OBJECT(name) \
-    struct name : public MapObject { void load(FILE *f){ int pos = ftell(f); assert(false); } }
+    struct name : public MapObject { void load(buffer &b){ int pos = b.getIndex(); assert(false); } }
 
 UNKNOWN_OBJECT(Building);
 UNKNOWN_OBJECT(Goods);
@@ -183,5 +182,5 @@ struct Objects
     uint32_t n_segments;
     vector<Segment *> segments;
 
-    void load(FILE *f);
+    void load(buffer &b);
 };

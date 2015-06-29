@@ -18,9 +18,7 @@
 
 #include "db.h"
 
-#define FREAD(var) fread(&var, 1, sizeof(var), f)
-#define SREAD(var) s.read(&var, sizeof(var))
-#define SREAD_N(var, sz) s.read(&var, sz)
+#include <common.h>
 
 string getSqlType(uint32_t ft)
 {
@@ -38,37 +36,37 @@ string getSqlType(uint32_t ft)
     return "";
 }
 
-void table::load(FILE *f)
+void table::load(buffer &b)
 {
-    FREAD(id);
-    FREAD(name);
-    FREAD(unk1);
-    FREAD(unk2);
-    FREAD(unk3);
-    FREAD(unk4);
+    READ(b, id);
+    READ(b, name);
+    READ(b, unk1);
+    READ(b, unk2);
+    READ(b, unk3);
+    READ(b, unk4);
 }
 
-void field::load(FILE *f)
+void field::load(buffer &b)
 {
-    FREAD(table_id);
-    FREAD(id);
-    FREAD(name);
-    FREAD(unk1);
-    FREAD(unk2);
-    FREAD(unk3);
-    FREAD(type);
+    READ(b, table_id);
+    READ(b, id);
+    READ(b, name);
+    READ(b, unk1);
+    READ(b, unk2);
+    READ(b, unk3);
+    READ(b, type);
 }
 
-void tab::load(FILE *f)
+void tab::load(buffer &b)
 {
-    FREAD(number_of_tables);
-    FREAD(number_of_fields);
+    READ(b, number_of_tables);
+    READ(b, number_of_fields);
 
     auto n = number_of_tables;
     while (n--)
     {
         table t;
-        t.load(f);
+        t.load(b);
         tables[t.id] = t;
     }
 
@@ -76,39 +74,35 @@ void tab::load(FILE *f)
     while (n--)
     {
         field t;
-        t.load(f);
+        t.load(b);
         fields[t.id] = t;
     }
 }
 
-void value::load_index(FILE *f)
+void value::load_index(buffer &b)
 {
-    FREAD(table_id);
-    FREAD(name);
-    FREAD(unk1);
-    FREAD(unk2);
-    FREAD(unk3);
-    FREAD(offset);
-    FREAD(data_size);
-    buf.resize(data_size);
+    READ(b, table_id);
+    READ(b, name);
+    READ(b, unk1);
+    READ(b, unk2);
+    READ(b, unk3);
+    READ(b, offset);
+    READ(b, data_size);
 }
 
-void value::load_data(FILE *f)
+void value::load_data(buffer &b)
 {
-    fseek(f, offset, SEEK_SET);
-    fread(buf.data(), buf.size(), 1, f);
+    data = buffer(b, data_size, offset);
 }
 
 void value::extract_fields(const tab &tab)
 {
-    s_file s(buf);
-
-    while (1)
+    while (!data.eof())
     {
         field_value fv;
-        if (SREAD(fv.field_id) == 0)
+        if (READ_NOTHROW(data, fv.field_id) == 0)
             break;
-        SREAD(fv.size);
+        READ(data, fv.size);
         auto i = tab.fields.find(fv.field_id);
         if (i == tab.fields.end())
             continue;
@@ -116,17 +110,17 @@ void value::extract_fields(const tab &tab)
         {
         case T_STRING:
             fv.s.resize(fv.size);
-            SREAD_N(fv.s[0], fv.s.size());
+            READ_N(data, fv.s[0], fv.s.size());
             break;
         case T_INTEGER:
-            SREAD(fv.i);
+            READ(data, fv.i);
             if (fv.size > sizeof(fv.i))
-                s.skip(fv.size - sizeof(fv.i));
+                data.skip(fv.size - sizeof(fv.i));
             break;
         case T_FLOAT:
-            SREAD(fv.f);
+            READ(data, fv.f);
             if (fv.size > sizeof(fv.i))
-                s.skip(fv.size - sizeof(fv.i));
+                data.skip(fv.size - sizeof(fv.i));
             break;
         default:
             assert(false);
@@ -135,15 +129,15 @@ void value::extract_fields(const tab &tab)
     }
 }
 
-void db::load(FILE *f)
+void db::load(buffer &b)
 {
-    FREAD(number_of_values);
+    READ(b, number_of_values);
 
     auto n = number_of_values;
     while (n--)
     {
         value t;
-        t.load_index(f);
+        t.load_index(b);
         values.push_back(t);
     }
 }

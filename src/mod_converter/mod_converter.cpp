@@ -21,58 +21,31 @@
 #include <stdint.h>
 #include <string>
 
-using namespace std;
-
+#include <common.h>
 #include "model.h"
 
-const int build_version =
-#include <version.h.in>
-;
-
-std::string version()
-{
-    string s;
-    s = to_string(0) + "." +
-        to_string(1) + "." +
-        to_string(0) + "." +
-        to_string(build_version);
-    return s;
-}
+using namespace std;
 
 void convert_model(string fn)
 {
+    printf("%s\n", fn.c_str());
+
+    buffer b(readFile(fn));
     model m;
-    FILE *f = fopen(fn.c_str(), "rb");
-    if (!f)
-        return;
-    try
-    {
-        m.load(f);
+    m.load(b);
 
-        auto p = ftell(f);
-        fseek(f, 0, SEEK_END);
-        auto end = ftell(f);
-        fclose(f);
-
-        if (p != end)
-        {
-            stringstream ss;
-            ss << hex << p << " != " << hex << end;
-            throw std::logic_error(ss.str());
-        }
-    }
-    catch (std::exception &e)
+    if (!b.eof())
     {
-        printf("error: %s\n", fn.c_str());
-        printf("%s\n", e.what());
-        fclose(f);
-        return;
+        stringstream ss;
+        ss << hex << b.getIndex() << " != " << hex << b.getSize();
+        throw std::logic_error(ss.str());
     }
 
     m.writeObj(fn + ".obj");
 }
 
 int main(int argc, char *argv[])
+try
 {
 #ifdef NDEBUG
     if (argc != 2)
@@ -98,4 +71,14 @@ int main(int argc, char *argv[])
     convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_M1_A_ATTACKER_DAMAGED");
 #endif
     return 0;
+}
+catch (std::exception &e)
+{
+    printf("error: %s\n", e.what());
+    return 1;
+}
+catch (...)
+{
+    printf("error: unknown exception\n");
+    return 1;
 }

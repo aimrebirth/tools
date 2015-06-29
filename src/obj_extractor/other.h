@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include <common.h>
+
 using namespace std;
 
 struct MechGroup
@@ -47,35 +49,35 @@ struct MechGroup
     vector<string> configs;
     char unk100;
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(unk1);
-        FREAD(unk2);
-        FREAD(type1);
-        FREAD(len1);
-        FREAD(name1);
+        READ(b, unk1);
+        READ(b, unk2);
+        READ(b, type1);
+        READ(b, len1);
+        READ(b, name1);
         if (type1 == 3 || type1 == 4)
         {
-            FREAD(unk30);
+            READ(b, unk30);
         }
         else if (type1 == 2)
         {
-            FREAD(len);
+            READ(b, len);
             unk11.resize(len);
             for (int i = 0; i < len; i++)
-                FREAD(unk11[i]);
+                READ(b, unk11[i]);
         }
         else if (type1 == 1 || type1 == 0)
         {
-            FREAD(unk20);
-            FREAD(unk21);
+            READ(b, unk20);
+            READ(b, unk21);
         }
         else
             assert(false);
         configs.resize(len1, string(0x20, 0));
         for (int i = 0; i < len1; i++)
-            FREAD_N(configs[i][0], 0x20);
-        FREAD(unk100);
+            READ_N(b, configs[i][0], 0x20);
+        READ(b, unk100);
     }
 };
 
@@ -86,15 +88,15 @@ struct MechGroups
 
     vector<MechGroup> mgs;
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(n);
-        FREAD(prefix);
+        READ(b, n);
+        READ(b, prefix);
 
         for (int s = 0; s < n; s++)
         {
             MechGroup mg;
-            mg.load(f);
+            mg.load(b);
             mgs.push_back(mg);
         }
     }
@@ -107,12 +109,12 @@ struct Good
     float price;
     float unk2[10];
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(name);
-        FREAD(unk1);
-        FREAD(price);
-        FREAD(unk2);
+        READ(b, name);
+        READ(b, unk1);
+        READ(b, price);
+        READ(b, unk2);
     }
 };
 
@@ -123,15 +125,15 @@ struct BuildingGoods
 
     vector<Good> goods;
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(name);
-        FREAD(n);
+        READ(b, name);
+        READ(b, n);
 
         for (int i = 0; i < n; i++)
         {
             Good g;
-            g.load(f);
+            g.load(b);
             goods.push_back(g);
         }
     }
@@ -146,17 +148,17 @@ struct MapGoods
 
     vector<BuildingGoods> bgs;
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(unk1);
-        FREAD(unk2);
-        FREAD(unk3);
-        FREAD(n);
+        READ(b, unk1);
+        READ(b, unk2);
+        READ(b, unk3);
+        READ(b, n);
 
         for (int i = 0; i < n; i++)
         {
             BuildingGoods bg;
-            bg.load(f);
+            bg.load(b);
             bgs.push_back(bg);
         }
     }
@@ -174,25 +176,25 @@ struct MapMusic
     uint32_t n2;
     vector<string> names2;
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(unk1);
-        FREAD(name1);
-        FREAD(name2);
+        READ(b, unk1);
+        READ(b, name1);
+        READ(b, name2);
 
-        FREAD(n1);
+        READ(b, n1);
         for (int i = 0; i < n1; i++)
         {
             char name[0x20];
-            FREAD(name);
+            READ(b, name);
             names1.push_back(name);
         }
 
-        FREAD(n2);
+        READ(b, n2);
         for (int i = 0; i < n2; i++)
         {
             char name[0x20];
-            FREAD(name);
+            READ(b, name);
             names2.push_back(name);
         }
     }
@@ -205,12 +207,12 @@ struct MapSound
     uint32_t unk2;
     float unk3[4];
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(name);
-        FREAD(unk1);
-        FREAD(unk2);
-        FREAD(unk3);
+        READ(b, name);
+        READ(b, unk1);
+        READ(b, unk2);
+        READ(b, unk3);
     }
 };
 
@@ -219,13 +221,13 @@ struct MapSounds
     uint32_t n;
     vector<MapSound> sounds;
 
-    void load(FILE *f)
+    void load(buffer &b)
     {
-        FREAD(n);
+        READ(b, n);
         for (int i = 0; i < n; i++)
         {
             MapSound s;
-            s.load(f);
+            s.load(b);
             sounds.push_back(s);
         }
     }

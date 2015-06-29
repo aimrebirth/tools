@@ -18,10 +18,10 @@
 
 #include "objects.h"
 
-Segment *Segment::create_segment(FILE *f)
+Segment *Segment::create_segment(buffer &b)
 {
     SegmentType segment_type;
-    FREAD(segment_type);
+    READ(b, segment_type);
 
     Segment *segment = 0;
     switch (segment_type)
@@ -78,22 +78,22 @@ Segment *Segment::create_segment(FILE *f)
     if (segment)
     {
         segment->segment_type = segment_type;
-        FREAD(segment->segment_len);
-        FREAD(segment->n_objects);
+        READ(b, segment->segment_len);
+        READ(b, segment->n_objects);
     }
     return segment;
 }
 
-void Objects::load(FILE *f)
+void Objects::load(buffer &b)
 {
-    FREAD(n_segments);
+    READ(b, n_segments);
 
     for (int s = 0; s < n_segments; s++)
     {
-        auto seg = Segment::create_segment(f);
+        auto seg = Segment::create_segment(b);
         if (!seg)
             break;
-        seg->load(f);
+        seg->load(b);
         segments.push_back(seg);
     }
 }

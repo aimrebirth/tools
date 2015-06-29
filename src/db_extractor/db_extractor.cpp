@@ -22,42 +22,15 @@
 
 #include <Windows.h>
 
-void open_tab(string path, tab &tab)
-{
-    path += ".tab";
-    FILE *f = fopen(path.c_str(), "rb");
-    if (!f)
-        return;
-    tab.load(f);
-    fclose(f);
-}
-
-void open_index(string path, db &index)
-{
-    path += ".ind";
-    FILE *f = fopen(path.c_str(), "rb");
-    if (!f)
-        return;
-    index.load(f);
-    fclose(f);
-}
-
-void open_data(string path, db &index)
-{
-    path += ".dat";
-    FILE *f = fopen(path.c_str(), "rb");
-    if (!f)
-        return;
-    for (auto &v : index.values)
-        v.load_data(f);
-    fclose(f);
-}
+#include <common.h>
 
 void open_db(string path, db &db)
 {
-    open_tab(path, db.t);
-    open_index(path, db);
-    open_data(path, db);
+    db.t.load(buffer(readFile(path + ".tab")));
+    db.load(buffer(readFile(path + ".ind")));
+    buffer b(readFile(path + ".dat"));
+    for (auto &v : db.values)
+        v.load_data(b);
     for (auto &v : db.values)
         v.extract_fields(db.t);
 }
@@ -179,6 +152,7 @@ void create_sql(string path, const db &db)
 }
 
 int main(int argc, char *argv[])
+try
 {
     if (argc != 2)
     {
@@ -190,4 +164,14 @@ int main(int argc, char *argv[])
     open_db(path, db);
     create_sql(path, db);
     return 0;
+}
+catch (std::exception &e)
+{
+    printf("error: %s\n", e.what());
+    return 1;
+}
+catch (...)
+{
+    printf("error: unknown exception\n");
+    return 1;
 }
