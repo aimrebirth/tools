@@ -21,4 +21,8 @@ file(GLOB mod_converter_src "mod_converter/*")
 add_executable(mod_converter ${mod_converter_src})
 target_link_libraries(mod_converter common)
 
+file(GLOB tm_converter_src "tm_converter/*")
+add_executable(tm_converter ${tm_converter_src})
+target_link_libraries(tm_converter common)
+
 add_subdirectory(common)

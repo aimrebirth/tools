@@ -18,6 +18,7 @@
 
 #include "model.h"
 
+#include <algorithm>
 #include <fstream>
 #include <set>
 #include <string>
@@ -27,6 +28,13 @@
 using namespace std;
 
 std::string version();
+
+std::string Vector4::print() const
+{
+    string s;
+    s += to_string(x) + " " + to_string(y) + " " + to_string(z);
+    return s;
+}
 
 void vertex::load(buffer &b, uint32_t flags)
 {
@@ -66,6 +74,116 @@ std::string vertex::printTex() const
     return s;
 }
 
+void damage_model::load(buffer &b)
+{
+    READ(b, n_polygons);
+    polygons.resize(n_polygons);
+    READ(b, unk8);
+    READ(b, name);
+    for (auto &t : polygons)
+        READ(b, t);
+    READ(b, unk6);
+    READ(b, flags);
+    READ(b, n_vertex);
+    vertices.resize(n_vertex);
+    READ(b, n_triangles);
+    triangles.resize(n_triangles);
+    for (auto &v : vertices)
+        v.load(b, flags);
+    for (auto &t : triangles)
+        READ(b, t);
+}
+
+void animation::load(buffer &b)
+{
+    READ(b, type);
+    READ(b, name);
+    for (auto &s : segments)
+        s.loadHeader(b);
+    if (segments[0].n)
+    for (auto &s : segments)
+        s.loadData(b);
+}
+
+void animation::segment::loadHeader(buffer &b)
+{
+    READ(b, n);
+    READ(b, unk0);
+    READ(b, unk1);
+}
+
+void animation::segment::loadData(buffer &b)
+{
+    if (n == 0)
+        return;
+    if (unk0)
+    {
+        triangles.resize(n);
+        for (auto &t : triangles)
+            READ(b, t);
+    }
+    unk2.resize(n);
+    for (auto &unk : unk2)
+        READ(b, unk);
+}
+
+std::string block::printMtl(const std::string &mtl_name) const
+{
+    string s;
+    s += "newmtl " + mtl_name + "\n";  
+    s += "\n";
+    s += "Ka " + material.ambient.print() + "\n";
+    s += "Kd " + material.diffuse.print() + "\n";
+    s += "Ks " + material.specular.print() + "\n";
+    s += "   Ns " + to_string(material.power) + "\n";
+    // d 1.0
+    // illum
+    s += "\n";
+    s += "map_Ka " + string(tex_mask) + ".tga\n";
+    s += "map_Kd " + string(tex_mask) + ".tga\n";
+    s += "map_Ks " + string(tex_spec) + ".tga\n";
+    s += "map_Ns " + string(tex_spec) + ".tga\n";
+    s += "\n";
+    return s;
+}
+
+std::string block::printObj() const
+{
+    string s;
+    s += string("o ") + name + "\n";
+    s += string("g ") + name + "\n";
+    s += "s off\n";
+    s += "\n";
+    s += "usemtl main\n";
+    s += "\n";
+
+    for (auto &v : vertices)
+        s += v.printVertex() + "\n";
+    s += "\n";
+    for (auto &v : vertices)
+        s += v.printNormal() + "\n";
+    s += "\n";
+    for (auto &v : vertices)
+        s += v.printTex() + "\n";
+    s += "\n";
+
+    if (n_triangles)
+    for (int i = 0; i <= n_triangles - 3; i += 3)
+    {
+        auto x = to_string(triangles[i] + 1);
+        auto y = to_string(triangles[i + 2] + 1);
+        auto z = to_string(triangles[i + 1] + 1);
+        x += "/" + x;
+        y += "/" + y;
+        z += "/" + z;
+        s += "f " + x + " " + y + " " + z + "\n";
+    }
+        
+    s += "\n";
+    s += "\n";
+    return s;
+}
+    
 void block::load(buffer &b)
 {
     // header
@@ -143,59 +261,6 @@ void block::load(buffer &b)
         throw std::logic_error("extraction error: block #" + std::string(name));
 }
 
-void damage_model::load(buffer &b)
-{
-    READ(b, n_polygons);
-    polygons.resize(n_polygons);
-    READ(b, unk8);
-    READ(b, name);
-    for (auto &t : polygons)
-        READ(b, t);
-    READ(b, unk6);
-    READ(b, flags);
-    READ(b, n_vertex);
-    vertices.resize(n_vertex);
-    READ(b, n_triangles);
-    triangles.resize(n_triangles);
-    for (auto &v : vertices)
-        v.load(b, flags);
-    for (auto &t : triangles)
-        READ(b, t);
-}
-
-void animation::load(buffer &b)
-{
-    READ(b, type);
-    READ(b, name);
-    for (auto &s : segments)
-        s.loadHeader(b);
-    if (segments[0].n)
-    for (auto &s : segments)
-        s.loadData(b);
-}
-
-void animation::segment::loadHeader(buffer &b)
-{
-    READ(b, n);
-    READ(b, unk0);
-    READ(b, unk1);
-}
-
-void animation::segment::loadData(buffer &b)
-{
-    if (n == 0)
-        return;
-    if (unk0)
-    {
-        triangles.resize(n);
-        for (auto &t : triangles)
-            READ(b, t);
-    }
-    unk2.resize(n);
-    for (auto &unk : unk2)
-        READ(b, unk);
-}
-
 void model::load(buffer &b)
 {
     READ(b, n_blocks);
@@ -216,34 +281,19 @@ void model::writeObj(std::string fn)
         o << "# A.I.M. Model Converter (ver. " << version() << ")\n";
         o << "#" << "\n";
         o << "\n";
-        o << "o " << f.name << "\n";
-        o << "g " << f.name << "\n";
-        o << "s off\n";
+        int p1 = fn.rfind("\\");
+        int p2 = fn.rfind("/");
+        auto mtl = fn.substr(std::max(p1, p2) + 1);
+        mtl += string(".") + f.name;
+        o << "mtllib " << mtl << ".mtl\n";
         o << "\n";
+        o << f.printObj();
 
-        for (auto &v : f.vertices)
-            o << v.printVertex() << "\n";
-        o << "\n";
-        for (auto &v : f.vertices)
-            o << v.printNormal() << "\n";
-        o << "\n";
-        for (auto &v : f.vertices)
-            o << v.printTex() << "\n";
-        o << "\n";
-
-        if (f.n_triangles)
-        for (int i = 0; i <= f.n_triangles - 3; i += 3)
-        {
-            auto x = to_string(f.triangles[i] + 1);
-            auto y = to_string(f.triangles[i + 2] + 1);
-            auto z = to_string(f.triangles[i + 1] + 1);
-            x += "/" + x;
-            y += "/" + y;
-            z += "/" + z;
-            o << "f " << x << " " << y << " " << z << "\n";
-        }
-        
-        o << "\n";
-        o << "\n";
+        ofstream m(fn + "." + f.name + ".mtl");
+        m << "#" << "\n";
+        m << "# A.I.M. Model Converter (ver. " << version() << ")\n";
+        m << "#" << "\n";
+        m << "\n";
+        m << f.printMtl(mtl);
     }
 }

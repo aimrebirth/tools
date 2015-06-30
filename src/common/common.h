@@ -26,30 +26,42 @@
 #define READ(b, var) b.read(&var, sizeof(var))
 #define READ_NOTHROW(b, var) b.read(&var, sizeof(var), true)
 #define READ_N(b, var, sz) b.read(&var, sz)
+#define WRITE(b, var) b.write(&var, sizeof(var))
 
 std::string version();
 std::vector<uint8_t> readFile(const std::string &fn);
+void writeFile(const std::string &fn, const std::vector<uint8_t> &data);
 
 class buffer
 {
 public:
     buffer();
+    buffer(size_t size);
     buffer(const std::vector<uint8_t> &buf, uint32_t data_offset = 0);
     buffer(buffer &rhs, uint32_t size);
     buffer(buffer &rhs, uint32_t size, uint32_t offset);
 
-    uint32_t read(void *dst, uint32_t size, bool nothrow = false);
-    void skip(int n);
+    uint32_t read(void *dst, uint32_t size, bool nothrow = false) const;
+    uint32_t write(const void *src, uint32_t size, bool nothrow = false);
+    template <typename T>
+    uint32_t write(const T &src, bool nothrow = false)
+    {
+        return write(&src, sizeof(src), nothrow);
+    }
+
+    void skip(int n) const;
     bool eof() const;
     bool check(int index) const;
+    void reset() const;
 
     uint32_t getIndex() const;
     uint32_t getSize() const;
+    const std::vector<uint8_t> &getBuf() const;
 
 private:
-    std::shared_ptr<const std::vector<uint8_t>> buf;
-    uint32_t index = 0;
-    uint8_t *ptr = 0;
-    uint32_t data_offset = 0;
-    uint32_t size = 0;
+    std::shared_ptr<std::vector<uint8_t>> buf;
+    mutable uint32_t index = 0;
+    mutable uint8_t *ptr = 0;
+    mutable uint32_t data_offset = 0;
+    mutable uint32_t size = 0;
 };

@@ -58,6 +58,8 @@ struct Vector4
     float y;
     float z;
     float w;
+
+    std::string print() const;
 };
 
 struct vertex
@@ -211,6 +213,8 @@ struct block
     std::vector<damage_model> damage_models;
 
     void load(buffer &b);
+    std::string printMtl(const std::string &mtl_name) const;
+    std::string printObj() const;
 };
 
 struct model

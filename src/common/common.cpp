@@ -50,15 +50,31 @@ std::vector<uint8_t> readFile(const std::string &fn)
     return buf;
 }
 
+void writeFile(const std::string &fn, const std::vector<uint8_t> &data)
+{
+    FILE *f = fopen(fn.c_str(), "wb");
+    if (!f)
+        throw std::runtime_error("Cannot open file " + fn);
+    fwrite(data.data(), 1, data.size(), f);
+    fclose(f);
+}
+
 buffer::buffer()
 {
+}
+
+buffer::buffer(size_t size)
+    : buf(new std::vector<uint8_t>(size))
+{
+    this->size = buf->size();
+    skip(0);
 }
 
 buffer::buffer(const std::vector<uint8_t> &buf, uint32_t data_offset)
     : buf(new std::vector<uint8_t>(buf)), data_offset(data_offset)
 {
     skip(0);
-    size = buf.size();
+    size = this->buf->size();
 }
 
 buffer::buffer(buffer &rhs, uint32_t size)
@@ -80,7 +96,7 @@ buffer::buffer(buffer &rhs, uint32_t size, uint32_t offset)
     this->size = index + size;
 }
 
-uint32_t buffer::read(void *dst, uint32_t size, bool nothrow)
+uint32_t buffer::read(void *dst, uint32_t size, bool nothrow) const
 {
     if (!buf)
         throw std::logic_error("buffer: not initialized");
@@ -91,19 +107,53 @@ uint32_t buffer::read(void *dst, uint32_t size, bool nothrow)
         throw std::logic_error("buffer: out of range");
     }
     if (index + size > this->size)
+    {
+        if (!nothrow)
+            throw std::logic_error("buffer: too much data");
         size = this->size - index;
+    }
     memcpy(dst, buf->data() + index, size);
     skip(size);
     return size;
 }
 
-void buffer::skip(int n)
+uint32_t buffer::write(const void *src, uint32_t size, bool nothrow)
+{
+    if (!buf)
+    {
+        buf = std::make_shared<std::vector<uint8_t>>(size);
+        this->size = buf->size();
+    }
+    if (index > this->size)
+    {
+        if (nothrow)
+            return 0;
+        throw std::logic_error("buffer: out of range");
+    }
+    if (index + size > this->size)
+    {
+        buf->resize(index + size);
+        this->size = buf->size();
+    }
+    memcpy((uint8_t *)buf->data() + index, src, size);
+    skip(size);
+    return size;
+}
+
+void buffer::skip(int n) const
 {
     if (!buf)
         throw std::logic_error("buffer: not initialized");
     index += n;
     data_offset += n;
     ptr = (uint8_t *)buf->data() + index;
+}
+
+void buffer::reset() const
+{
+    index = 0;
+    data_offset = 0;
+    ptr = (uint8_t *)buf->data();
 }
 
 bool buffer::check(int index) const
@@ -124,4 +174,11 @@ uint32_t buffer::getIndex() const
 uint32_t buffer::getSize() const
 {
     return this->size;
+}
+
+const std::vector<uint8_t> &buffer::getBuf() const
+{
+    if (!buf)
+        throw std::logic_error("buffer: not initialized");
+    return *buf;
 }

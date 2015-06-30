@@ -48,7 +48,7 @@ try
 {
     if (argc != 2)
     {
-        printf("Usage: %s model_file \n", argv[0]);
+        printf("Usage: %s model_file\n", argv[0]);
         return 1;
     }
     convert_model(argv[1]);
