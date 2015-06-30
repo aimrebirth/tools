@@ -6,8 +6,9 @@ This repository contains different tools for A.I.M. games.
 2. DB extractor. Converts (db|quest) databases from any AIM game into .sql file to be executed with sqlite3 DBMS.
 3. OBJ extractor. Extracts all data about objects on the map from .mmo file. Tested only with AIM1 game.
 4. MMP extractor (not working, only template).
-5. Models converter.
+5. Models converter: AIM1/2 format -> .OBJ + .MTL. Textures are included.
 6. Script to TXT convertor.
+7. Texture converter: TM -> TGA
 
 # Build instructions
 1. Download and install latest CMake http://www.cmake.org/download/
