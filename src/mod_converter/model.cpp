@@ -19,6 +19,7 @@
 #include "model.h"
 
 #include <fstream>
+#include <set>
 #include <string>
 
 #include <common.h>
@@ -33,8 +34,8 @@ void vertex::load(buffer &b, uint32_t flags)
     READ(b, vZ);
     READ(b, vY);
 
-    if (flags & F_WIND)
-        READ(b, wind);
+    if (flags & F_UNK0)
+        READ(b, unk0);
     
     READ(b, nX);
     READ(b, nZ);
@@ -65,34 +66,58 @@ std::string vertex::printTex() const
     return s;
 }
 
-void fragment::load(buffer &b)
+void block::load(buffer &b)
 {
     // header
     READ(b, type);
-    READ(b, name0);
-    READ(b, name1);
-    READ(b, name2);
-    READ(b, name3);
-    READ(b, name4);
-    READ(b, unk0);
+    READ(b, name);
+    READ(b, tex_mask);
+    READ(b, tex_spec);
+    READ(b, tex3);
+    READ(b, tex4);
+    READ(b, LODs);
     READ(b, unk1);
     READ(b, unk2);
     READ(b, unk3);
     READ(b, size);
     READ(b, unk4);
 
+    if (size == 0) // critical error!!! cannot survive
+        throw std::runtime_error("model file has bad block size field");
+    
     // data
-    buffer data(b, size);
-    READ(data, n_segments);
-    segments.resize(n_segments);
-    READ(data, header);
-    READ(data, triangles_mult_7);
+    buffer data = buffer(b, size);
+
+    // we cannot process this type at the moment    
+    if (type == BlockType::ParticleEmitter)
+        return;
+
+    READ(data, n_animations);
+    animations.resize(n_animations);
+    READ(data, material);
+
+    // unk
+    READ(data, unk_flags0);
+    READ(data, unk7);
+    READ(data, unk9);
     READ(data, unk10);
+    READ(data, auto_animation);
+    READ(data, animation_cycle);
+    READ(data, unk8);
+    READ(data, unk11);
+    READ(data, unk12);
+    READ(data, triangles_mult_7);
+    //
+
+    READ(data, additional_params);
+    READ(data, n_damage_models);
+    damage_models.resize(n_damage_models);
+    READ(data, rot);
     READ(data, flags);
     READ(data, n_vertex);
     vertices.resize(n_vertex);
     READ(data, n_triangles);
-    if (triangles_mult_7)
+    if (triangles_mult_7 && (flags & F_UNK0) && !unk11)
         n_triangles *= 7;
     triangles.resize(n_triangles);
     for (auto &v : vertices)
@@ -100,76 +125,31 @@ void fragment::load(buffer &b)
     for (auto &t : triangles)
         READ(data, t);
 
-    // segments
-    for (auto &seg : segments)
+    // animations
+    for (auto &a : animations)
+        a.load(data);
+    for (auto &dm : damage_models)
+        dm.load(data);
+    
+    if (!data.eof() && triangles_mult_7)
     {
-        uint32_t type;
-        READ(data, type);
-        switch (type)
-        {
-        case 1:
-            seg = new segment1;
-            break;
-        case 2:
-            seg = new segment2;
-            break;
-        case 6:
-            seg = new segment6;
-            break;
-        default:
-            throw std::logic_error("unknown segment type " + std::to_string(type));
-        }
-        seg->type = type;
-        seg->load(data);
+        // unknown end of block
+        auto triangles2 = triangles;
+        triangles2.resize((data.getSize() - data.getIndex()) / sizeof(triangle));
+        for (auto &t : triangles2)
+            READ(data, t);
     }
-
     if (!data.eof())
-        throw std::logic_error("extraction error: fragment #" + std::string(name0));
+        throw std::logic_error("extraction error: block #" + std::string(name));
 }
 
-void segment1::load(buffer &b)
+void damage_model::load(buffer &b)
 {
-    READ(b, name);
-    READ(b, unk0);
-    triangles.resize(unk0[0][0]);
-    unk1.resize(unk0[0][0]);
-    for (int i = 0; i < 2; i++)
-    {
-        for (auto &t : triangles)
-            READ(b, t);
-        for (auto &unk: unk1)
-            READ(b, unk);
-    }
-}
-
-void segment2::load(buffer &b)
-{
-    READ(b, name);
-    READ(b, unk0);
-    triangles.resize(unk0[0][0]);
-    unk1.resize(unk0[0][0]);
-    unk1_1.resize(unk0[0][0]);
-    for (auto &t : triangles)
-        READ(b, t);
-    for (auto &unk : unk1)
-        READ(b, unk);
-    for (auto &unk : unk1_1)
-        READ(b, unk);
-    while (!b.eof())
-    {
-        repeater r;
-        r.load(b);
-        unk2.push_back(r);
-    }
-}
-
-void segment2::repeater::load(buffer &b)
-{
-    READ(b, unk2);
-    triangles2.resize(unk2);
+    READ(b, n_polygons);
+    polygons.resize(n_polygons);
     READ(b, unk8);
-    READ(b, unk3);
-    for (auto &t : triangles2)
+    READ(b, name);
+    for (auto &t : polygons)
         READ(b, t);
     READ(b, unk6);
     READ(b, flags);
@@ -183,60 +163,87 @@ void segment2::repeater::load(buffer &b)
         READ(b, t);
 }
 
-void segment6::load(buffer &b)
+void animation::load(buffer &b)
 {
+    READ(b, type);
     READ(b, name);
+    for (auto &s : segments)
+        s.loadHeader(b);
+    if (segments[0].n)
+    for (auto &s : segments)
+        s.loadData(b);
+}
+
+void animation::segment::loadHeader(buffer &b)
+{
+    READ(b, n);
     READ(b, unk0);
-    triangles.resize(unk0[0][0]);
-    for (int i = 0; i < 1; i++)
+    READ(b, unk1);
+}
+
+void animation::segment::loadData(buffer &b)
+{
+    if (n == 0)
+        return;
+    if (unk0)
     {
+        triangles.resize(n);
         for (auto &t : triangles)
             READ(b, t);
-        char unk1[0x30]; // some 6 floats
-        for (int i = 0; i < unk0[0][0]; i++)
-            READ(b, unk1);
     }
+    unk2.resize(n);
+    for (auto &unk : unk2)
+        READ(b, unk);
 }
 
 void model::load(buffer &b)
 {
-    READ(b, n_fragments);
+    READ(b, n_blocks);
+    if (n_blocks > 1000) // probably bad file
+        throw std::runtime_error("Model file has bad block count (should be <= 1000). Probably not a model.");
     READ(b, header);
-    fragments.resize(n_fragments);
-    for (auto &f : fragments)
+    blocks.resize(n_blocks);
+    for (auto &f : blocks)
         f.load(b);
 }
 
 void model::writeObj(std::string fn)
 {
-    ofstream o(fn);
-    o << "# " << "\n";
-    o << "# A.I.M. Model Converter (ver. " << version() << ")\n";
-    o << "# " << "\n";
-    o << "\n";
-
-    if (fragments.empty())
-        return;
-
-    const auto &f = fragments[0];
-    for (auto &v : f.vertices)
-        o << v.printVertex() << "\n";
-    o << "\n";
-    for (auto &v : f.vertices)
-        o << v.printNormal() << "\n";
-    o << "\n";
-    for (auto &v : f.vertices)
-        o << v.printTex() << "\n";
-    o << "\n";
-
-    for (int i = 0; i <= f.n_triangles - 3; i += 3)
+    for (auto &f : blocks)
     {
-        auto x = to_string(f.triangles[i] + 1);
-        auto y = to_string(f.triangles[i + 2] + 1);
-        auto z = to_string(f.triangles[i + 1] + 1);
-        x += "/" + x;
-        y += "/" + y;
-        z += "/" + z;
-        o << "f " << x << " " << y << " " << z << "\n";
+        ofstream o(fn + "." + f.name + ".obj");
+        o << "#" << "\n";
+        o << "# A.I.M. Model Converter (ver. " << version() << ")\n";
+        o << "#" << "\n";
+        o << "\n";
+        o << "o " << f.name << "\n";
+        o << "g " << f.name << "\n";
+        o << "s off\n";
+        o << "\n";
+
+        for (auto &v : f.vertices)
+            o << v.printVertex() << "\n";
+        o << "\n";
+        for (auto &v : f.vertices)
+            o << v.printNormal() << "\n";
+        o << "\n";
+        for (auto &v : f.vertices)
+            o << v.printTex() << "\n";
+        o << "\n";
+
+        if (f.n_triangles)
+        for (int i = 0; i <= f.n_triangles - 3; i += 3)
+        {
+            auto x = to_string(f.triangles[i] + 1);
+            auto y = to_string(f.triangles[i + 2] + 1);
+            auto z = to_string(f.triangles[i + 1] + 1);
+            x += "/" + x;
+            y += "/" + y;
+            z += "/" + z;
+            o << "f " << x << " " << y << " " << z << "\n";
+        }
+        
+        o << "\n";
+        o << "\n";
     }
 }

@@ -26,7 +26,38 @@ class buffer;
 
 enum
 {
-    F_WIND  =   0x4,
+    F_UNK0  =   0x4,
+};
+
+enum class AdditionalParameter : uint32_t
+{
+    None,
+    DetalizationCoefficient
+};
+
+enum class ModelRotation : uint32_t
+{
+    None,
+    Vertical,
+    Horizontal,
+    Other
+};
+
+enum class BlockType : uint32_t
+{
+    VisibleObject,
+    HelperObject,
+    BitmapAlpha,
+    BitmapGrass,
+    ParticleEmitter
+};
+
+struct Vector4
+{
+    float x;
+    float y;
+    float z;
+    float w;
 };
 
 struct vertex
@@ -35,7 +66,7 @@ struct vertex
     float vZ;
     float vY;
 
-    float wind;
+    float unk0;
 
     float nX;
     float nZ;
@@ -53,76 +84,96 @@ struct vertex
 
 typedef uint16_t triangle;
 
-struct unk_float3x4
+struct animation
 {
-    float unk[4][3];
-};
-
-struct unk_float6
-{
-    float unk[6];
-};
-
-struct segment
-{
-    uint32_t type;
-
-    virtual void load(buffer &b) = 0;
-};
-
-struct segment1 : public segment
-{
-    char name[0xC];
-    uint32_t unk0[4][3];
-    std::vector<triangle> triangles;
-    std::vector<unk_float3x4> unk1;
-    
-    virtual void load(buffer &b);
-};
-
-struct segment2 : public segment
-{
-    struct repeater
+    // +1 +0.5 -0.5 +1
+    struct segment
     {
-        uint32_t unk2;
-        float unk8[3];
-        char unk3[0x3C];
-        std::vector<uint16_t> triangles2;
-        uint8_t unk6;
-        uint32_t flags;
-        uint32_t n_vertex;
-        uint32_t n_triangles;
-        std::vector<vertex> vertices;
-        std::vector<uint16_t> triangles;
-        
-        virtual void load(buffer &b);
+        struct unk_float6
+        {
+            float unk[6];
+        };
+
+        uint32_t n;
+        uint32_t unk0;
+        uint32_t unk1;
+
+        std::vector<triangle> triangles;
+        std::vector<unk_float6> unk2;
+
+        void loadHeader(buffer &b);
+        void loadData(buffer &b);
     };
 
+    uint32_t type;
     char name[0xC];
-    uint32_t unk0[4][3];
-    std::vector<triangle> triangles;
-    std::vector<unk_float6> unk1;
-    std::vector<unk_float6> unk1_1;
-    std::vector<repeater> unk2;
-    
+    segment segments[4];
+
     virtual void load(buffer &b);
 };
 
-struct segment6 : public segment1
+struct damage_model
 {
+    uint32_t n_polygons;
+    float unk8[3];
+    char name[0x3C];
+    std::vector<uint16_t> polygons;
+    uint8_t unk6;
+    uint32_t flags;
+    uint32_t n_vertex;
+    uint32_t n_triangles;
+    std::vector<vertex> vertices;
+    std::vector<uint16_t> triangles;
+        
     virtual void load(buffer &b);
 };
 
-struct fragment
+struct material
+{
+    Vector4 ambient;
+    Vector4 diffuse;
+    Vector4 specular;
+    Vector4 emissive;
+    float power;
+};
+
+struct rotation
+{
+    ModelRotation type;
+    float speed;
+    // center of rotating axis
+    float x;
+    float y;
+    float z;
+};
+
+struct additional_parameters
+{
+    AdditionalParameter params;
+    float detalization_koef;
+};
+
+struct block
 {
     // header
-    uint32_t type;
-    char name0[0x20];
-    char name1[0x20];
-    char name2[0x20];
-    char name3[0x20];
-    char name4[0x20];
-    uint32_t unk0;
+    BlockType type;
+    char name[0x20];
+    char tex_mask[0x20];
+    char tex_spec[0x20];
+    char tex3[0x20];
+    char tex4[0x20];
+    union // LODs
+    {
+        struct
+        {
+            uint8_t lod1 : 1;
+            uint8_t lod2 : 1;
+            uint8_t lod3 : 1;
+            uint8_t lod4 : 1;
+            uint8_t      : 4;
+        } _;
+        uint32_t LODs;
+    };
     uint32_t unk1;
     uint32_t unk2[2];
     uint32_t unk3;
@@ -130,27 +181,43 @@ struct fragment
     uint32_t unk4[10];
 
     // data
-    uint32_t n_segments;
-    char header[0x68];
+    uint32_t n_animations;
+    material material;
+
+    //unk (anim + transform settings?)
+    uint32_t unk_flags0;
+    uint32_t unk7;
+    float unk9;
+    uint32_t unk10;
+    uint32_t auto_animation;
+    float animation_cycle;
+    float unk8;
+    uint32_t unk11;
+    uint32_t unk12;
     uint32_t triangles_mult_7;
-    char unk10[0x20];
+    //
+
+    additional_parameters additional_params;
+    uint32_t n_damage_models;
+    rotation rot;
     uint32_t flags;
     uint32_t n_vertex;
     uint32_t n_triangles;
     std::vector<vertex> vertices;
     std::vector<uint16_t> triangles;
 
-    // segments
-    std::vector<segment *> segments;
+    // animations
+    std::vector<animation> animations;
+    std::vector<damage_model> damage_models;
 
     void load(buffer &b);
 };
 
 struct model
 {
-    int n_fragments;
+    int n_blocks;
     char header[0x40];
-    std::vector<fragment> fragments;
+    std::vector<block> blocks;
 
     void load(buffer &b);
     void writeObj(std::string fn);

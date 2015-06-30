@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <fstream>
 #include <sstream>
 #include <stdio.h>
 #include <stdint.h>
@@ -28,8 +29,6 @@ using namespace std;
 
 void convert_model(string fn)
 {
-    printf("%s\n", fn.c_str());
-
     buffer b(readFile(fn));
     model m;
     m.load(b);
@@ -41,44 +40,45 @@ void convert_model(string fn)
         throw std::logic_error(ss.str());
     }
 
-    m.writeObj(fn + ".obj");
+    m.writeObj(fn);
 }
 
 int main(int argc, char *argv[])
 try
 {
-#ifdef NDEBUG
     if (argc != 2)
     {
-        cout << "Usage:\n" << argv[0] << " model_file" << "\n";
+        printf("Usage: %s model_file \n", argv[0]);
         return 1;
     }
-    read_model(argv[1]);
-#else
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_M1_A_ATTACKER");
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_M1_B_BASE");
-
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_BLD_BASE1");
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_S4_SINIGR");
-    
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_FIRE");
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_FARA");
-
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_FX_ANTI_MATER_GUN");
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_UNFL_STONE01");
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_L1_KUST");
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_L6_KUST_12");
-    convert_model("h:\\Games\\AIM\\data\\res0.pak.dir\\Data\\Models\\MOD_GL_M1_A_ATTACKER_DAMAGED");
-#endif
+    convert_model(argv[1]);
     return 0;
+}
+catch (std::runtime_error &e)
+{
+    string error;
+    if (argv[1])
+        error += argv[1];
+    error += "\n";
+    error += "fatal error: ";
+    error += e.what();
+    error += "\n";
+    if (argv[1])
+    {
+        ofstream ofile(string(argv[1]) + ".error.txt");
+        ofile << error;
+    }
+    return 1;
 }
 catch (std::exception &e)
 {
+    printf("%s\n", argv[1]);
     printf("error: %s\n", e.what());
     return 1;
 }
 catch (...)
 {
+    printf("%s\n", argv[1]);
     printf("error: unknown exception\n");
     return 1;
 }

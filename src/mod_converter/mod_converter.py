@@ -5,6 +5,11 @@ import argparse
 import os
 import subprocess
 
+banned_ext = [
+    '.obj',
+    '.txt'
+]
+
 def main():    
     parser = argparse.ArgumentParser(description='Batch models converter')
     parser.add_argument('--dir', dest='dir', help='path to directory with models')
@@ -14,10 +19,10 @@ def main():
         run(pargs.dir)
 
 def run(dir):
-    for file in os.listdir(dir):
-        if os.path.isdir(file):
+    for file in sorted(os.listdir(dir)):
+        if os.path.isdir(file) or os.path.splitext(file)[1] in banned_ext:
             continue
-        p = subprocess.Popen(['mod_converter.exe', file])
+        p = subprocess.Popen(['mod_converter.exe', dir + '/' + file])
         p.communicate()
 
 if __name__ == '__main__':
