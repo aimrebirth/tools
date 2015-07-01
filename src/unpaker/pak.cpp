@@ -124,15 +124,19 @@ void segment::decompress(int segment_id)
     load_segment();
 
     if (flags & 0xC)
+    {
         if (flags & 0x4)
             decode_f1((char*)decoded, size2, (char*)encoded);
         else
             decode_f2((char*)decoded, size2, (char*)encoded);
+    }
     if (flags & 0x3)
+    {
         if (flags & 0x1)
             decode_f3((char*)encoded, size1, (char*)decoded);
         else
             decode_f4((char*)encoded, size1, (char*)decoded, segment_id * header_size);
+    }
 }
 
 void pak::load(FILE *f)

@@ -63,9 +63,10 @@ struct storage
 
 storage read_mmo(string fn)
 {
+    buffer f(readFile(fn));
     storage s;
     s.name = fn;
-    s.load(buffer(readFile(fn)));
+    s.load(f);
     return s;
 }
 

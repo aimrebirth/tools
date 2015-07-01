@@ -1,9 +1,9 @@
 include_directories(common)
 
+if (WIN32)
 file(GLOB unpaker_src "unpaker/*")
 add_executable(unpaker ${unpaker_src})
 
-if (WIN32)
 file(GLOB db_extractor_src "db_extractor/*")
 add_executable(db_extractor ${db_extractor_src})
 target_link_libraries(db_extractor common)

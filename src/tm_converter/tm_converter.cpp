@@ -66,7 +66,7 @@ void tm2tga(string fn)
         dst.write(uint8_t((hi << 4) | hi));
     }
 
-    transform(fn.begin(), fn.end(), fn.begin(), tolower);
+    transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
     fn = fn.substr(0, fn.rfind(".tm")) + ".tga";
     writeFile(fn, dst.getBuf());
 }
