@@ -40,7 +40,10 @@ std::vector<uint8_t> readFile(const std::string &fn)
 {
     FILE *f = fopen(fn.c_str(), "rb");
     if (!f)
+    {
+        printf("Cannot open file %s\n", fn.c_str());
         throw std::runtime_error("Cannot open file " + fn);
+    }
     fseek(f, 0, SEEK_END);
     auto sz = ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -64,121 +67,141 @@ buffer::buffer()
 }
 
 buffer::buffer(size_t size)
-    : buf(new std::vector<uint8_t>(size))
+    : buf_(new std::vector<uint8_t>(size))
 {
-    this->size = buf->size();
+    size_ = buf_->size();
     skip(0);
 }
 
 buffer::buffer(const std::vector<uint8_t> &buf, uint32_t data_offset)
-    : buf(new std::vector<uint8_t>(buf)), data_offset(data_offset)
+    : buf_(new std::vector<uint8_t>(buf)), data_offset(data_offset)
 {
     skip(0);
-    size = this->buf->size();
+    size_ = buf_->size();
 }
 
 buffer::buffer(buffer &rhs, uint32_t size)
-    : buf(rhs.buf)
+    : buf_(rhs.buf_)
 {
-    index = rhs.index;
+    index_ = rhs.index_;
     data_offset = rhs.data_offset;
     ptr = rhs.ptr;
-    this->size = index + size;
+    size_ = index_ + size;
     rhs.skip(size);
 }
 
 buffer::buffer(buffer &rhs, uint32_t size, uint32_t offset)
-    : buf(rhs.buf)
+    : buf_(rhs.buf_)
 {
-    index = offset;
+    index_ = offset;
     data_offset = offset;
-    ptr = (uint8_t *)buf->data() + index;
-    this->size = index + size;
+    ptr = (uint8_t *)buf_->data() + index_;
+    size_ = index_ + size;
 }
 
 uint32_t buffer::read(void *dst, uint32_t size, bool nothrow) const
 {
-    if (!buf)
+    if (!buf_)
         throw std::logic_error("buffer: not initialized");
-    if (index >= this->size)
+    if (index_ >= size_)
     {
         if (nothrow)
             return 0;
         throw std::logic_error("buffer: out of range");
     }
-    if (index + size > this->size)
+    if (index_ + size > size_)
     {
         if (!nothrow)
             throw std::logic_error("buffer: too much data");
-        size = this->size - index;
+        size = size_ - index_;
     }
-    memcpy(dst, buf->data() + index, size);
+    memcpy(dst, buf_->data() + index_, size);
     skip(size);
+    return size;
+}
+
+uint32_t buffer::readfrom(void *dst, uint32_t size, uint32_t offset, bool nothrow) const
+{
+    if (!buf_)
+        throw std::logic_error("buffer: not initialized");
+    if (offset + size > size_)
+    {
+        if (!nothrow)
+            throw std::logic_error("buffer: too much data");
+        size = size_ - offset;
+    }
+    memcpy(dst, buf_->data() + offset, size);
     return size;
 }
 
 uint32_t buffer::write(const void *src, uint32_t size, bool nothrow)
 {
-    if (!buf)
+    if (!buf_)
     {
-        buf = std::make_shared<std::vector<uint8_t>>(size);
-        this->size = buf->size();
+        buf_ = std::make_shared<std::vector<uint8_t>>(size);
+        size_ = buf_->size();
     }
-    if (index > this->size)
+    if (index_ > size_)
     {
         if (nothrow)
             return 0;
         throw std::logic_error("buffer: out of range");
     }
-    if (index + size > this->size)
+    if (index_ + size > size_)
     {
-        buf->resize(index + size);
-        this->size = buf->size();
+        buf_->resize(index_ + size);
+        size_ = buf_->size();
     }
-    memcpy((uint8_t *)buf->data() + index, src, size);
+    memcpy((uint8_t *)buf_->data() + index_, src, size);
     skip(size);
     return size;
 }
 
 void buffer::skip(int n) const
 {
-    if (!buf)
+    if (!buf_)
         throw std::logic_error("buffer: not initialized");
-    index += n;
+    index_ += n;
     data_offset += n;
-    ptr = (uint8_t *)buf->data() + index;
+    ptr = (uint8_t *)buf_->data() + index_;
 }
 
 void buffer::reset() const
 {
-    index = 0;
+    index_ = 0;
     data_offset = 0;
-    ptr = (uint8_t *)buf->data();
+    ptr = (uint8_t *)buf_->data();
+}
+
+void buffer::seek(uint32_t size) const
+{
+    reset();
+    skip(size);
 }
 
 bool buffer::check(int index) const
 {
-    return this->index == index;
+    return index_ == index;
 }
 
 bool buffer::eof() const
 {
-    return check(this->size);
+    return check(size_);
 }
 
-uint32_t buffer::getIndex() const
+uint32_t buffer::index() const
 {
-    return index;
+    return index_;
 }
 
-uint32_t buffer::getSize() const
+uint32_t buffer::size() const
 {
-    return this->size;
+    return size_;
 }
 
-const std::vector<uint8_t> &buffer::getBuf() const
+const std::vector<uint8_t> &buffer::buf() const
 {
-    if (!buf)
+    if (!buf_)
         throw std::logic_error("buffer: not initialized");
-    return *buf;
+    return *buf_;
 }

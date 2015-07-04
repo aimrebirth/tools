@@ -1,0 +1,1 @@
+python obj_extractor.py --db "h:\Games\Epic Games\Projects\Polygon4\Mods\db.sqlite" --dir "h:\Games\AIM\data\maps.pak.dir"

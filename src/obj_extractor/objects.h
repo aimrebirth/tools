@@ -171,7 +171,7 @@ KNOWN_OBJECT(Anomaly);
 KNOWN_OBJECT(Boundary);
 
 #define UNKNOWN_OBJECT(name) \
-    struct name : public MapObject { void load(buffer &b){ int pos = b.getIndex(); assert(false); } }
+    struct name : public MapObject { void load(buffer &b){ int pos = b.index(); assert(false); } }
 
 UNKNOWN_OBJECT(Building);
 UNKNOWN_OBJECT(Goods);

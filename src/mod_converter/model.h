@@ -214,7 +214,7 @@ struct block
 
     void load(buffer &b);
     std::string printMtl(const std::string &mtl_name) const;
-    std::string printObj() const;
+    std::string printObj(const std::string &mtl_name) const;
 };
 
 struct model
@@ -224,5 +224,4 @@ struct model
     std::vector<block> blocks;
 
     void load(buffer &b);
-    void writeObj(std::string fn);
 };

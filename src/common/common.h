@@ -42,26 +42,28 @@ public:
     buffer(buffer &rhs, uint32_t size, uint32_t offset);
 
     uint32_t read(void *dst, uint32_t size, bool nothrow = false) const;
+    uint32_t readfrom(void *dst, uint32_t size, uint32_t offset, bool nothrow = false) const;
     uint32_t write(const void *src, uint32_t size, bool nothrow = false);
     template <typename T>
-    uint32_t write(const T &src, bool nothrow = false)
+    uint32_t write(const T &src)
     {
-        return write(&src, sizeof(src), nothrow);
+        return write(&src, sizeof(src));
     }
 
+    void seek(uint32_t size) const;
     void skip(int n) const;
     bool eof() const;
     bool check(int index) const;
     void reset() const;
 
-    uint32_t getIndex() const;
-    uint32_t getSize() const;
-    const std::vector<uint8_t> &getBuf() const;
+    uint32_t index() const;
+    uint32_t size() const;
+    const std::vector<uint8_t> &buf() const;
 
 private:
-    std::shared_ptr<std::vector<uint8_t>> buf;
-    mutable uint32_t index = 0;
+    std::shared_ptr<std::vector<uint8_t>> buf_;
+    mutable uint32_t index_ = 0;
     mutable uint8_t *ptr = 0;
     mutable uint32_t data_offset = 0;
-    mutable uint32_t size = 0;
+    mutable uint32_t size_ = 0;
 };

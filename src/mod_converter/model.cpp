@@ -139,22 +139,28 @@ std::string block::printMtl(const std::string &mtl_name) const
     // d 1.0
     // illum
     s += "\n";
-    s += "map_Ka " + string(tex_mask) + ".tga\n";
-    s += "map_Kd " + string(tex_mask) + ".tga\n";
-    s += "map_Ks " + string(tex_spec) + ".tga\n";
-    s += "map_Ns " + string(tex_spec) + ".tga\n";
+    if (string(tex_mask) != "_DEFAULT_")
+        s += "map_Ka " + string(tex_mask) + ".tga" + "\n";
+    if (string(tex_mask) != "_DEFAULT_")
+        s += "map_Kd " + string(tex_mask) + ".tga" + "\n";
+    if (string(tex_spec) != "_DEFAULT_")
+        s += "map_Ks " + string(tex_spec) + ".tga" + "\n";
+    if (string(tex_spec) != "_DEFAULT_")
+        s += "map_Ns " + string(tex_spec) + ".tga" + "\n";
     s += "\n";
     return s;
 }
 
-std::string block::printObj() const
+std::string block::printObj(const std::string &mtl_name) const
 {
     string s;
-    s += string("o ") + name + "\n";
-    s += string("g ") + name + "\n";
+    // UE does not recognize russian strings in .obj
+    //s += string("o ") + name + "\n";
+    //s += string("g ") + name + "\n";
+    s += "g group1\n";
     s += "s off\n";
     s += "\n";
-    s += "usemtl main\n";
+    s += "usemtl " + mtl_name + "\n";
     s += "\n";
 
     for (auto &v : vertices)
@@ -201,12 +207,12 @@ void block::load(buffer &b)
     READ(b, unk4);
 
     if (size == 0) // critical error!!! cannot survive
-        throw std::runtime_error("model file has bad block size field");
+        throw std::runtime_error("model file has bad block size field (size == 0)");
     
     // data
     buffer data = buffer(b, size);
 
-    // we cannot process this type at the moment    
+    // we cannot process this type at the moment
     if (type == BlockType::ParticleEmitter)
         return;
 
@@ -253,7 +259,7 @@ void block::load(buffer &b)
     {
         // unknown end of block
         auto triangles2 = triangles;
-        triangles2.resize((data.getSize() - data.getIndex()) / sizeof(triangle));
+        triangles2.resize((data.size() - data.index()) / sizeof(triangle));
         for (auto &t : triangles2)
             READ(data, t);
     }
@@ -270,30 +276,4 @@ void model::load(buffer &b)
     blocks.resize(n_blocks);
     for (auto &f : blocks)
         f.load(b);
-}
-
-void model::writeObj(std::string fn)
-{
-    for (auto &f : blocks)
-    {
-        ofstream o(fn + "." + f.name + ".obj");
-        o << "#" << "\n";
-        o << "# A.I.M. Model Converter (ver. " << version() << ")\n";
-        o << "#" << "\n";
-        o << "\n";
-        int p1 = fn.rfind("\\");
-        int p2 = fn.rfind("/");
-        auto mtl = fn.substr(std::max(p1, p2) + 1);
-        mtl += string(".") + f.name;
-        o << "mtllib " << mtl << ".mtl\n";
-        o << "\n";
-        o << f.printObj();
-
-        ofstream m(fn + "." + f.name + ".mtl");
-        m << "#" << "\n";
-        m << "# A.I.M. Model Converter (ver. " << version() << ")\n";
-        m << "#" << "\n";
-        m << "\n";
-        m << f.printMtl(mtl);
-    }
 }

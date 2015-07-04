@@ -27,15 +27,31 @@
 
 using namespace std;
 
+void convert_simple(buffer &dst, buffer &src, int width, int height)
+{
+    int size = width * height * 2;
+    for (int i = 0; i < size; i++)
+    {
+        uint8_t c;
+        READ(src, c);
+        uint8_t lo = c & 0x0F;
+        uint8_t hi = (c & 0xF0) >> 4;
+        dst.write(uint8_t((lo << 4) | lo));
+        dst.write(uint8_t((hi << 4) | hi));
+    }
+}
+
 void tm2tga(string fn)
 {
     int width, height;
+    int dxt5 = 0;
 
     buffer src(readFile(fn));
     READ(src, width);
     READ(src, height);
-    src.reset();
-    src.skip(0x4C);
+    src.seek(0x10);
+    src.read(&dxt5, 1);
+    src.seek(0x4C);
     
     // http://paulbourke.net/dataformats/tga/
     buffer dst;
@@ -53,22 +69,19 @@ void tm2tga(string fn)
     dst.write(uint8_t(0x28)); // imagedescriptor
 
     const char *label = "AIMTMConverter";
-    dst.write(label, strlen(label), false);
+    dst.write(label, strlen(label));
 
-    int size = width * height * 2;
-    for (int i = 0; i < size; i++)
+    if (dxt5)
     {
-        uint8_t c;
-        READ(src, c);
-        uint8_t lo = c & 0x0F;
-        uint8_t hi = (c & 0xF0) >> 4;
-        dst.write(uint8_t((lo << 4) | lo));
-        dst.write(uint8_t((hi << 4) | hi));
+        //convert_dxt5(dst, src, width, height);
+        throw std::logic_error("dxt5 converter is not implemented!");
     }
+    else
+        convert_simple(dst, src, width, height);
 
     transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
     fn = fn.substr(0, fn.rfind(".tm")) + ".tga";
-    writeFile(fn, dst.getBuf());
+    writeFile(fn, dst.buf());
 }
 
 int main(int argc, char *argv[])

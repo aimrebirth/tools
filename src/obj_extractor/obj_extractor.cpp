@@ -55,7 +55,7 @@ struct storage
         if (!b.eof())
         {
             stringstream ss;
-            ss << hex << b.getIndex() << " != " << hex << b.getSize();
+            ss << hex << b.index() << " != " << hex << b.size();
             throw std::logic_error(ss.str());
         }
     }
@@ -99,7 +99,10 @@ void write_mmo(string db, const storage &s)
     }
 
     if (map_id == 0)
+    {
+        printf("error: this map is not found in the database\n");
         return;
+    }
 
     auto this_map = storage->maps[map_id];
 
@@ -122,10 +125,10 @@ void write_mmo(string db, const storage &s)
                 {
                     auto bld = storage->addBuilding();
                     bld->text_id = o;
-                    bld_ids[o] = bld->id;
+                    bld_ids[o] = bld->getId();
                 }
                 else
-                    bld_ids[o] = iter->second->id;
+                    bld_ids[o] = iter->second->getId();
             }
             for (auto &object : segment->objects)
             {
@@ -146,7 +149,7 @@ void write_mmo(string db, const storage &s)
                 if (i == storage->mapBuildings.end())
                 {
                     auto mb2 = storage->addMapBuilding(storage->maps[map_id].get());
-                    mb.id = mb2->id;
+                    mb.setId(mb2->getId());
                     *mb2.get() = mb;
                 }
             }
@@ -170,10 +173,10 @@ void write_mmo(string db, const storage &s)
                 {
                     auto bld = storage->addObject();
                     bld->text_id = o;
-                    bld_ids[o] = bld->id;
+                    bld_ids[o] = bld->getId();
                 }
                 else
-                    bld_ids[o] = iter->second->id;
+                    bld_ids[o] = iter->second->getId();
             }
             for (auto &object : segment->objects)
             {
@@ -194,7 +197,7 @@ void write_mmo(string db, const storage &s)
                 if (i == storage->mapObjects.end())
                 {
                     auto mb2 = storage->addMapObject(storage->maps[map_id].get());
-                    mb.id = mb2->id;
+                    mb.setId(mb2->getId());
                     *mb2.get() = mb;
                 }
             }

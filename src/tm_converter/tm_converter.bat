@@ -1,0 +1,1 @@
+python tm_converter.py --dir "h:\\Games\\Epic Games\\Projects\\AIM\\models\\aim1\\"
