@@ -1,3 +1,0 @@
-[submodule "dep/dbmgr"]
-	path = dep/dbmgr
-	url = https://github.com/aimrebirth/DatabaseManager.git
