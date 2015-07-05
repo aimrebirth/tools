@@ -152,9 +152,9 @@ void write_mmo(string db, const storage &s)
                 mb.text_id = object.name2;
                 mb.building = storage->buildings[bld_ids[object.name1]];
                 mb.map = this_map;
-                mb.x = object.position.x * 100.0;
-                mb.y = object.position.y * 100.0;
-                mb.z = object.position.z * 100.0;
+                mb.x = object.position.x;
+                mb.y = object.position.y;
+                mb.z = object.position.z;
                 mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
                 mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
                 mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);
@@ -197,12 +197,12 @@ void write_mmo(string db, const storage &s)
             for (auto &object : segment->objects)
             {
                 detail::MapObject mb;
-                //mb.text_id = object.name2;
+                mb.text_id = object.name2;
                 mb.map = this_map;
                 mb.object = storage->objects[bld_ids[object.name1]];
-                mb.x = object.position.x * 100.0;
-                mb.y = object.position.y * 100.0;
-                mb.z = object.position.z * 100.0;
+                mb.x = object.position.x;
+                mb.y = object.position.y;
+                mb.z = object.position.z;
                 mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
                 mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
                 mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);

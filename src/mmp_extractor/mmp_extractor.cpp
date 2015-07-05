@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
     }
     read_mmp(argv[1]);
 #else
-    auto arena = read_mmp("h:\\Games\\Механоиды\\data\\maps.pak.dir\\arena.mmp");
-    auto loc1 = read_mmp("h:\\Games\\Механоиды\\data\\maps.pak.dir\\location1.mmp");
+    auto arena = read_mmp("h:\\Games\\AIM\\data\\maps.pak.dir\\arena.mmp");
+    auto loc1 = read_mmp("h:\\Games\\AIM\\data\\maps.pak.dir\\location1.mmp");
 #endif
     return 0;
 }
