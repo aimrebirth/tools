@@ -93,7 +93,7 @@ void Objects::load(buffer &b)
         auto seg = Segment::create_segment(b);
         if (!seg)
             break;
-        seg->load(b);
+        seg->load(buffer(b, seg->segment_len));
         segments.push_back(seg);
     }
 }

@@ -33,6 +33,9 @@
 
 using namespace std;
 
+std::string prefix;
+GameType gameType;
+
 struct storage
 {
     string name;
@@ -41,6 +44,10 @@ struct storage
     MapGoods mg;
     MapMusic mm;
     MapSounds ms;
+    // aim2
+    Organizations orgs;
+    OrganizationBases orgsBases;
+    Prices prices;
 
     void load(buffer &b)
     {
@@ -51,6 +58,12 @@ struct storage
         mg.load(b);
         mm.load(b);
         ms.load(b);
+        if (gameType == GameType::Aim2)
+        {
+            orgs.load(b);
+            orgsBases.load(b);
+            prices.load(b);
+        }
         
         if (!b.eof())
         {
@@ -87,6 +100,9 @@ void write_mmo(string db, const storage &s)
     int p = max(p1, p2);
     string map_name = s.name.substr(p + 1);
     map_name = map_name.substr(0, map_name.find('.'));
+    if (!prefix.empty())
+        map_name = prefix + "." + map_name;
+    transform(map_name.begin(), map_name.end(), map_name.begin(), ::tolower);
 
     int map_id = 0;
     for (auto &m : storage->maps)
@@ -209,11 +225,18 @@ void write_mmo(string db, const storage &s)
 int main(int argc, char *argv[])
 try
 {
-    if (argc != 3)
+    if (argc != 4)
     {
         cout << "Usage:\n" << argv[0] << " db.sqlite file.mmo" << "\n";
         return 1;
     }
+    prefix = argv[3];
+    if (prefix == "m1")
+        gameType = GameType::Aim1;
+    else if (prefix == "m2")
+        gameType = GameType::Aim2;
+    else
+        throw std::runtime_error("unknown prefix (game type)");
     storage s = read_mmo(argv[2]);
     write_mmo(argv[1], s);
     return 0;

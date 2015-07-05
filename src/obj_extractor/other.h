@@ -28,10 +28,18 @@
 
 using namespace std;
 
+enum class GameType
+{
+    Aim1,
+    Aim2
+};
+
+extern GameType gameType;
+
 struct MechGroup
 {
-    char unk1[0x20];
-    char unk2[0x20];
+    char name[0x20];
+    char org[0x20];
     uint32_t type1;
     uint32_t len1;
     char name1[0x70];
@@ -51,8 +59,8 @@ struct MechGroup
 
     void load(buffer &b)
     {
-        READ(b, unk1);
-        READ(b, unk2);
+        READ(b, name);
+        READ(b, org);
         READ(b, type1);
         READ(b, len1);
         READ(b, name1);
@@ -83,6 +91,7 @@ struct MechGroup
 
 struct MechGroups
 {
+    uint32_t length;
     uint32_t n;
     char prefix[0x30];
 
@@ -90,6 +99,8 @@ struct MechGroups
 
     void load(buffer &b)
     {
+        if (gameType == GameType::Aim2)
+            READ(b, length);
         READ(b, n);
         READ(b, prefix);
 
@@ -106,15 +117,23 @@ struct Good
 {
     char name[0x20];
     char unk1[0x40];
+    uint32_t unk1_2;
     float price;
     float unk2[10];
+    float unk2_2[4];
 
     void load(buffer &b)
     {
         READ(b, name);
-        READ(b, unk1);
+        if (gameType == GameType::Aim1)
+            READ(b, unk1);
+        else
+            READ(b, unk1_2);
         READ(b, price);
-        READ(b, unk2);
+        if (gameType == GameType::Aim1)
+            READ(b, unk2);
+        else
+            READ(b, unk2_2);
     }
 };
 
@@ -141,7 +160,7 @@ struct BuildingGoods
 
 struct MapGoods
 {
-    uint32_t unk1;
+    uint32_t length;
     uint32_t unk2;
     uint32_t unk3;
     uint32_t n;
@@ -150,9 +169,10 @@ struct MapGoods
 
     void load(buffer &b)
     {
-        READ(b, unk1);
+        READ(b, length);
         READ(b, unk2);
-        READ(b, unk3);
+        if (gameType != GameType::Aim2)
+            READ(b, unk3);
         READ(b, n);
 
         for (int i = 0; i < n; i++)
@@ -160,6 +180,8 @@ struct MapGoods
             BuildingGoods bg;
             bg.load(b);
             bgs.push_back(bg);
+            if (gameType == GameType::Aim2)
+                READ(b, unk2);
         }
     }
 };
@@ -230,5 +252,161 @@ struct MapSounds
             s.load(b);
             sounds.push_back(s);
         }
+    }
+};
+
+struct OrganizationConfig
+{
+    uint32_t n_configs;
+    vector<string> configs;
+
+    void load(buffer &b)
+    {
+        READ(b, n_configs);
+        configs.resize(n_configs, string(0x20, 0));
+        for (int i = 0; i < n_configs; i++)
+            READ_N(b, configs[i][0], 0x20);
+    }
+};
+
+struct Organization
+{
+    uint32_t unk0;
+    char name[0x20];
+    char unk1[0xE0];
+    OrganizationConfig configs[3];
+
+    void load(buffer &b)
+    {
+        READ(b, unk0);
+        READ(b, name);
+        READ(b, unk1);
+        for (auto &c : configs)
+            c.load(b);
+    }
+};
+
+struct Organizations
+{
+    uint32_t len;
+    uint32_t n;
+    vector<Organization> organizations;
+
+    void load(buffer &b)
+    {
+        READ(b, len);
+        READ(b, n);
+        for (int i = 0; i < n; i++)
+        {
+            Organization s;
+            s.load(b);
+            organizations.push_back(s);
+        }
+    }
+};
+
+struct OrganizationBase
+{
+    char base_name[0x20];
+    char org_name[0x20];
+    uint32_t unk0;
+
+    void load(buffer &b)
+    {
+        READ(b, base_name);
+        READ(b, org_name);
+        READ(b, unk0);
+    }
+};
+
+struct OrganizationBases
+{
+    uint32_t n;
+    vector<OrganizationBase> organizationBases;
+
+    void load(buffer &b)
+    {
+        READ(b, n);
+        for (int i = 0; i < n; i++)
+        {
+            OrganizationBase s;
+            s.load(b);
+            organizationBases.push_back(s);
+        }
+    }
+};
+
+struct Price
+{
+    char tov_name[0x20];
+    uint32_t unk0;
+    uint32_t unk1;
+    float unk2[3];
+
+    void load(buffer &b)
+    {
+        READ(b, tov_name);
+        READ(b, unk0);
+        READ(b, unk1);
+        READ(b, unk2);
+    }
+};
+
+struct BuildingPrice
+{
+    char name[0x20];
+    uint32_t n_tov;
+    vector<Price> prices;
+
+    void load(buffer &b)
+    {
+        READ(b, name);
+        READ(b, n_tov);
+        for (int i = 0; i < n_tov; i++)
+        {
+            Price s;
+            s.load(b);
+            prices.push_back(s);
+        }
+    }
+};
+
+struct BuildingPrices
+{
+    uint32_t n_tov;
+    vector<Price> prices;
+    uint32_t n_bases;
+    vector<BuildingPrice> buildingPrices;
+
+    void load(buffer &b)
+    {
+        READ(b, n_tov);
+        for (int i = 0; i < n_tov; i++)
+        {
+            Price s;
+            s.load(b);
+            prices.push_back(s);
+        }
+        READ(b, n_bases);
+        for (int i = 0; i < n_bases; i++)
+        {
+            BuildingPrice s;
+            s.load(b);
+            buildingPrices.push_back(s);
+        }
+    }
+};
+
+struct Prices
+{
+    uint32_t len;
+    uint32_t unk0;
+    BuildingPrices buildingPrices;
+
+    void load(buffer &b)
+    {
+        READ(b, len);
+        READ(b, unk0);
+        buildingPrices.load(b);
     }
 };
