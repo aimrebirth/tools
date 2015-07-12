@@ -40,19 +40,19 @@ struct MechGroup
 {
     char name[0x20];
     char org[0x20];
-    uint32_t type1;
-    uint32_t len1;
+    uint32_t type1 = 0;
+    uint32_t len1 = 0;
     char name1[0x70];
     //{3,4
-        uint32_t unk30;
+        uint32_t unk30 = 0;
     //}
     //{2
-        uint32_t len;
+        uint32_t len = 0;
         vector<uint32_t> unk11;
     //}
     //{1,0
-        uint32_t unk20;
-        uint32_t unk21;
+        uint32_t unk20 = 0;
+        uint32_t unk21 = 0;
     //}
     vector<string> configs;
     char unk100;
@@ -91,8 +91,8 @@ struct MechGroup
 
 struct MechGroups
 {
-    uint32_t length;
-    uint32_t n;
+    uint32_t length = 0;
+    uint32_t n = 0;
     char prefix[0x30];
 
     vector<MechGroup> mgs;
@@ -117,8 +117,8 @@ struct Good
 {
     char name[0x20];
     char unk1[0x40];
-    uint32_t unk1_2;
-    float price;
+    uint32_t unk1_2 = 0;
+    float price = 0;
     float unk2[10];
     float unk2_2[4];
 
@@ -140,7 +140,7 @@ struct Good
 struct BuildingGoods
 {
     char name[0x20];
-    uint32_t n;
+    uint32_t n = 0;
 
     vector<Good> goods;
 
@@ -160,10 +160,10 @@ struct BuildingGoods
 
 struct MapGoods
 {
-    uint32_t length;
-    uint32_t unk2;
-    uint32_t unk3;
-    uint32_t n;
+    uint32_t length = 0;
+    uint32_t unk2 = 0;
+    uint32_t unk3 = 0;
+    uint32_t n = 0;
 
     vector<BuildingGoods> bgs;
 
@@ -188,14 +188,14 @@ struct MapGoods
 
 struct MapMusic
 {
-    uint32_t unk1;
+    uint32_t unk1 = 0;
     char name1[0x20];
     char name2[0x20];
 
-    uint32_t n1;
+    uint32_t n1 = 0;
     vector<string> names1;
 
-    uint32_t n2;
+    uint32_t n2 = 0;
     vector<string> names2;
 
     void load(buffer &b)
@@ -226,7 +226,7 @@ struct MapSound
 {
     char name[0x20];
     float unk1[4];
-    uint32_t unk2;
+    uint32_t unk2 = 0;
     float unk3[4];
 
     void load(buffer &b)
@@ -240,7 +240,7 @@ struct MapSound
 
 struct MapSounds
 {
-    uint32_t n;
+    uint32_t n = 0;
     vector<MapSound> sounds;
 
     void load(buffer &b)
@@ -257,7 +257,7 @@ struct MapSounds
 
 struct OrganizationConfig
 {
-    uint32_t n_configs;
+    uint32_t n_configs = 0;
     vector<string> configs;
 
     void load(buffer &b)
@@ -271,7 +271,7 @@ struct OrganizationConfig
 
 struct Organization
 {
-    uint32_t unk0;
+    uint32_t unk0 = 0;
     char name[0x20];
     char unk1[0xE0];
     OrganizationConfig configs[3];
@@ -288,8 +288,8 @@ struct Organization
 
 struct Organizations
 {
-    uint32_t len;
-    uint32_t n;
+    uint32_t len = 0;
+    uint32_t n = 0;
     vector<Organization> organizations;
 
     void load(buffer &b)
@@ -309,7 +309,7 @@ struct OrganizationBase
 {
     char base_name[0x20];
     char org_name[0x20];
-    uint32_t unk0;
+    uint32_t unk0 = 0;
 
     void load(buffer &b)
     {
@@ -321,7 +321,7 @@ struct OrganizationBase
 
 struct OrganizationBases
 {
-    uint32_t n;
+    uint32_t n = 0;
     vector<OrganizationBase> organizationBases;
 
     void load(buffer &b)
@@ -339,8 +339,8 @@ struct OrganizationBases
 struct Price
 {
     char tov_name[0x20];
-    uint32_t unk0;
-    uint32_t unk1;
+    uint32_t unk0 = 0;
+    uint32_t unk1 = 0;
     float unk2[3];
 
     void load(buffer &b)
@@ -355,7 +355,7 @@ struct Price
 struct BuildingPrice
 {
     char name[0x20];
-    uint32_t n_tov;
+    uint32_t n_tov = 0;
     vector<Price> prices;
 
     void load(buffer &b)
@@ -373,9 +373,9 @@ struct BuildingPrice
 
 struct BuildingPrices
 {
-    uint32_t n_tov;
+    uint32_t n_tov = 0;
     vector<Price> prices;
-    uint32_t n_bases;
+    uint32_t n_bases = 0;
     vector<BuildingPrice> buildingPrices;
 
     void load(buffer &b)
@@ -399,8 +399,8 @@ struct BuildingPrices
 
 struct Prices
 {
-    uint32_t len;
-    uint32_t unk0;
+    uint32_t len = 0;
+    uint32_t unk0 = 0;
     BuildingPrices buildingPrices;
 
     void load(buffer &b)

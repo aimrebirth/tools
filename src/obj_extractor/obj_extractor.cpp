@@ -24,12 +24,17 @@
 #include <stdio.h>
 #include <string>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 #include "objects.h"
 #include "other.h"
 
 #include <Polygon4/Storage.h>
 
 #include <common.h>
+
+#define RAD2GRAD(x) (x) = (x) / M_PI * 100.0
 
 using namespace std;
 
@@ -40,10 +45,10 @@ struct storage
 {
     string name;
     Objects objects;
-    MechGroups mgs;
-    MapGoods mg;
-    MapMusic mm;
-    MapSounds ms;
+    MechGroups mechGroups;
+    MapGoods mapGoods;
+    MapMusic mapMusic;
+    MapSounds mapSounds;
     // aim2
     Organizations orgs;
     OrganizationBases orgsBases;
@@ -52,12 +57,12 @@ struct storage
     void load(buffer &b)
     {
         objects.load(b);
-        mgs.load(b);
+        mechGroups.load(b);
         if (b.eof()) // custom maps
             return;
-        mg.load(b);
-        mm.load(b);
-        ms.load(b);
+        mapGoods.load(b);
+        mapMusic.load(b);
+        mapSounds.load(b);
         if (gameType == GameType::Aim2)
         {
             orgs.load(b);
@@ -144,7 +149,7 @@ void write_mmo(string db, const storage &s)
                     bld_ids[o] = bld->getId();
                 }
                 else
-                    bld_ids[o] = iter->second->getId();
+                    bld_ids[o] = iter->getId();
             }
             for (auto &object : segment->objects)
             {
@@ -155,9 +160,13 @@ void write_mmo(string db, const storage &s)
                 mb.x = object.position.x;
                 mb.y = object.position.y;
                 mb.z = object.position.z;
-                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
-                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
                 mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);
+                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
+                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
+                // to grad
+                RAD2GRAD(mb.roll);
+                RAD2GRAD(mb.pitch);
+                RAD2GRAD(mb.yaw);
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const decltype(Storage::mapBuildings)::value_type &p)
                 {
                     return *p.second.get() == mb;
@@ -192,7 +201,7 @@ void write_mmo(string db, const storage &s)
                     bld_ids[o] = bld->getId();
                 }
                 else
-                    bld_ids[o] = iter->second->getId();
+                    bld_ids[o] = iter->getId();
             }
             for (auto &object : segment->objects)
             {
@@ -203,9 +212,13 @@ void write_mmo(string db, const storage &s)
                 mb.x = object.position.x;
                 mb.y = object.position.y;
                 mb.z = object.position.z;
-                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
-                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
                 mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);
+                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
+                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
+                // to grad
+                RAD2GRAD(mb.roll);
+                RAD2GRAD(mb.pitch);
+                RAD2GRAD(mb.yaw);
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const decltype(Storage::mapObjects)::value_type &p)
                 {
                     return *p.second.get() == mb;
@@ -227,7 +240,7 @@ try
 {
     if (argc != 4)
     {
-        cout << "Usage:\n" << argv[0] << " db.sqlite file.mmo" << "\n";
+        cout << "Usage:\n" << argv[0] << " db.sqlite file.mmo prefix" << "\n";
         return 1;
     }
     prefix = argv[3];

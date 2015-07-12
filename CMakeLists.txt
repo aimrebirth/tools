@@ -21,8 +21,11 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
 endif(MSVC)
 
-include_directories(../DatabaseManager/include)
-add_subdirectory(../DatabaseManager DatabaseManager)
+if (NOT DATABASE_MANAGER_DIR)
+    message(FATAL_ERROR "Please, set DATABASE_MANAGER_DIR variable")
+endif()
+add_subdirectory(${DATABASE_MANAGER_DIR} DatabaseManager)
+include_directories(${DATABASE_MANAGER_DIR}/include)
 set_target_properties(sqlite3 PROPERTIES FOLDER Extern)
 set_target_properties(DatabaseManager PROPERTIES FOLDER Extern)
 

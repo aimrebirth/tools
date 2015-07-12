@@ -66,8 +66,8 @@ enum class SegmentType : uint32_t
 struct Segment
 {
     SegmentType segment_type;
-    uint32_t    segment_len;
-    uint32_t    n_objects;
+    uint32_t    segment_len = 0;
+    uint32_t    n_objects = 0;
 
     virtual ~Segment(){}
     static Segment *create_segment(buffer &b);
@@ -92,10 +92,10 @@ struct SegmentObjects : public Segment
 
 struct Vector4
 {
-    float x;
-    float y;
-    float z;
-    float w;
+    float x = 0;
+    float y = 0;
+    float z = 0;
+    float w = 0;
 };
 
 struct Common
@@ -126,7 +126,7 @@ struct MapObject : public Common
 
 struct MapObjectWithArray : public MapObject
 {
-    uint32_t len;
+    uint32_t len = 0;
     vector<uint32_t> unk7;
 
     void load(buffer &b)
@@ -179,7 +179,7 @@ UNKNOWN_OBJECT(unk1);
 
 struct Objects
 {
-    uint32_t n_segments;
+    uint32_t n_segments = 0;
     vector<Segment *> segments;
 
     void load(buffer &b);

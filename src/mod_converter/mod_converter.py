@@ -7,7 +7,11 @@ import subprocess
 
 banned_ext = [
     '.obj',
-    '.txt'
+    '.mtl',
+    '.txt',
+    '.tm',
+    '.TM',
+    '.tga',
 ]
 
 def main():    
@@ -22,7 +26,7 @@ def run(dir):
     for file in sorted(os.listdir(dir)):
         if os.path.isdir(file) or os.path.splitext(file)[1] in banned_ext:
             continue
-        p = subprocess.Popen(['mod_converter.exe', dir + '/' + file])
+        p = subprocess.Popen(['mod_converter.exe', '-m', dir + '/' + file])
         p.communicate()
 
 if __name__ == '__main__':
