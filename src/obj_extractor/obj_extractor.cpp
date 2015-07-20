@@ -34,7 +34,7 @@
 
 #include <common.h>
 
-#define RAD2GRAD(x) (x) = (x) / M_PI * 100.0
+#define RAD2GRAD(x) (x) = (x) / M_PI * 180.0
 
 using namespace std;
 
