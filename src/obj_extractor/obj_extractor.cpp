@@ -129,7 +129,8 @@ void write_mmo(string db, const storage &s)
 
     for (auto &seg : s.objects.segments)
     {
-        if (seg->segment_type == SegmentType::SHELL)
+        if (seg->segment_type == SegmentType::SHELL ||
+            seg->segment_type == SegmentType::TOWER)
         {
             SegmentObjects<Shell> *segment = (SegmentObjects<Shell> *)seg;
             set<string> objs;
@@ -160,13 +161,11 @@ void write_mmo(string db, const storage &s)
                 mb.x = object.position.x;
                 mb.y = object.position.y;
                 mb.z = object.position.z;
-                mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);
-                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
-                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
-                // to grad
-                RAD2GRAD(mb.roll);
-                RAD2GRAD(mb.pitch);
+                mb.roll = 0;
+                mb.pitch = 0;
+                mb.yaw = acos(object.m_rotate_z[0].x);
                 RAD2GRAD(mb.yaw);
+                mb.scale = object.m_rotate_z[2].z;
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const decltype(Storage::mapBuildings)::value_type &p)
                 {
                     return *p.second.get() == mb;
@@ -212,13 +211,11 @@ void write_mmo(string db, const storage &s)
                 mb.x = object.position.x;
                 mb.y = object.position.y;
                 mb.z = object.position.z;
-                mb.roll = atan2(object.m_rotate_z[2].y, object.m_rotate_z[2].z);
-                mb.pitch = atan2(-object.m_rotate_z[2].x, sqrt(object.m_rotate_z[2].y * object.m_rotate_z[2].y + object.m_rotate_z[2].z * object.m_rotate_z[2].z));
-                mb.yaw = atan2(object.m_rotate_z[1].x, object.m_rotate_z[0].x);
-                // to grad
-                RAD2GRAD(mb.roll);
-                RAD2GRAD(mb.pitch);
+                mb.roll = 0;
+                mb.pitch = 0;
+                mb.yaw = acos(object.m_rotate_z[0].x);
                 RAD2GRAD(mb.yaw);
+                mb.scale = object.m_rotate_z[2].z;
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const decltype(Storage::mapObjects)::value_type &p)
                 {
                     return *p.second.get() == mb;

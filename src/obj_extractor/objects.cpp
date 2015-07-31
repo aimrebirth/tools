@@ -53,9 +53,6 @@ Segment *Segment::create_segment(buffer &b)
     case SegmentType::SOUND:
         segment = new SegmentObjects<Sound>;
         break;
-    case SegmentType::MUSIC:
-        segment = new SegmentObjects<Music>;
-        break;
     case SegmentType::ANOMALY:
         segment = new SegmentObjects<Anomaly>;
         break;
@@ -67,6 +64,9 @@ Segment *Segment::create_segment(buffer &b)
         break;
     case SegmentType::GOODS:
         segment = new SegmentObjects<Goods>;
+        break;
+    case SegmentType::SOUND_ZONE:
+        segment = new SegmentObjects<SoundZone>;
         break;
     case SegmentType::unk1:
         segment = new SegmentObjects<unk1>;

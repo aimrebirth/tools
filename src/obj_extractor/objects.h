@@ -52,9 +52,8 @@ enum class SegmentType : uint32_t
     LAMP,
     COVERING,
     SOUND,
-    MUSIC,
-
     GOODS,
+
     ANOMALY,
     TOWER,
     BOUNDARY,
@@ -155,7 +154,7 @@ struct Sound : public Common
 };
 
 struct Road : public MapObjectWithArray {};
-struct Tower : public MapObjectWithArray {};
+struct Boundary : public MapObjectWithArray {};
 
 #define KNOWN_OBJECT(name) \
     struct name : public MapObject {}
@@ -166,15 +165,15 @@ KNOWN_OBJECT(Shell);
 KNOWN_OBJECT(Stone);
 KNOWN_OBJECT(Explosion);
 KNOWN_OBJECT(Image);
-KNOWN_OBJECT(Music);
+KNOWN_OBJECT(Goods);
 KNOWN_OBJECT(Anomaly);
-KNOWN_OBJECT(Boundary);
+KNOWN_OBJECT(Tower);
+KNOWN_OBJECT(SoundZone);
 
 #define UNKNOWN_OBJECT(name) \
     struct name : public MapObject { void load(buffer &b){ int pos = b.index(); assert(false); } }
 
 UNKNOWN_OBJECT(Building);
-UNKNOWN_OBJECT(Goods);
 UNKNOWN_OBJECT(unk1);
 
 struct Objects
