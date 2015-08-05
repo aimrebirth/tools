@@ -9,15 +9,20 @@ add_executable(db_extractor ${db_extractor_src})
 target_link_libraries(db_extractor common)
 endif()
 
-file(GLOB obj_extractor_src "obj_extractor/*")
-add_executable(obj_extractor ${obj_extractor_src})
-target_link_libraries(obj_extractor DatabaseManager common)
-
 file(GLOB script2txt_src "script2txt/*")
 add_executable(script2txt ${script2txt_src})
 
+file(GLOB mmm_extractor_src "mmm_extractor/*")
+add_executable(mmm_extractor ${mmm_extractor_src})
+target_link_libraries(mmm_extractor DatabaseManager common)
+
+file(GLOB mmo_extractor_src "mmo_extractor/*")
+add_executable(mmo_extractor ${mmo_extractor_src})
+target_link_libraries(mmo_extractor DatabaseManager common)
+
 file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
+target_link_libraries(mmp_extractor common)
 
 file(GLOB mod_converter_src "mod_converter/*")
 add_executable(mod_converter ${mod_converter_src})

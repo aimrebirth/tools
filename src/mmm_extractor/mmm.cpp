@@ -1,5 +1,5 @@
 /*
- * AIM mmp_extractor
+ * AIM mmm_extractor
  * Copyright (C) 2015 lzwdgc
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,46 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-#include <stdint.h>
-#include <string>
-#include <sstream>
+#include "mmm.h"
 
-#include "mmp.h"
-
-using namespace std;
-
-mmp read_mmp(string fn)
+void mmm::load(buffer &b)
 {
-    buffer b(readFile(fn));
-    mmp m;
-    m.load(b);
-    return m;
-}
-
-void process_mmp(mmp &m, string fn)
-{
-}
-
-int main(int argc, char *argv[])
-try
-{
-    if (argc != 2)
-    {
-        cout << "Usage:\n" << argv[0] << " file.mmp" << "\n";
-        return 1;
-    }
-    auto m = read_mmp(argv[1]);
-    process_mmp(m, argv[1]);
-    return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
+    READ(b, unk1);
+    READ(b, unk2);
+    READ(b, width);
+    READ(b, height);
+    data.resize(width * height / 16);
+    READ_N(b, data[0], data.size() * 16);
 }

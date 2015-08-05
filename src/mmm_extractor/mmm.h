@@ -1,5 +1,5 @@
 /*
- * AIM mmp_extractor
+ * AIM mmm_extractor
  * Copyright (C) 2015 lzwdgc
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,46 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
 #include <stdint.h>
 #include <string>
-#include <sstream>
+#include <vector>
 
-#include "mmp.h"
+#include <common.h>
 
-using namespace std;
+struct dxt5_record
+{
+    char unk[0x10];
+};
 
-mmp read_mmp(string fn)
+struct mmm
 {
-    buffer b(readFile(fn));
-    mmp m;
-    m.load(b);
-    return m;
-}
+    uint32_t unk1;
+    uint32_t unk2;
+    uint32_t width;
+    uint32_t height;
+    std::vector<dxt5_record> data;
 
-void process_mmp(mmp &m, string fn)
-{
-}
-
-int main(int argc, char *argv[])
-try
-{
-    if (argc != 2)
-    {
-        cout << "Usage:\n" << argv[0] << " file.mmp" << "\n";
-        return 1;
-    }
-    auto m = read_mmp(argv[1]);
-    process_mmp(m, argv[1]);
-    return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
-}
+    void load(buffer &b);
+};

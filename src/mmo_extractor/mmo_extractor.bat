@@ -1,0 +1,2 @@
+python mmo_extractor.py --db "h:\Games\Epic Games\Projects\Polygon4\Mods\db.sqlite" --dir "h:\Games\AIM\data\maps.pak.dir" --prefix m1
+python mmo_extractor.py --db "h:\Games\Epic Games\Projects\Polygon4\Mods\db.sqlite" --dir "h:\Games\Steam\steamapps\common\AIM2\Data\mmo.pak\DATA\LOCS" --prefix m2

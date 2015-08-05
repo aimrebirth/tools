@@ -23,7 +23,7 @@ def run(dir, db, prefix):
         if os.path.isdir(file) or os.path.splitext(file)[1].lower() != ".mmo":
             continue
         print('loading: ' + file)
-        p = subprocess.Popen(['obj_extractor.exe', db, dir + '/' + file, prefix])
+        p = subprocess.Popen(['mmo_extractor.exe', db, dir + '/' + file, prefix])
         p.communicate()
 
 if __name__ == '__main__':

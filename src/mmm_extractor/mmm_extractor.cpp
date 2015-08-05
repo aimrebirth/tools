@@ -1,5 +1,5 @@
 /*
- * AIM mmp_extractor
+ * AIM mmm_extractor
  * Copyright (C) 2015 lzwdgc
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,32 +21,38 @@
 #include <string>
 #include <sstream>
 
-#include "mmp.h"
+#include "mmm.h"
 
 using namespace std;
 
-mmp read_mmp(string fn)
+mmm read_mmm(string fn)
 {
     buffer b(readFile(fn));
-    mmp m;
+    mmm m;
     m.load(b);
-    return m;
-}
 
-void process_mmp(mmp &m, string fn)
-{
+    if (!b.eof())
+    {
+        stringstream ss;
+        ss << hex << b.index() << " != " << hex << b.size();
+        throw std::logic_error(ss.str());
+    }
+    return m;
 }
 
 int main(int argc, char *argv[])
 try
 {
+#ifdef NDEBUG
     if (argc != 2)
     {
         cout << "Usage:\n" << argv[0] << " file.mmp" << "\n";
         return 1;
     }
-    auto m = read_mmp(argv[1]);
-    process_mmp(m, argv[1]);
+    read_mmm(argv[1]);
+#else
+    auto loc1 = read_mmm("h:\\Games\\AIM\\data\\minimaps.pak.dir\\location1.mmm");
+#endif
     return 0;
 }
 catch (std::exception &e)
