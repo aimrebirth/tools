@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+#include <set>
 #include <stdint.h>
 #include <string>
 #include <sstream>
@@ -25,28 +26,26 @@
 
 using namespace std;
 
-mmp read_mmp(string fn)
-{
-    buffer b(readFile(fn));
-    mmp m;
-    m.load(b);
-    return m;
-}
-
-void process_mmp(mmp &m, string fn)
-{
-}
-
 int main(int argc, char *argv[])
 try
 {
-    if (argc != 2)
+    if (argc < 2 || argc > 3)
     {
-        cout << "Usage:\n" << argv[0] << " file.mmp" << "\n";
+        cout << "Usage:\n" << argv[0] << " file.mmp [texture_ids.txt]" << "\n";
         return 1;
     }
-    auto m = read_mmp(argv[1]);
-    process_mmp(m, argv[1]);
+    mmp m;
+    if (argc > 2)
+        m.loadTextureNames(argv[2]);
+    m.load(argv[1]);
+    m.process();
+    m.writeFileInfo();
+    m.writeTexturesList();
+    m.writeHeightMap();
+    m.writeTextureMap();
+    m.writeTextureAlphaMaps();
+    m.writeTextureMapColored();
+    m.writeColorMap();
     return 0;
 }
 catch (std::exception &e)

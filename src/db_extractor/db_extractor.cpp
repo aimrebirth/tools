@@ -30,9 +30,7 @@ void open_db(string path, db &db)
     db.load(buffer(readFile(path + ".ind")));
     buffer b(readFile(path + ".dat"));
     for (auto &v : db.values)
-        v.load_data(b);
-    for (auto &v : db.values)
-        v.extract_fields(db.t);
+        v.load_fields(db.t, b);
 }
 
 string str2utf8(string codepage_str)
@@ -132,13 +130,13 @@ void create_sql(string path, const db &db)
             auto fld = db.t.fields.find(f.field_id);
             switch (fld->second.type)
             {
-                case T_STRING:
+                case FieldType::String:
                     s += str2utf8(f.s.c_str());
                     break;
-                case T_INTEGER:
+                case FieldType::Integer:
                     s += to_string(f.i);
                     break;
-                case T_FLOAT:
+                case FieldType::Float:
                     s += to_string(f.f);
                     break;
                 default:

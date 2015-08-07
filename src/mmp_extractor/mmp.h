@@ -16,16 +16,60 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <map>
+#include <set>
 #include <stdint.h>
 #include <string>
 #include <vector>
 
 #include <common.h>
 
+#include "mat.h"
+
+enum class WeatherType : uint32_t
+{
+    rain    =   0x1,
+    snow    =   0x2,
+    storm   =   0x4,
+};
+
+enum class SmokeType : uint32_t
+{
+    none,
+    exp,
+    biexp,
+    linear,
+};
+
+struct color
+{
+    uint8_t b;
+    uint8_t g;
+    uint8_t r;
+    uint8_t a;
+
+    operator uint32_t() const
+    {
+        uint32_t color = 0;
+        color |= r << 16;
+        color |= g << 8;
+        color |= b;
+        return color;
+        //return *reinterpret_cast<uint32_t *>(const_cast<uint8_t *>(&b));
+    }
+};
+
+struct direction
+{
+    float x;
+    float y;
+    float z;
+};
+
 enum class HeaderSegmentType : uint32_t
 {
-    unk1    =   1,
-    unk2    =   2,
+    water       =   1,
+    weather     =   2,
 };
 
 struct header_segment
@@ -37,7 +81,7 @@ struct header_segment
     virtual void load(buffer &b) = 0;
 };
 
-struct unk_segment1_1
+struct water
 {
     float unk0[6];
     char name1[0x20];
@@ -51,38 +95,61 @@ struct unk_segment1_1
     void load(buffer &b);
 };
 
-struct unk_segment1 : public header_segment
+struct water_segment : public header_segment
 {
-    std::vector<unk_segment1_1> segments;
+    std::vector<water> segments;
 
     virtual void load(buffer &b) override;
 };
 
-struct unk_segment2_1
+struct weather
 {
-    char name1[0x20];
-    char name2[0x20];
-    char name3[0x20];
-    char name4[0x20];
-    char name5[0x20];
-    float unk0[2];
-    uint32_t unk1[6];
-    char tex_name0[0x20];
+    struct atmospheric_effects
+    {
+        direction wind;
+        WeatherType weatherType;
+        float strength;
+        float duration;
+        float probability;
+    };
+
+    char name[0x20];
+    char unk0[0x20];
+    uint32_t unk1[2];
+    color smoke_1; //3?
+    color smoke_3; //1?
+    SmokeType smokeType;
     uint32_t unk2[3];
-    char unk_name0[0x20];
-    float unk3;
-    char tex_name1[0x20];
-    char tex_name2[0x20];
-    uint32_t unk4[23];
+    char cloud_layer1[0x20];
+    char cloud_layer2[0x20];
+    float cloud_layer1_speed;
+    float cloud_layer2_speed;
+    direction cloud_layer1_direction;
+    direction cloud_layer2_direction;
+    char sun[0x20];
+    color general_color;
+    color sun_color;
+    color moon_color;
+    char moon[0x20];
+    float probability;
+    char day_night_gradient_name[0x20];
+    char dawn_dusk_gradient_name[0x20];
+    color dawn_dusk_color;
+    atmospheric_effects effects;
+    color smoke_2;
+    color smoke_4;
+    uint32_t slider_3;
+    uint32_t slider_1;
+    float unk8[11];
 
     void load(buffer &b);
 };
 
-struct unk_segment2 : public header_segment
+struct weather_segment : public header_segment
 {
     uint32_t n_segs;
     char name[0xA0];
-    std::vector<unk_segment2_1> segments;
+    std::vector<weather> segments;
 
     virtual void load(buffer &b) override;
 };
@@ -94,7 +161,7 @@ struct header
     wchar_t name2[0x20];
     uint32_t width;
     uint32_t height;
-    uint32_t n_segs;
+    uint32_t n_header_segs;
     char name[0xA0];
     std::vector<header_segment*> segments;
 
@@ -106,6 +173,9 @@ private:
 
 struct segment
 {
+    static const int len = 65;
+    static const int size = len * len;
+
     struct description
     {
         uint32_t offset;
@@ -124,13 +194,8 @@ struct segment
         {
             uint16_t render_flags;
             uint16_t texture_index;
-        };
-        struct color
-        {
-            uint8_t b;
-            uint8_t g;
-            uint8_t r;
-            uint8_t a;
+
+            uint16_t getTexture() const { return texture_index & 0x0fff; } // first 4 bits are unk (flags?)
         };
         struct shadow
         {
@@ -151,11 +216,11 @@ struct segment
 
         uint32_t MagicNumber;
         old_data old;
-        float Heightmap[4225];
-        info Infomap[4225];
-        color Colormap[4225];
-        shadow Shadowmap[4225];
-        normal Normalmap[4225];
+        float Heightmap[size];
+        info Infomap[size];
+        color Colormap[size];
+        shadow Shadowmap[size];
+        normal Normalmap[size];
     };
 
     description desc;
@@ -169,5 +234,34 @@ struct mmp
     header h;
     std::vector<segment> segments;
 
+    //
+    std::string filename;
+    int xsegs;
+    int ysegs;
+    std::map<int, int /* count */> textures;
+    std::map<int, color> textures_map;
+    std::map<int, mat<uint32_t>> alpha_maps;
+    std::map<int, color> textures_map_colored;
+    std::map<int, std::string> textures_names;
+    float h_min;
+    float h_max;
+    float scale16 = 0;
+    mat<uint16_t> heightmap;
+    mat<uint32_t> texmap;
+    mat<uint32_t> texmap_colored;
+    mat<uint32_t> colormap;
+    
     void load(buffer &b);
+    void load(const std::string &filename);
+    void loadTextureNames(const std::string &filename);
+
+    void process();
+
+    void writeFileInfo();
+    void writeTexturesList();
+    void writeHeightMap();
+    void writeTextureMap();
+    void writeTextureAlphaMaps();
+    void writeTextureMapColored();
+    void writeColorMap();
 };

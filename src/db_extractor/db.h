@@ -28,21 +28,18 @@
 
 using namespace std;
 
-enum FieldType
+enum class FieldType : uint32_t
 {
-    T_STRING,
-    T_INTEGER,
-    T_FLOAT,
+    String,
+    Integer,
+    Float,
 };
-string getSqlType(uint32_t ft);
+string getSqlType(FieldType type);
 
 struct table
 {
     uint32_t id;
-    char name[0x14];
-    uint32_t unk1;
-    uint32_t unk2;
-    uint32_t unk3;
+    char name[0x20];
     uint32_t unk4;
 
     void load(buffer &b);
@@ -52,11 +49,8 @@ struct field
 {
     uint32_t table_id;
     uint32_t id;
-    char name[0x14];
-    uint32_t unk1;
-    uint32_t unk2;
-    uint32_t unk3;
-    uint32_t type;
+    char name[0x20];
+    FieldType type;
 
     void load(buffer &b);
 };
@@ -85,20 +79,13 @@ struct field_value
 struct value
 {
     uint32_t table_id;
-    char name[0x14];
-    uint32_t unk1;
-    uint32_t unk2;
-    uint32_t unk3;
+    char name[0x20];
     uint32_t offset;
     uint32_t data_size;
-    buffer data;
-    uint32_t number_of_fields;
     vector<field_value> fields;
 
-    void extract_fields(const tab &tab);
-
     void load_index(buffer &b);
-    void load_data(buffer &b);
+    void load_fields(const tab &tab, buffer &b);
 };
 
 struct db

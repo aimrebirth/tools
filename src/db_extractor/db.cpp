@@ -20,15 +20,15 @@
 
 #include <common.h>
 
-string getSqlType(uint32_t ft)
+string getSqlType(FieldType type)
 {
-    switch (ft)
+    switch (type)
     {
-    case T_STRING:
+    case FieldType::String:
         return "TEXT";
-    case T_INTEGER:
+    case FieldType::Integer:
         return "INTEGER";
-    case T_FLOAT:
+    case FieldType::Float:
         return "REAL";
     default:
         assert(false);
@@ -40,9 +40,6 @@ void table::load(buffer &b)
 {
     READ(b, id);
     READ(b, name);
-    READ(b, unk1);
-    READ(b, unk2);
-    READ(b, unk3);
     READ(b, unk4);
 }
 
@@ -51,9 +48,6 @@ void field::load(buffer &b)
     READ(b, table_id);
     READ(b, id);
     READ(b, name);
-    READ(b, unk1);
-    READ(b, unk2);
-    READ(b, unk3);
     READ(b, type);
 }
 
@@ -83,20 +77,13 @@ void value::load_index(buffer &b)
 {
     READ(b, table_id);
     READ(b, name);
-    READ(b, unk1);
-    READ(b, unk2);
-    READ(b, unk3);
     READ(b, offset);
     READ(b, data_size);
 }
 
-void value::load_data(buffer &b)
+void value::load_fields(const tab &tab, buffer &b)
 {
-    data = buffer(b, data_size, offset);
-}
-
-void value::extract_fields(const tab &tab)
-{
+    buffer data(b, data_size, offset);
     while (!data.eof())
     {
         field_value fv;
@@ -108,16 +95,16 @@ void value::extract_fields(const tab &tab)
             continue;
         switch (i->second.type)
         {
-        case T_STRING:
+        case FieldType::String:
             fv.s.resize(fv.size);
             READ_N(data, fv.s[0], fv.s.size());
             break;
-        case T_INTEGER:
+        case FieldType::Integer:
             READ(data, fv.i);
             if (fv.size > sizeof(fv.i))
                 data.skip(fv.size - sizeof(fv.i));
             break;
-        case T_FLOAT:
+        case FieldType::Float:
             READ(data, fv.f);
             if (fv.size > sizeof(fv.i))
                 data.skip(fv.size - sizeof(fv.i));
