@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#include <common.h>
+#include <buffer.h>
 
 using namespace std;
 

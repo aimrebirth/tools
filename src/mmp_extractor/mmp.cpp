@@ -22,61 +22,6 @@
 #include <fstream>
 #include <iomanip>
 
-#include "bmp.h"
-
-template<class T>
-void write_mat_bmp(const std::string &filename, const mat<T> &m)
-{
-    FILE *f = fopen(filename.c_str(), "wb");
-    if (f == nullptr)
-        return;
-    BITMAPFILEHEADER h = { 0 };
-    h.bfType = 0x4D42;
-    h.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO) + m.size() * sizeof(T);
-    h.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO);
-    BITMAPINFO i = { 0 };
-    i.bmiHeader.biSize = sizeof(i.bmiHeader);
-    i.bmiHeader.biWidth = m.getWidth();
-    i.bmiHeader.biHeight = m.getHeight();
-    i.bmiHeader.biPlanes = 1;
-    i.bmiHeader.biBitCount = 32;
-    i.bmiHeader.biCompression = 0;
-    i.bmiHeader.biSizeImage = 0;
-    i.bmiHeader.biXPelsPerMeter = 0;
-    i.bmiHeader.biYPelsPerMeter = 0;
-    i.bmiHeader.biClrUsed = 0;
-    i.bmiHeader.biClrImportant = 0;
-    fwrite(&h, sizeof(BITMAPFILEHEADER), 1, f);
-    fwrite(&i, sizeof(BITMAPINFO), 1, f);
-    fwrite(&m(0, 0), m.size() * sizeof(T), 1, f);
-    fclose(f);
-}
-
-void write_mat_tga(const std::string &filename, const mat<uint8_t> &m)
-{
-    // http://paulbourke.net/dataformats/tga/
-    buffer dst;
-    dst.write(uint8_t(0xE)); // idlength (comment length)
-    dst.write(uint8_t(0)); // colourmaptype
-    dst.write(uint8_t(3)); // datatypecode
-    dst.write(uint16_t(0)); // colourmaporigin
-    dst.write(uint16_t(0)); // colourmaplength
-    dst.write(uint8_t(0)); // colourmapdepth
-    dst.write(uint16_t(0)); // x_origin
-    dst.write(uint16_t(0)); // y_origin
-    dst.write(uint16_t(m.getWidth())); // width
-    dst.write(uint16_t(m.getHeight())); // height
-    dst.write(uint8_t(8)); // bitsperpixel
-    dst.write(uint8_t(0x28)); // imagedescriptor
-    
-    const char *label = "AIMMPExtractor";
-    dst.write(label, strlen(label));
-
-    dst.write(m.getData().data(), m.getWidth() * m.getHeight());
-
-    writeFile(filename, dst.buf());
-}
-
 void water_segment::load(buffer &b)
 {
     while (!b.eof())
@@ -247,7 +192,7 @@ void mmp::process()
     }
     textures.erase(0);
     auto textures_per_color = std::max(1U, textures.size() / 3);
-    auto color_step = 200 / textures.size();
+    auto color_step = 200 / std::max(1U, textures.size());
     for (int i = 0; i < textures.size(); i++)
     {
         int color_id = i / textures_per_color;
@@ -286,10 +231,14 @@ void mmp::process()
             const auto &data = segments[ys + xs].d;
             auto height = data.Heightmap[yc + xc];
             auto t = data.Infomap[yc + xc].getTexture();
-            auto t_norm = textures_map[t];
 
-            texmap(y_rev, x) = t_norm;
-            alpha_maps[t_norm.g](y_rev, x) = color{ 0,255,0,0 };
+            auto t_norm = textures_map.find(t);
+            if (t_norm != textures_map.end())
+            {
+                texmap(y_rev, x) = t_norm->second;
+                alpha_maps[t_norm->second.g](y_rev, x) = color{ 0,255,0,0 };
+            }
+
             texmap_colored(y_rev, x) = textures_map_colored[t];
             colormap(y_rev, x) = data.Colormap[yc + xc];
 

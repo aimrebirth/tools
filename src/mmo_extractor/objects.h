@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#include <common.h>
+#include <buffer.h>
 
 using namespace std;
 
@@ -76,15 +76,15 @@ struct Segment
 template <class T>
 struct SegmentObjects : public Segment
 {
-    vector<T> objects;
+    vector<T*> objects;
 
     virtual void load(buffer &b)
     {
         for (int i = 0; i < n_objects; i++)
         {
-            T r;
-            r.load(b);
-            objects.push_back(r);
+            T* o = new T;
+            o->load(b);
+            objects.push_back(o);
         }
     }
 };
@@ -126,16 +126,16 @@ struct MapObject : public Common
 struct MapObjectWithArray : public MapObject
 {
     uint32_t len = 0;
-    vector<uint32_t> unk7;
+    vector<uint32_t> unk0;
 
     void load(buffer &b)
     {
         MapObject::load(b);
 
         READ(b, len);
-        unk7.resize(len);
+        unk0.resize(len);
         for (int i = 0; i < len; i++)
-            READ(b, unk7[i]);
+            READ(b, unk0[i]);
     }
 };
 

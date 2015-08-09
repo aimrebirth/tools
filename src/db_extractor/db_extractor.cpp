@@ -22,7 +22,7 @@
 
 #include <Windows.h>
 
-#include <common.h>
+#include <buffer.h>
 
 void open_db(string path, db &db)
 {

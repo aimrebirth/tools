@@ -22,9 +22,9 @@
 #include <string>
 #include <vector>
 
-#include <common.h>
-
-#include "mat.h"
+#include <buffer.h>
+#include <color.h>
+#include <mat.h>
 
 enum class WeatherType : uint32_t
 {
@@ -39,24 +39,6 @@ enum class SmokeType : uint32_t
     exp,
     biexp,
     linear,
-};
-
-struct color
-{
-    uint8_t b;
-    uint8_t g;
-    uint8_t r;
-    uint8_t a;
-
-    operator uint32_t() const
-    {
-        uint32_t color = 0;
-        color |= r << 16;
-        color |= g << 8;
-        color |= b;
-        return color;
-        //return *reinterpret_cast<uint32_t *>(const_cast<uint8_t *>(&b));
-    }
 };
 
 struct direction

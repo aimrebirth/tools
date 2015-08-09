@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <string>
 
-#include <common.h>
+#include <buffer.h>
 #include "model.h"
 
 using namespace std;

@@ -18,7 +18,7 @@
 
 #include "db.h"
 
-#include <common.h>
+#include <buffer.h>
 
 string getSqlType(FieldType type)
 {

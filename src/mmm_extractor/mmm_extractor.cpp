@@ -21,9 +21,24 @@
 #include <string>
 #include <sstream>
 
-#include "mmm.h"
+#include <buffer.h>
+#include <dxt5.h>
 
 using namespace std;
+
+struct mmm
+{
+    uint32_t unk1;
+    uint32_t unk2;
+    dxt5 data;
+
+    void load(buffer &b)
+    {
+        READ(b, unk1);
+        READ(b, unk2);
+        data.load(b);
+    }
+};
 
 mmm read_mmm(string fn)
 {
@@ -33,8 +48,8 @@ mmm read_mmm(string fn)
 
     if (!b.eof())
     {
-        stringstream ss;
-        ss << hex << b.index() << " != " << hex << b.size();
+        std::stringstream ss;
+        ss << std::hex << b.index() << " != " << hex << b.size();
         throw std::logic_error(ss.str());
     }
     return m;
@@ -43,16 +58,13 @@ mmm read_mmm(string fn)
 int main(int argc, char *argv[])
 try
 {
-#ifdef NDEBUG
     if (argc != 2)
     {
         cout << "Usage:\n" << argv[0] << " file.mmp" << "\n";
         return 1;
     }
-    read_mmm(argv[1]);
-#else
-    auto loc1 = read_mmm("h:\\Games\\AIM\\data\\minimaps.pak.dir\\location1.mmm");
-#endif
+    auto m = read_mmm(argv[1]);
+    write_mat_bmp(std::string(argv[1]) + ".bmp", m.data.unpack_mmm());
     return 0;
 }
 catch (std::exception &e)

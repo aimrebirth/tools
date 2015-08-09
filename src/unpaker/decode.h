@@ -3,7 +3,6 @@
 #define _BYTE  uint8_t
 #define _WORD  uint16_t
 #define _DWORD uint32_t
-#define _QWORD uint64_t
 
 #define LOBYTE(x)   (*((_BYTE*)&(x)))
 #define LOWORD(x)   (*((_WORD*)&(x)))

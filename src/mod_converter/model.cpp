@@ -23,7 +23,7 @@
 #include <set>
 #include <string>
 
-#include <common.h>
+#include <buffer.h>
 
 using namespace std;
 

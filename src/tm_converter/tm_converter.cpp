@@ -23,7 +23,9 @@
 #include <stdint.h>
 #include <string>
 
-#include <common.h>
+#include <bmp.h>
+#include <buffer.h>
+#include <dxt5.h>
 
 using namespace std;
 
@@ -44,44 +46,48 @@ void convert_simple(buffer &dst, buffer &src, int width, int height)
 void tm2tga(string fn)
 {
     int width, height;
-    int dxt5 = 0;
+    int dxt5_flag = 0;
 
     buffer src(readFile(fn));
     READ(src, width);
     READ(src, height);
     src.seek(0x10);
-    src.read(&dxt5, 1);
+    src.read(&dxt5_flag, 1);
     src.seek(0x4C);
     
-    // http://paulbourke.net/dataformats/tga/
-    buffer dst;
-    dst.write(uint8_t(0xE)); // idlength (comment length)
-    dst.write(uint8_t(0)); // colourmaptype
-    dst.write(uint8_t(2)); // datatypecode
-    dst.write(uint16_t(0)); // colourmaporigin
-    dst.write(uint16_t(0)); // colourmaplength
-    dst.write(uint8_t(0)); // colourmapdepth
-    dst.write(uint16_t(0)); // x_origin
-    dst.write(uint16_t(0)); // y_origin
-    dst.write(uint16_t(width)); // width
-    dst.write(uint16_t(height)); // height
-    dst.write(uint8_t(32)); // bitsperpixel
-    dst.write(uint8_t(0x28)); // imagedescriptor
-
-    const char *label = "AIMTMConverter";
-    dst.write(label, strlen(label));
-
-    if (dxt5)
+    if (dxt5_flag)
     {
-        //convert_dxt5(dst, src, width, height);
-        throw std::logic_error("dxt5 converter is not implemented!");
+        dxt5 d;
+        d.width = width;
+        d.height = height;
+        d.load_blocks(src);
+        write_mat_bmp(fn + ".bmp", d.unpack_tm());
     }
     else
-        convert_simple(dst, src, width, height);
+    {
+        // http://paulbourke.net/dataformats/tga/
+        buffer dst;
+        dst.write(uint8_t(0xE)); // idlength (comment length)
+        dst.write(uint8_t(0)); // colourmaptype
+        dst.write(uint8_t(2)); // datatypecode
+        dst.write(uint16_t(0)); // colourmaporigin
+        dst.write(uint16_t(0)); // colourmaplength
+        dst.write(uint8_t(0)); // colourmapdepth
+        dst.write(uint16_t(0)); // x_origin
+        dst.write(uint16_t(0)); // y_origin
+        dst.write(uint16_t(width)); // width
+        dst.write(uint16_t(height)); // height
+        dst.write(uint8_t(32)); // bitsperpixel
+        dst.write(uint8_t(0x28)); // imagedescriptor
 
-    transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
-    fn = fn.substr(0, fn.rfind(".tm")) + ".tga";
-    writeFile(fn, dst.buf());
+        const char *label = "AIMTMConverter";
+        dst.write(label, strlen(label));
+
+        convert_simple(dst, src, width, height);
+        transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
+        fn = fn.substr(0, fn.rfind(".tm")) + ".tga";
+        writeFile(fn, dst.buf());
+    }
 }
 
 int main(int argc, char *argv[])

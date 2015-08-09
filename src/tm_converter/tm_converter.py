@@ -17,6 +17,7 @@ def run(dir):
     for file in sorted(os.listdir(dir)):
         if os.path.isdir(file) or os.path.splitext(file)[1].lower() != ".tm":
             continue
+        print('processing: ' + file)
         p = subprocess.Popen(['tm_converter.exe', dir + '/' + file])
         p.communicate()
 
