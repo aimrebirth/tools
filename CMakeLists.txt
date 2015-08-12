@@ -10,6 +10,8 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake Targets")
 
 project(aim_tools)
 
+find_package(Git)
+
 if (MSVC)
     set(disable_msvc_warnings "/W1 /wd4996")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP ${disable_msvc_warnings}")
@@ -29,12 +31,16 @@ include_directories(${DATABASE_MANAGER_DIR}/include)
 set_target_properties(sqlite3 PROPERTIES FOLDER Extern)
 set_target_properties(DatabaseManager PROPERTIES FOLDER Extern)
 
-add_custom_target(version ALL
-    COMMAND git rev-list HEAD --count > ${CMAKE_CURRENT_BINARY_DIR}/version.h_
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/version.h_ ${CMAKE_CURRENT_BINARY_DIR}/version.h.in
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-set_target_properties(version PROPERTIES FOLDER Helpers)
+if (Git_FOUND)
+    add_custom_target(version ALL
+        COMMAND git rev-list HEAD --count > ${CMAKE_CURRENT_BINARY_DIR}/version.h_
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/version.h_ ${CMAKE_CURRENT_BINARY_DIR}/version.h.in
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    set_target_properties(version PROPERTIES FOLDER Helpers)
+else()
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version.h.in "0")
+endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
