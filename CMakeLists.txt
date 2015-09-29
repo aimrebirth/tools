@@ -24,12 +24,13 @@ else()
 endif(MSVC)
 
 if (NOT DATABASE_MANAGER_DIR)
-    message(FATAL_ERROR "Please, set DATABASE_MANAGER_DIR variable")
+    message(STATUS "DATABASE_MANAGER_DIR variable is not set! Some targets won't be built")
+else()
+    add_subdirectory(${DATABASE_MANAGER_DIR} DatabaseManager)
+    include_directories(${DATABASE_MANAGER_DIR}/include)
+    set_target_properties(sqlite3 PROPERTIES FOLDER Extern)
+    set_target_properties(DatabaseManager PROPERTIES FOLDER Extern)
 endif()
-add_subdirectory(${DATABASE_MANAGER_DIR} DatabaseManager)
-include_directories(${DATABASE_MANAGER_DIR}/include)
-set_target_properties(sqlite3 PROPERTIES FOLDER Extern)
-set_target_properties(DatabaseManager PROPERTIES FOLDER Extern)
 
 if (Git_FOUND)
     add_custom_target(version ALL
