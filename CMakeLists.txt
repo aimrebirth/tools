@@ -16,12 +16,12 @@ if (MSVC)
     set(disable_msvc_warnings "/W1 /wd4996")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP ${disable_msvc_warnings}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP ${disable_msvc_warnings}")
-    
-    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-    #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++14")
 endif(MSVC)
+
+add_definitions(-DPOLYGON4_TOOLS=1)
+add_definitions(-DPOLYGON4_STATIC=1)
 
 if (NOT DATABASE_MANAGER_DIR)
     message(STATUS "DATABASE_MANAGER_DIR variable is not set! Some targets won't be built")

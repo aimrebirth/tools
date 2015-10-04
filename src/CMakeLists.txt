@@ -34,4 +34,7 @@ file(GLOB tm_converter_src "tm_converter/*")
 add_executable(tm_converter ${tm_converter_src})
 target_link_libraries(tm_converter common)
 
+file(GLOB name_generator_src "name_generator/*")
+add_executable(name_generator ${name_generator_src})
+
 add_subdirectory(common)
