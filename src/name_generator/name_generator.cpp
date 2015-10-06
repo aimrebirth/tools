@@ -35,11 +35,12 @@ public:
     {
         static const std::string consonants = "bcdfghjklmnpqrstvwxz";
         static const std::string vowels = "aeiouy";
-        std::uniform_int_distribution<> c_distr(0, consonants.size() - 1);
-        std::uniform_int_distribution<> v_distr(0, vowels.size() - 1);
-        std::uniform_int_distribution<> cv_distr(0, 1);
-        auto n_syllables = std::uniform_int_distribution<>(sylmin, sylmax)(rng);
-        std::uniform_int_distribution<> let_distr(letmin, letmax);
+        using dist = std::uniform_int_distribution<>;
+        dist c_distr(0, consonants.size() - 1);
+        dist v_distr(0, vowels.size() - 1);
+        dist cv_distr(0, 1);
+        dist let_distr(letmin, letmax);
+        auto n_syllables = dist(sylmin, sylmax)(rng);
         std::string name;
         for (int s = 0; s < n_syllables; s++)
         {
@@ -55,21 +56,30 @@ public:
             }
             if (n_consonants == n_letters)
             {
-                auto pos = std::uniform_int_distribution<>(0, n_letters - 1)(rng);
+                auto pos = dist(0, n_letters - 1)(rng);
                 syllable[pos] = vowels[v_distr(rng)];
             }
             else if (n_vowels == n_letters)
             {
-                auto pos = std::uniform_int_distribution<>(0, n_letters - 1)(rng);
+                auto pos = dist(0, n_letters - 1)(rng);
                 syllable[pos] = consonants[c_distr(rng)];
             }
             name += syllable;
         }
-        return name;
+        return check_name(name) ? name : generate(sylmin, sylmax);
     }
 
 private:
     std::mt19937 rng;
+
+    bool check_name(const std::string &name) const
+    {
+        auto banned = { "hu", "piz", "eb", "bl", "mu" };
+        for (auto &b : banned)
+            if (name.find(b) != std::string::npos)
+                return false;
+        return true;
+    }
 };
 
 int main()
