@@ -82,9 +82,11 @@ private:
     }
 };
 
-int main()
+int main(int argc, char *argv[])
 {
+    int n = argc == 1 ? 1 : std::stoi(argv[1]);
     NameGenerator ng;
-    std::cout << ng.generate();
+    for (int i = 0; i < n; i++)
+        std::cout << ng.generate() << (i != n-1 ? "\n" : "");
     return 0;
 }
