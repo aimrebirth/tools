@@ -20,55 +20,52 @@
 
 Segment *Segment::create_segment(buffer &b)
 {
-    SegmentType segment_type;
+    ObjectType segment_type;
     READ(b, segment_type);
 
     Segment *segment = 0;
     switch (segment_type)
     {
-    case SegmentType::ROAD:
+    case ObjectType::ROAD:
         segment = new SegmentObjects<Road>;
         break;
-    case SegmentType::BUILDING:
+    case ObjectType::BUILDING:
         segment = new SegmentObjects<Building>;
         break;
-    case SegmentType::SURFACE:
-        segment = new SegmentObjects<Surface>;
+    case ObjectType::TREE:
+        segment = new SegmentObjects<Tree>;
         break;
-    case SegmentType::STONE:
+    case ObjectType::STONE:
         segment = new SegmentObjects<Stone>;
         break;
-    case SegmentType::HELPER:
+    case ObjectType::HELPER:
         segment = new SegmentObjects<Helper>;
         break;
-    case SegmentType::SHELL:
-        segment = new SegmentObjects<Shell>;
-        break;
-    case SegmentType::IMAGE:
+    case ObjectType::IMAGE:
         segment = new SegmentObjects<Image>;
         break;
-    case SegmentType::EXPLOSION:
-        segment = new SegmentObjects<Explosion>;
+    case ObjectType::LAMP:
+        segment = new SegmentObjects<Lamp>;
         break;
-    case SegmentType::SOUND:
+    case ObjectType::SOUND:
         segment = new SegmentObjects<Sound>;
         break;
-    case SegmentType::ANOMALY:
+    case ObjectType::ANOMALY:
         segment = new SegmentObjects<Anomaly>;
         break;
-    case SegmentType::TOWER:
+    case ObjectType::TOWER:
         segment = new SegmentObjects<Tower>;
         break;
-    case SegmentType::BOUNDARY:
+    case ObjectType::BOUNDARY:
         segment = new SegmentObjects<Boundary>;
         break;
-    case SegmentType::GOODS:
-        segment = new SegmentObjects<Goods>;
-        break;
-    case SegmentType::SOUND_ZONE:
+    case ObjectType::SOUND_ZONE:
         segment = new SegmentObjects<SoundZone>;
         break;
-    case SegmentType::unk1:
+    case ObjectType::unk0:
+        segment = new SegmentObjects<unk0>;
+        break;
+    case ObjectType::unk1:
         segment = new SegmentObjects<unk1>;
         break;
     default:

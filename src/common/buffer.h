@@ -23,10 +23,9 @@
 #include <string>
 #include <vector>
 
-#define READ(b, var) b.read(&var, sizeof(var))
-#define READ_NOTHROW(b, var) b.read(&var, sizeof(var), true)
+#define READ(b, var) b.read(&var)
 #define READ_N(b, var, sz) b.read(&var, sz)
-#define WRITE(b, var) b.write(&var, sizeof(var))
+#define WRITE(b, var) b.write(&var)
 
 std::string version();
 std::vector<uint8_t> readFile(const std::string &fn);
@@ -41,13 +40,36 @@ public:
     buffer(buffer &rhs, uint32_t size);
     buffer(buffer &rhs, uint32_t size, uint32_t offset);
 
-    uint32_t read(void *dst, uint32_t size, bool nothrow = false) const;
-    uint32_t readfrom(void *dst, uint32_t size, uint32_t offset, bool nothrow = false) const;
-    uint32_t write(const void *src, uint32_t size, bool nothrow = false);
+    template <typename T>
+    uint32_t read(T *dst) const
+    {
+        return _read(dst, sizeof(T), 0);
+    }
+    template <typename T>
+    uint32_t read(T *dst, uint32_t size) const
+    {
+        return _read(dst, size * sizeof(T), 0);
+    }
+    template <typename T>
+    uint32_t readfrom(T *dst, uint32_t size, uint32_t offset) const
+    {
+        return _read(dst, size * sizeof(T), offset);
+    }
+
     template <typename T>
     uint32_t write(const T &src)
     {
-        return write(&src, sizeof(src));
+        return _write(&src, sizeof(T));
+    }
+    template <typename T>
+    uint32_t write(const T *src, uint32_t size)
+    {
+        return _write(src, size * sizeof(T));
+    }
+    template <typename T>
+    uint32_t write(const T *src)
+    {
+        return _write(src, sizeof(T));
     }
 
     void seek(uint32_t size) const;
@@ -66,4 +88,8 @@ private:
     mutable uint8_t *ptr = 0;
     mutable uint32_t data_offset = 0;
     mutable uint32_t size_ = 0;
+    uint32_t end_;
+
+    uint32_t _read(void *dst, uint32_t size, uint32_t offset = 0) const;
+    uint32_t _write(const void *src, uint32_t size);
 };

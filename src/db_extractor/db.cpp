@@ -87,8 +87,14 @@ void value::load_fields(const tab &tab, buffer &b)
     while (!data.eof())
     {
         field_value fv;
-        if (READ_NOTHROW(data, fv.field_id) == 0)
+        try
+        {
+            READ(data, fv.field_id);
+        }
+        catch (std::exception &)
+        {
             break;
+        }
         READ(data, fv.size);
         auto i = tab.fields.find(fv.field_id);
         if (i == tab.fields.end())

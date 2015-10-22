@@ -27,19 +27,19 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include "objects.h"
+#include <objects.h>
 #include "other.h"
 
 #include <Polygon4/Storage.h>
 
 #include <buffer.h>
+#include <types.h>
 
 #define RAD2GRAD(x) (x) = (x) / M_PI * 180.0
 
 using namespace std;
 
 std::string prefix;
-GameType gameType;
 
 struct storage
 {
@@ -47,6 +47,7 @@ struct storage
     Objects objects;
     MechGroups mechGroups;
     MapGoods mapGoods;
+    uint32_t unk0 = 0;
     MapMusic mapMusic;
     MapSounds mapSounds;
     // aim2
@@ -61,6 +62,7 @@ struct storage
         if (b.eof()) // custom maps
             return;
         mapGoods.load(b);
+        READ(b, unk0);
         mapMusic.load(b);
         mapSounds.load(b);
         if (gameType == GameType::Aim2)
@@ -129,8 +131,8 @@ void write_mmo(string db, const storage &s)
 
     for (auto &seg : s.objects.segments)
     {
-        if (seg->segment_type == SegmentType::SHELL ||
-            seg->segment_type == SegmentType::TOWER)
+        if (seg->segment_type == ObjectType::BUILDING ||
+            seg->segment_type == ObjectType::TOWER)
         {
             SegmentObjects<::MapObject> *segment = (SegmentObjects<::MapObject> *)seg;
             set<string> objs;
@@ -178,10 +180,10 @@ void write_mmo(string db, const storage &s)
                 }
             }
         }
-        if (seg->segment_type == SegmentType::SURFACE   ||
-            seg->segment_type == SegmentType::STONE     ||
-            seg->segment_type == SegmentType::EXPLOSION ||
-            seg->segment_type == SegmentType::BOUNDARY)
+        if (seg->segment_type == ObjectType::TREE       ||
+            seg->segment_type == ObjectType::STONE      ||
+            seg->segment_type == ObjectType::LAMP       ||
+            seg->segment_type == ObjectType::BOUNDARY)
         {
             SegmentObjects<::MapObject> *segment = (SegmentObjects<::MapObject> *)seg;
             set<string> objs;

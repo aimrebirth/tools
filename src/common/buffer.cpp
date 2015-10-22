@@ -78,6 +78,7 @@ buffer::buffer(const std::vector<uint8_t> &buf, uint32_t data_offset)
 {
     skip(0);
     size_ = buf_->size();
+    end_ = index_ + size_;
 }
 
 buffer::buffer(buffer &rhs, uint32_t size)
@@ -86,7 +87,8 @@ buffer::buffer(buffer &rhs, uint32_t size)
     index_ = rhs.index_;
     data_offset = rhs.data_offset;
     ptr = rhs.ptr;
-    size_ = index_ + size;
+    size_ = size;
+    end_ = index_ + size_;
     rhs.skip(size);
 }
 
@@ -95,62 +97,39 @@ buffer::buffer(buffer &rhs, uint32_t size, uint32_t offset)
 {
     index_ = offset;
     data_offset = offset;
+    size_ = size;
     ptr = (uint8_t *)buf_->data() + index_;
-    size_ = index_ + size;
+    end_ = index_ + size_;
 }
 
-uint32_t buffer::read(void *dst, uint32_t size, bool nothrow) const
+uint32_t buffer::_read(void *dst, uint32_t size, uint32_t offset) const
 {
     if (!buf_)
         throw std::logic_error("buffer: not initialized");
-    if (index_ >= size_)
-    {
-        if (nothrow)
-            return 0;
+    if (index_ >= end_)
         throw std::logic_error("buffer: out of range");
-    }
-    if (index_ + size > size_)
-    {
-        if (!nothrow)
-            throw std::logic_error("buffer: too much data");
-        size = size_ - index_;
-    }
-    memcpy(dst, buf_->data() + index_, size);
-    skip(size);
+    if (index_ + offset + size > end_)
+        throw std::logic_error("buffer: too much data");
+    memcpy(dst, buf_->data() + index_ + offset, size);
+    skip(size + offset);
     return size;
 }
 
-uint32_t buffer::readfrom(void *dst, uint32_t size, uint32_t offset, bool nothrow) const
-{
-    if (!buf_)
-        throw std::logic_error("buffer: not initialized");
-    if (offset + size > size_)
-    {
-        if (!nothrow)
-            throw std::logic_error("buffer: too much data");
-        size = size_ - offset;
-    }
-    memcpy(dst, buf_->data() + offset, size);
-    return size;
-}
-
-uint32_t buffer::write(const void *src, uint32_t size, bool nothrow)
+uint32_t buffer::_write(const void *src, uint32_t size)
 {
     if (!buf_)
     {
         buf_ = std::make_shared<std::vector<uint8_t>>(size);
         size_ = buf_->size();
+        end_ = index_ + size_;
     }
-    if (index_ > size_)
-    {
-        if (nothrow)
-            return 0;
+    if (index_ > end_)
         throw std::logic_error("buffer: out of range");
-    }
-    if (index_ + size > size_)
+    if (index_ + size > end_)
     {
         buf_->resize(index_ + size);
         size_ = buf_->size();
+        end_ = index_ + size_;
     }
     memcpy((uint8_t *)buf_->data() + index_, src, size);
     skip(size);
@@ -186,7 +165,7 @@ bool buffer::check(int index) const
 
 bool buffer::eof() const
 {
-    return check(size_);
+    return index_ == end_;
 }
 
 uint32_t buffer::index() const

@@ -24,65 +24,12 @@
 
 void water_segment::load(buffer &b)
 {
-    while (!b.eof())
-    {
-        water w;
-        w.load(b);
-        segments.push_back(w);
-    }
-}
-
-void water::load(buffer &b)
-{
-    READ(b, unk0);
-    READ(b, name1);
-    READ(b, unk1);
-    READ(b, unk2);
-    READ(b, unk3);
-    READ(b, unk4);
-    READ(b, name2);
-    READ(b, unk5);
+    wg.load(b);
 }
 
 void weather_segment::load(buffer &b)
 {
-    READ(b, n_segs);
-    segments.resize(n_segs);
-    READ(b, name);
-    for (auto &s : segments)
-        s.load(b);
-}
-
-void weather::load(buffer &b)
-{
-    READ(b, name);
-    READ(b, unk0);
-    READ(b, unk1);
-    READ(b, smoke_1);
-    READ(b, smoke_3);    
-    READ(b, smokeType);
-    READ(b, unk2);
-    READ(b, cloud_layer1);
-    READ(b, cloud_layer2);
-    READ(b, cloud_layer1_speed);
-    READ(b, cloud_layer2_speed);
-    READ(b, cloud_layer1_direction);
-    READ(b, cloud_layer2_direction);
-    READ(b, sun);
-    READ(b, general_color);
-    READ(b, sun_color);
-    READ(b, moon_color);
-    READ(b, moon);
-    READ(b, probability);
-    READ(b, day_night_gradient_name);
-    READ(b, dawn_dusk_gradient_name);
-    READ(b, dawn_dusk_color);
-    READ(b, effects);
-    READ(b, smoke_2);
-    READ(b, smoke_4);
-    READ(b, slider_3);
-    READ(b, slider_1);
-    READ(b, unk8);
+    wg.load(b);
 }
 
 header_segment *header::create_segment(buffer &b)
@@ -183,8 +130,6 @@ void mmp::loadTextureNames(const std::string &fn)
 
 void mmp::process()
 {
-    int k = segment::len;
-
     for (auto &s : segments)
     {
         for (auto &i : s.d.Infomap)
@@ -212,43 +157,50 @@ void mmp::process()
     }
     alpha_maps[0] = mat<uint32_t>(h.width, h.height);
     for (auto &t : textures_map)
+    {
         alpha_maps[t.second.g] = mat<uint32_t>(h.width, h.height);
+    }
 
     // merge
     heightmap = decltype(heightmap)(h.width, h.height);
     texmap = decltype(texmap)(h.width, h.height);
     texmap_colored = decltype(texmap_colored)(h.width, h.height);
     colormap = decltype(colormap)(h.width, h.height);
-    for (int y = 0; y < h.height; y++)
+
+    h_min = std::numeric_limits<Height>::max();
+    h_max = std::numeric_limits<Height>::min();
+    for (auto &s : segments)
     {
-        auto ys = y / k * xsegs;
-        auto yc = y % k * k;
-        for (int x = 0; x < h.width; x++)
+        const auto &data = s.d;
+        int y1 = s.desc.Ymin / 10;
+        int y2 = s.desc.Ymax / 10;
+        if (y2 > h.height)
+            y2 = h.height;
+        for (int y = 0; y1 < y2; y1++, y++)
         {
-            auto xs = x / k;
-            auto xc = x % k;
-            auto y_rev = h.height - y - 1;
-            const auto &data = segments[ys + xs].d;
-            auto height = data.Heightmap[yc + xc];
-            auto t = data.Infomap[yc + xc].getTexture();
-
-            auto t_norm = textures_map.find(t);
-            if (t_norm != textures_map.end())
+            int x1 = s.desc.Xmin / 10;
+            int x2 = s.desc.Xmax / 10;
+            auto dx = x2 - x1;
+            if (x2 > h.width)
+                x2 = h.width;
+            for (int x = 0; x1 < x2; x1++, x++)
             {
-                texmap(y_rev, x) = t_norm->second;
-                alpha_maps[t_norm->second.g](y_rev, x) = color{ 0,255,0,0 };
-            }
+                auto p = y * dx + x;
+                auto y_rev = h.height - y1 - 1; // for bmp reversion
+                //auto y_rev = y1;
 
-            texmap_colored(y_rev, x) = textures_map_colored[t];
-            colormap(y_rev, x) = data.Colormap[yc + xc];
+                auto t = data.Infomap[p].getTexture();
+                auto t_norm = textures_map.find(t);
+                if (t_norm != textures_map.end())
+                {
+                    texmap(y_rev, x1) = t_norm->second;
+                    alpha_maps[t_norm->second.g](y_rev, x1) = color{ 0,255,0,0 };
+                }
 
-            if (x == 0 && y == 0)
-            {
-                h_min = height;
-                h_max = height;
-            }
-            else
-            {
+                texmap_colored(y_rev, x1) = textures_map_colored[t];
+                colormap(y_rev, x1) = data.Colormap[p];
+
+                auto height = data.Heightmap[p];
                 h_min = std::min(h_min, height);
                 h_max = std::max(h_max, height);
             }
@@ -257,18 +209,31 @@ void mmp::process()
 
     alpha_maps.erase(0);
     scale16 = 0xffff / (h_max - h_min);
+    const int unreal_koef = 51200;
+    const int aim_koef = 10;
+    const double diff = h_max - h_min;
+    const double scale = aim_koef / (unreal_koef / diff);
 
-    for (int y = 0; y < h.height; y++)
+    for (auto &s : segments)
     {
-        auto ys = y / k * xsegs;
-        auto yc = y % k * k;
-        for (int x = 0; x < h.width; x++)
+        int y1 = s.desc.Ymin / 10;
+        int y2 = s.desc.Ymax / 10;
+        if (y2 > h.height)
+            y2 = h.height;
+        for (int y = 0; y1 < y2; y1++, y++)
         {
-            auto xs = x / k;
-            auto xc = x % k;
-            auto height = segments[ys + xs].d.Heightmap[yc + xc];
-            auto val = (height - h_min) * scale16;
-            heightmap(y, x) = val;
+            int x1 = s.desc.Xmin / 10;
+            int x2 = s.desc.Xmax / 10;
+            auto dx = x2 - x1;
+            if (x2 > h.width)
+                x2 = h.width;
+            for (int x = 0; x1 < x2; x1++, x++)
+            {
+                auto height = s.d.Heightmap[y * dx + x];
+                auto val = (height - h_min) * scale16 * scale;
+                auto &old_height = heightmap(y1, x1);
+                old_height = val;
+            }
         }
     }
 }

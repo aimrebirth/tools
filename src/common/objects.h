@@ -24,49 +24,49 @@
 #include <string>
 #include <vector>
 
-#include <buffer.h>
+#include "buffer.h"
+#include "types.h"
 
-using namespace std;
-
-enum class SegmentType : uint32_t
+enum class ObjectType : uint32_t
 {
-    TEXTURE         =   0x1,
-    MODEL,
-    SURFACE, // stones
-    STONE, // trees
-    TREE,
+    TEXTURE         =   1,
+    //MODEL,
+    //SURFACE,
+    STONE           =   3,
+    TREE            =   4,
 
-    GLIDER,
-    HELPER,
-    ROAD,
-    WEAPON,
-    CONFIG,
+    //GLIDER,
+    HELPER          =   7,
+    ROAD            =   8,
+    //WEAPON,
+    //CONFIG,
 
-    SHELL, // buildings
+    //SHELL, // buildings
+    BUILDING        =   11,
     IMAGE,
-    EXPLOSION, // road lights
-    EQUIPMENT,
-    ORGANIZATION,
+    LAMP            =   13,
+    //EXPLOSION, // road lights
+    //EQUIPMENT,
+    //ORGANIZATION,
 
-    BUILDING,
-    LAMP,
-    COVERING,
-    SOUND,
-    GOODS,
+    //COVERING        =   18,
+    SOUND           =   19,
+    //GOODS, // anomaly?
+    ANOMALY         =   20, // radiation?
 
-    ANOMALY,
-    TOWER,
-    BOUNDARY,
-    SOUND_ZONE,
+    unk0            =   21, // anomaly?
+    TOWER           =   22,
+    BOUNDARY        =   23,
+    SOUND_ZONE      =   24,
 
-    unk1 = 0x1b,
+    unk1            =   27,
 };
 
 struct Segment
 {
-    SegmentType segment_type;
-    uint32_t    segment_len = 0;
-    uint32_t    n_objects = 0;
+    ObjectType segment_type;
+    uint32_t segment_len = 0;
+    uint32_t n_objects = 0;
 
     virtual ~Segment(){}
     static Segment *create_segment(buffer &b);
@@ -76,7 +76,7 @@ struct Segment
 template <class T>
 struct SegmentObjects : public Segment
 {
-    vector<T*> objects;
+    std::vector<T*> objects;
 
     virtual void load(buffer &b)
     {
@@ -89,18 +89,10 @@ struct SegmentObjects : public Segment
     }
 };
 
-struct Vector4
-{
-    float x = 0;
-    float y = 0;
-    float z = 0;
-    float w = 0;
-};
-
 struct Common
 {
-    Vector4     m_rotate_z[3];
-    Vector4     position;
+    Vector4 m_rotate_z[3];
+    Vector4 position;
     
     void load(buffer &b)
     {
@@ -126,7 +118,7 @@ struct MapObject : public Common
 struct MapObjectWithArray : public MapObject
 {
     uint32_t len = 0;
-    vector<uint32_t> unk0;
+    std::vector<uint32_t> unk0;
 
     void load(buffer &b)
     {
@@ -159,13 +151,12 @@ struct Boundary : public MapObjectWithArray {};
 #define KNOWN_OBJECT(name) \
     struct name : public MapObject {}
 
-KNOWN_OBJECT(Surface);
-KNOWN_OBJECT(Helper);
-KNOWN_OBJECT(Shell);
 KNOWN_OBJECT(Stone);
-KNOWN_OBJECT(Explosion);
+KNOWN_OBJECT(Helper);
+KNOWN_OBJECT(Building);
+KNOWN_OBJECT(Tree);
+KNOWN_OBJECT(Lamp);
 KNOWN_OBJECT(Image);
-KNOWN_OBJECT(Goods);
 KNOWN_OBJECT(Anomaly);
 KNOWN_OBJECT(Tower);
 KNOWN_OBJECT(SoundZone);
@@ -173,13 +164,13 @@ KNOWN_OBJECT(SoundZone);
 #define UNKNOWN_OBJECT(name) \
     struct name : public MapObject { void load(buffer &b){ int pos = b.index(); assert(false); } }
 
-UNKNOWN_OBJECT(Building);
+UNKNOWN_OBJECT(unk0);
 UNKNOWN_OBJECT(unk1);
 
 struct Objects
 {
     uint32_t n_segments = 0;
-    vector<Segment *> segments;
+    std::vector<Segment *> segments;
 
     void load(buffer &b);
 };

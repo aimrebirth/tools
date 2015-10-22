@@ -12,6 +12,7 @@ endif()
 file(GLOB script2txt_src "script2txt/*")
 add_executable(script2txt ${script2txt_src})
 
+
 if (DATABASE_MANAGER_DIR)
 file(GLOB mmm_extractor_src "mmm_extractor/*")
 add_executable(mmm_extractor ${mmm_extractor_src})
@@ -22,6 +23,7 @@ add_executable(mmo_extractor ${mmo_extractor_src})
 target_link_libraries(mmo_extractor DatabaseManager common)
 endif()
 
+
 file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
 target_link_libraries(mmp_extractor common)
@@ -29,6 +31,10 @@ target_link_libraries(mmp_extractor common)
 file(GLOB mod_converter_src "mod_converter/*")
 add_executable(mod_converter ${mod_converter_src})
 target_link_libraries(mod_converter common)
+
+file(GLOB mpj_loader_src "mpj_loader/*")
+add_executable(mpj_loader ${mpj_loader_src})
+target_link_libraries(mpj_loader common)
 
 file(GLOB tm_converter_src "tm_converter/*")
 add_executable(tm_converter ${tm_converter_src})
