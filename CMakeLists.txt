@@ -1,3 +1,7 @@
+#
+# A.I.M. Tools
+#
+
 cmake_minimum_required(VERSION 2.8)
 
 set(output_dir ${CMAKE_BINARY_DIR}/bin)
@@ -23,13 +27,13 @@ endif(MSVC)
 add_definitions(-DPOLYGON4_TOOLS=1)
 add_definitions(-DPOLYGON4_STATIC=1)
 
-if (NOT DATABASE_MANAGER_DIR)
-    message(STATUS "DATABASE_MANAGER_DIR variable is not set! Some targets won't be built")
+if (NOT DATA_MANAGER_DIR)
+    message(STATUS "DATA_MANAGER_DIR variable is not set! Some targets won't be built")
 else()
-    add_subdirectory(${DATABASE_MANAGER_DIR} DatabaseManager)
-    include_directories(${DATABASE_MANAGER_DIR}/include)
-    set_target_properties(sqlite3 PROPERTIES FOLDER Extern)
-    set_target_properties(DatabaseManager PROPERTIES FOLDER Extern)
+    set(SOLUTION_FOLDER Extern)
+    add_subdirectory(${DATA_MANAGER_DIR} DataManager)
+    include_directories(${DATA_MANAGER_DIR}/include)
+    include_directories(${DATA_MANAGER_ADDITIONAL_INCLUDES})
 endif()
 
 if (Git_FOUND)

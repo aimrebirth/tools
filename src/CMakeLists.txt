@@ -13,14 +13,14 @@ file(GLOB script2txt_src "script2txt/*")
 add_executable(script2txt ${script2txt_src})
 
 
-if (DATABASE_MANAGER_DIR)
+if (DATA_MANAGER_DIR)
 file(GLOB mmm_extractor_src "mmm_extractor/*")
 add_executable(mmm_extractor ${mmm_extractor_src})
-target_link_libraries(mmm_extractor DatabaseManager common)
+target_link_libraries(mmm_extractor DataManager common)
 
 file(GLOB mmo_extractor_src "mmo_extractor/*")
 add_executable(mmo_extractor ${mmo_extractor_src})
-target_link_libraries(mmo_extractor DatabaseManager common)
+target_link_libraries(mmo_extractor DataManager common)
 endif()
 
 

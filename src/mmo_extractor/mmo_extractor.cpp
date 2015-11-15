@@ -30,7 +30,7 @@
 #include <objects.h>
 #include "other.h"
 
-#include <Polygon4/Storage.h>
+#include <Polygon4/DataManager/Storage.h>
 
 #include <buffer.h>
 #include <types.h>
@@ -176,7 +176,7 @@ void write_mmo(string db, const storage &s)
                 {
                     auto mb2 = storage->addMapBuilding(storage->maps[map_id].get());
                     mb.setId(mb2->getId());
-                    *mb2.get() = mb;
+                    *mb2.ptr = mb;
                 }
             }
         }
@@ -227,7 +227,7 @@ void write_mmo(string db, const storage &s)
                 {
                     auto mb2 = storage->addMapObject(storage->maps[map_id].get());
                     mb.setId(mb2->getId());
-                    *mb2.get() = mb;
+                    *mb2.ptr = mb;
                 }
             }
         }
