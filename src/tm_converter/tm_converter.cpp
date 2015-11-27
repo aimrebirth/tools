@@ -61,27 +61,15 @@ void tm2tga(string fn)
         d.width = width;
         d.height = height;
         d.load_blocks(src);
-        write_mat_bmp(fn + ".bmp", d.unpack_tm());
+        write_mat_tga(fn + ".tga", d.unpack_tm());
     }
     else
     {
-        // http://paulbourke.net/dataformats/tga/
         buffer dst;
-        dst.write(uint8_t(0xE)); // idlength (comment length)
-        dst.write(uint8_t(0)); // colourmaptype
-        dst.write(uint8_t(2)); // datatypecode
-        dst.write(uint16_t(0)); // colourmaporigin
-        dst.write(uint16_t(0)); // colourmaplength
-        dst.write(uint8_t(0)); // colourmapdepth
-        dst.write(uint16_t(0)); // x_origin
-        dst.write(uint16_t(0)); // y_origin
-        dst.write(uint16_t(width)); // width
-        dst.write(uint16_t(height)); // height
-        dst.write(uint8_t(32)); // bitsperpixel
-        dst.write(uint8_t(0x28)); // imagedescriptor
-
-        const char *label = "AIMTMConverter";
-        dst.write(label, strlen(label));
+        tga t;
+        t.width = width;
+        t.height = height;
+        t.write(dst);
 
         convert_simple(dst, src, width, height);
         transform(fn.begin(), fn.end(), fn.begin(), ::tolower);

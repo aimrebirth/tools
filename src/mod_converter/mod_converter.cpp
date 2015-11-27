@@ -121,24 +121,20 @@ catch (std::runtime_error &e)
     if (silent)
         return 1;
     string error;
-    if (argv[1])
-        error += argv[1];
+    error += filename;
     error += "\n";
     error += "fatal error: ";
     error += e.what();
     error += "\n";
-    if (argv[1])
-    {
-        ofstream ofile(string(argv[1]) + ".error.txt");
-        ofile << error;
-    }
+    ofstream ofile(filename + ".error.txt");
+    ofile << error;
     return 1;
 }
 catch (std::exception &e)
 {
     if (silent)
         return 1;
-    printf("%s\n", argv[1]);
+    printf("%s\n", filename.c_str());
     printf("error: %s\n", e.what());
     return 1;
 }
@@ -146,7 +142,7 @@ catch (...)
 {
     if (silent)
         return 1;
-    printf("%s\n", argv[1]);
+    printf("%s\n", filename.c_str());
     printf("error: unknown exception\n");
     return 1;
 }

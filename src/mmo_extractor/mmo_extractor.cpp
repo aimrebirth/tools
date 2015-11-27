@@ -36,14 +36,13 @@
 #include <types.h>
 
 #define RAD2GRAD(x) (x) = (x) / M_PI * 180.0
-
-using namespace std;
+#define ASSIGN(x, d) isnan(x) ? d : x
 
 std::string prefix;
 
 struct storage
 {
-    string name;
+    std::string name;
     Objects objects;
     MechGroups mechGroups;
     MapGoods mapGoods;
@@ -74,14 +73,14 @@ struct storage
         
         if (!b.eof())
         {
-            stringstream ss;
-            ss << hex << b.index() << " != " << hex << b.size();
+            std::stringstream ss;
+            ss << std::hex << b.index() << " != " << std::hex << b.size();
             throw std::logic_error(ss.str());
         }
     }
 };
 
-storage read_mmo(string fn)
+storage read_mmo(std::string fn)
 {
     buffer f(readFile(fn));
     storage s;
@@ -90,7 +89,7 @@ storage read_mmo(string fn)
     return s;
 }
 
-void write_mmo(string db, const storage &s)
+void write_mmo(std::string db, const storage &s)
 {
     using namespace polygon4;
     using namespace polygon4::detail;
@@ -104,12 +103,12 @@ void write_mmo(string db, const storage &s)
     auto p2 = s.name.rfind('/');
     if (p2 == -1)
         p2 = 0;
-    int p = max(p1, p2);
-    string map_name = s.name.substr(p + 1);
+    int p = std::max(p1, p2);
+    std::string map_name = s.name.substr(p + 1);
     map_name = map_name.substr(0, map_name.find('.'));
     if (!prefix.empty())
         map_name = prefix + "." + map_name;
-    transform(map_name.begin(), map_name.end(), map_name.begin(), ::tolower);
+    std::transform(map_name.begin(), map_name.end(), map_name.begin(), ::tolower);
 
     int map_id = 0;
     for (auto &m : storage->maps)
@@ -129,19 +128,21 @@ void write_mmo(string db, const storage &s)
 
     auto this_map = storage->maps[map_id];
 
+    int inserted = 0;
+    int exist = 0;
     for (auto &seg : s.objects.segments)
     {
         if (seg->segment_type == ObjectType::BUILDING ||
             seg->segment_type == ObjectType::TOWER)
         {
             SegmentObjects<::MapObject> *segment = (SegmentObjects<::MapObject> *)seg;
-            set<string> objs;
-            std::map<string, int> bld_ids;
+            std::set<std::string> objs;
+            std::map<std::string, int> bld_ids;
             for (auto &object : segment->objects)
                 objs.insert(object->name1);
             for (auto &o : objs)
             {
-                auto iter = find_if(storage->buildings.begin(), storage->buildings.end(), [&](const auto &p)
+                auto iter = std::find_if(storage->buildings.begin(), storage->buildings.end(), [&](const auto &p)
                 {
                     return p.second->text_id == o;
                 });
@@ -152,7 +153,9 @@ void write_mmo(string db, const storage &s)
                     bld_ids[o] = bld->getId();
                 }
                 else
+                {
                     bld_ids[o] = iter->getId();
+                }
             }
             for (auto &object : segment->objects)
             {
@@ -160,14 +163,19 @@ void write_mmo(string db, const storage &s)
                 mb.text_id = object->name2;
                 mb.building = storage->buildings[bld_ids[object->name1]];
                 mb.map = this_map;
-                mb.x = object->position.x;
-                mb.y = object->position.y;
-                mb.z = object->position.z;
+                mb.x = ASSIGN(object->position.x, 0);
+                mb.y = ASSIGN(object->position.y, 0);
+                mb.z = ASSIGN(object->position.z, 0);
                 mb.roll = 0;
                 mb.pitch = 0;
-                mb.yaw = acos(object->m_rotate_z[0].x);
+                auto yaw = ASSIGN(object->m_rotate_z[0].x, 0);
+                if (yaw > 1)
+                    yaw = yaw - floor(yaw);
+                if (yaw < -1)
+                    yaw = yaw - ceil(yaw);
+                mb.yaw = acos(yaw);
                 RAD2GRAD(mb.yaw);
-                mb.scale = object->m_rotate_z[2].z;
+                mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const auto &p)
                 {
                     return *p.second.get() == mb;
@@ -176,7 +184,12 @@ void write_mmo(string db, const storage &s)
                 {
                     auto mb2 = storage->addMapBuilding(storage->maps[map_id].get());
                     mb.setId(mb2->getId());
-                    *mb2.ptr = mb;
+                    *mb2 = mb;
+                    inserted++;
+                }
+                else
+                {
+                    exist++;
                 }
             }
         }
@@ -186,8 +199,8 @@ void write_mmo(string db, const storage &s)
             seg->segment_type == ObjectType::BOUNDARY)
         {
             SegmentObjects<::MapObject> *segment = (SegmentObjects<::MapObject> *)seg;
-            set<string> objs;
-            std::map<string, int> bld_ids;
+            std::set<std::string> objs;
+            std::map<std::string, int> bld_ids;
             for (auto &object : segment->objects)
                 objs.insert(object->name1);
             for (auto &o : objs)
@@ -211,14 +224,19 @@ void write_mmo(string db, const storage &s)
                 mb.text_id = object->name2;
                 mb.map = this_map;
                 mb.object = storage->objects[bld_ids[object->name1]];
-                mb.x = object->position.x;
-                mb.y = object->position.y;
-                mb.z = object->position.z;
+                mb.x = ASSIGN(object->position.x, 0);
+                mb.y = ASSIGN(object->position.y, 0);
+                mb.z = ASSIGN(object->position.z, 0);
                 mb.roll = 0;
                 mb.pitch = 0;
-                mb.yaw = acos(object->m_rotate_z[0].x);
+                auto yaw = ASSIGN(object->m_rotate_z[0].x, 0);
+                if (yaw > 1)
+                    yaw = yaw - floor(yaw);
+                if (yaw < -1)
+                    yaw = yaw - ceil(yaw);
+                mb.yaw = acos(yaw);
                 RAD2GRAD(mb.yaw);
-                mb.scale = object->m_rotate_z[2].z;
+                mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const auto &p)
                 {
                     return *p.second.get() == mb;
@@ -227,12 +245,19 @@ void write_mmo(string db, const storage &s)
                 {
                     auto mb2 = storage->addMapObject(storage->maps[map_id].get());
                     mb.setId(mb2->getId());
-                    *mb2.ptr = mb;
+                    *mb2 = mb;
+                    inserted++;
+                }
+                else
+                {
+                    exist++;
                 }
             }
         }
     }
-    storage->save();
+    if (inserted)
+        storage->save();
+    std::cout << "inserted: " << inserted << ", exist: " << exist << "\n";
 }
 
 int main(int argc, char *argv[])
@@ -240,7 +265,7 @@ try
 {
     if (argc != 4)
     {
-        cout << "Usage:\n" << argv[0] << " db.sqlite file.mmo prefix" << "\n";
+        std::cout << "Usage:\n" << argv[0] << " db.sqlite file.mmo prefix" << "\n";
         return 1;
     }
     prefix = argv[3];

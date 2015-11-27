@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <bmp.h>
+#include <tga.h>
 
 template <class T>
 class mat
@@ -90,6 +91,26 @@ void write_mat_bmp(const std::string &filename, const mat<T> &m)
     i.biClrImportant = 0;
     fwrite(&h, sizeof(BITMAPFILEHEADER), 1, f);
     fwrite(&i, sizeof(BITMAPINFOHEADER), 1, f);
+    fwrite(&m(0, 0), m.size() * sizeof(T), 1, f);
+    fclose(f);
+}
+
+template<class T>
+void write_mat_tga(const std::string &filename, const mat<T> &m)
+{
+    FILE *f = fopen(filename.c_str(), "wb");
+    if (f == nullptr)
+        return;
+    
+    tga t;
+    t.width = m.getWidth();
+    t.height = m.getHeight();
+
+    // header
+    fwrite(&t, sizeof(tga), 1, f);
+    fwrite(t.label(), t.idlength, 1, f);
+    
+    // data
     fwrite(&m(0, 0), m.size() * sizeof(T), 1, f);
     fclose(f);
 }
