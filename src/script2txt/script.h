@@ -79,8 +79,13 @@ struct script
         const std::string space = "    ";
         int brace_count = 0;
         int proc_started = 0;
+        bool proc_started_now = false;
         for (auto &line : lines)
         {
+            if (proc_started_now && line.find("{") != line.npos)
+            {
+                proc_started--;
+            }
             if (brace_count > 0 || proc_started > 0)
             {
                 auto space_count = brace_count + proc_started;
@@ -97,8 +102,11 @@ struct script
                 line.find("()") != line.npos)
             {
                 proc_started++;
+                proc_started_now = true;
                 continue;
             }
+            if (proc_started_now)
+                proc_started_now = false;
             if (line.find("END") != line.npos && proc_started == 1)
             {
                 proc_started--;
@@ -130,6 +138,12 @@ struct script
         replace_all(s, "\nIF", "\n\nIF");
         replace_all(s, "PROC", "PROC ");
         replace_all(s, "END\nPROC", "END\n\nPROC");
+        replace_all(s, "|", " || ");
+        replace_all(s, "&", " && ");
+        replace_all(s, "(", "( ");
+        replace_all(s, ")", " )");
+        replace_all(s, ",", ", ");
+        replace_all(s, "!", "! ");
         return s;
     }
 };
