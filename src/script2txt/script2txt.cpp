@@ -16,47 +16,46 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <fstream>
 #include <iostream>
 #include <stdint.h>
 
-using namespace std;
+#include "script.h"
+
+using std::cout;
+using std::string;
 
 int main(int argc, char *argv[])
+try
 {
     if (argc != 2)
     {
         cout << "Usage:\n" << argv[0] << " script.scr";
         return 1;
     }
-    string path = argv[1];
-    FILE *f = fopen(path.c_str(), "rb");
-    if (!f)
-    {
-        cout << "Cannot open the file: " << argv[1];
-        return 2;
-    }
-    uint32_t size = 0;
-    uint32_t dummy = 0;
-    fread(&size, sizeof(uint32_t), 1, f);
-    fread(&size, sizeof(uint32_t), 1, f);
-    fread(&size, sizeof(uint32_t), 1, f);
-    fread(&dummy, sizeof(uint32_t), 1, f);
-    string buf(size, 0);
-    fread(&buf[0], size, 1, f);
-    fclose(f);
-    path += ".txt";
-    f = fopen(path.c_str(), "w");
-    if (!f)
-    {
-        cout << "Cannot open the file: " << argv[1];
-        return 3;
-    }
-    const char *ptr = &buf[0];
-    while (ptr < &buf[0] + size)
-    {
-        fprintf(f, "%s\n", ptr);
-        ptr += strlen(ptr) + 1;
-    }
-    fclose(f);
+
+    std::string filename = argv[1];
+
+    // read
+    buffer b(readFile(filename));
+    script s;
+    s.load(b);
+    auto str = s.get_text();
+
+    // write
+    filename += ".txt";
+    std::ofstream ofile(filename);
+    if (ofile)
+        ofile << str;
     return 0;
+}
+catch (std::exception &e)
+{
+    printf("error: %s\n", e.what());
+    return 1;
+}
+catch (...)
+{
+    printf("error: unknown exception\n");
+    return 1;
 }

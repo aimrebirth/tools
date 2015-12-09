@@ -11,6 +11,7 @@ endif()
 
 file(GLOB script2txt_src "script2txt/*")
 add_executable(script2txt ${script2txt_src})
+target_link_libraries(script2txt common)
 
 
 if (DATA_MANAGER_DIR)
