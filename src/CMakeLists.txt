@@ -9,12 +9,6 @@ add_executable(db_extractor ${db_extractor_src})
 target_link_libraries(db_extractor common)
 endif()
 
-file(GLOB script2txt_src "script2txt/*")
-add_executable(script2txt ${script2txt_src})
-target_link_libraries(script2txt common)
-
-
-if (DATA_MANAGER_DIR)
 file(GLOB mmm_extractor_src "mmm_extractor/*")
 add_executable(mmm_extractor ${mmm_extractor_src})
 target_link_libraries(mmm_extractor DataManager common)
@@ -22,8 +16,6 @@ target_link_libraries(mmm_extractor DataManager common)
 file(GLOB mmo_extractor_src "mmo_extractor/*")
 add_executable(mmo_extractor ${mmo_extractor_src})
 target_link_libraries(mmo_extractor DataManager common)
-endif()
-
 
 file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
@@ -45,3 +37,4 @@ file(GLOB name_generator_src "name_generator/*")
 add_executable(name_generator ${name_generator_src})
 
 add_subdirectory(common)
+add_subdirectory(script2txt)

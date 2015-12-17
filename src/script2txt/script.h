@@ -43,7 +43,8 @@ struct script
         READ(b, raw_text_size);
         READ(b, unk1);
         raw_text.resize(raw_text_size);
-        READ_N(b, raw_text[0], raw_text.size());
+        if (raw_text_size)
+            READ_N(b, raw_text[0], raw_text.size());
         READ(b, array_len);
         unk2.resize(array_len);
         READ_N(b, unk2[0], unk2.size());
@@ -56,7 +57,6 @@ struct script
         }
         
         fix_text();
-        beautify();
     }
 
     void fix_text()
@@ -74,58 +74,6 @@ struct script
         }
     }
 
-    void beautify()
-    {
-        const std::string space = "    ";
-        int brace_count = 0;
-        int proc_started = 0;
-        bool proc_started_now = false;
-        for (auto &line : lines)
-        {
-            if (proc_started_now && line.find("{") != line.npos)
-            {
-                proc_started--;
-            }
-            if (brace_count > 0 || proc_started > 0)
-            {
-                auto space_count = brace_count + proc_started;
-                if (line == "}" ||
-                    (brace_count == 0 && proc_started == 1 &&
-                        line.find("END") != line.npos))
-                    space_count--;
-                std::string s;
-                for (int i = 0; i < space_count; i++)
-                    s += space;
-                line = s + line;
-            }
-            if (line.find("PROC") != line.npos &&
-                line.find("()") != line.npos)
-            {
-                proc_started++;
-                proc_started_now = true;
-                continue;
-            }
-            if (proc_started_now)
-                proc_started_now = false;
-            if (line.find("END") != line.npos && proc_started == 1)
-            {
-                proc_started--;
-            }
-            for (auto &c : line)
-            {
-                if (c == '{')
-                    brace_count++;
-                else if (c == '}')
-                    brace_count--;
-                if (brace_count < 0)
-                {
-                    c = '\n';
-                    brace_count++;
-                }
-            }
-        }
-    }
-
     std::string get_text() const
     {
         std::string s;
@@ -134,16 +82,30 @@ struct script
             if (line != "\n")
                 s += line + "\n";
         }
-        replace_all(s, "IF(", "IF (");
-        replace_all(s, "\nIF", "\n\nIF");
+
         replace_all(s, "PROC", "PROC ");
-        replace_all(s, "END\nPROC", "END\n\nPROC");
-        replace_all(s, "|", " || ");
-        replace_all(s, "&", " && ");
-        replace_all(s, "(", "( ");
-        replace_all(s, ")", " )");
-        replace_all(s, ",", ", ");
-        replace_all(s, "!", "! ");
+        replace_all(s, "ENFD", "END");
+        replace_all(s, "\nEN\n", "\n");
+        replace_all(s, "?", " ");
+        s += "\nEND\n";
+
+        // remove wrong braces
+        int braces = 0;
+        for (auto &c : s)
+        {
+            switch (c)
+            {
+            case '{':
+                braces++;
+                break;
+            case '}':
+                if (braces == 0)
+                    c = ' ';
+                else
+                    braces--;
+                break;
+            }
+        }
         return s;
     }
 };

@@ -20,6 +20,7 @@
 #include <iostream>
 #include <stdint.h>
 
+#include "ParserDriver.h"
 #include "script.h"
 
 using std::cout;
@@ -42,11 +43,35 @@ try
     s.load(b);
     auto str = s.get_text();
 
-    // write
-    filename += ".txt";
-    std::ofstream ofile(filename);
-    if (ofile)
-        ofile << str;
+    ParserDriver driver;
+    if (driver.parse(str))
+    {
+        throw std::runtime_error("error during parsing input file");
+    }
+    auto &ctx = driver.getContext();
+
+    // write script
+    {
+        filename += ".txt";
+        std::ofstream ofile(filename);
+        if (ofile)
+            ofile << ctx.getText();
+    }
+
+    // write function calls
+    {
+        std::ofstream functions("functions.txt", std::ios::app);
+        if (functions)
+        {
+            for (auto &f : driver.functions)
+            {
+                std::string f2(f.size(), 0);
+                std::transform(f.begin(), f.end(), f2.begin(), tolower);
+                functions << f2 << "\n";
+            }
+        }
+    }
+
     return 0;
 }
 catch (std::exception &e)

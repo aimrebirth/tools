@@ -14,6 +14,8 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake Targets")
 
 project(aim_tools)
 
+find_package(BISON 3.0 REQUIRED)
+find_package(FLEX 2.5.35 REQUIRED)
 find_package(Git)
 
 if (MSVC)
@@ -28,7 +30,7 @@ add_definitions(-DPOLYGON4_TOOLS=1)
 add_definitions(-DPOLYGON4_STATIC=1)
 
 if (NOT DATA_MANAGER_DIR)
-    message(STATUS "DATA_MANAGER_DIR variable is not set! Some targets won't be built")
+    message(FATAL_ERROR "DATA_MANAGER_DIR variable is not set!")
 else()
     set(SOLUTION_FOLDER Extern)
     add_subdirectory(${DATA_MANAGER_DIR} DataManager)
