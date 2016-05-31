@@ -105,7 +105,7 @@ void segment::load_segment()
 
     fseek(f, offset, SEEK_SET);
     assert(flags != 0);
-        
+
     FREAD(size1);
     size2 = size1;
     if ((flags & 0x3) && (flags & 0xC))
@@ -118,7 +118,7 @@ void segment::load_segment()
         fread(&encoded[0], 1, size1, f);
     }
 }
-    
+
 void segment::decompress(int segment_id)
 {
     load_segment();

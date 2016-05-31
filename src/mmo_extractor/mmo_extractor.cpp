@@ -70,7 +70,7 @@ struct storage
             orgsBases.load(b);
             prices.load(b);
         }
-        
+
         if (!b.eof())
         {
             std::stringstream ss;
@@ -154,7 +154,7 @@ void write_mmo(std::string db, const storage &s)
                 }
                 else
                 {
-                    bld_ids[o] = iter->getId();
+                    bld_ids[o] = iter->second->getId();
                 }
             }
             for (auto &object : segment->objects)
@@ -178,11 +178,11 @@ void write_mmo(std::string db, const storage &s)
                 mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const auto &p)
                 {
-                    return *p.second.get() == mb;
+                    return *p.second == mb;
                 });
                 if (i == storage->mapBuildings.end())
                 {
-                    auto mb2 = storage->addMapBuilding(storage->maps[map_id].get());
+                    auto mb2 = storage->addMapBuilding(storage->maps[map_id]);
                     mb.setId(mb2->getId());
                     *mb2 = mb;
                     inserted++;
@@ -216,7 +216,7 @@ void write_mmo(std::string db, const storage &s)
                     bld_ids[o] = bld->getId();
                 }
                 else
-                    bld_ids[o] = iter->getId();
+                    bld_ids[o] = iter->second->getId();
             }
             for (auto &object : segment->objects)
             {
@@ -239,11 +239,11 @@ void write_mmo(std::string db, const storage &s)
                 mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const auto &p)
                 {
-                    return *p.second.get() == mb;
+                    return *p.second == mb;
                 });
                 if (i == storage->mapObjects.end())
                 {
-                    auto mb2 = storage->addMapObject(storage->maps[map_id].get());
+                    auto mb2 = storage->addMapObject(storage->maps[map_id]);
                     mb.setId(mb2->getId());
                     *mb2 = mb;
                     inserted++;

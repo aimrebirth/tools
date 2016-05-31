@@ -27,15 +27,14 @@ void unpak(string fn)
         return;
     pak p;
     p.load(f);
-    auto read_write_any_file = [&](record &file)
+    for (auto &f : p.files)
     {
+        record &file = f.second;
         cout << "Unpacking " << file.name << "\n";
         vector<char> buf(file.len);
         file.read(&p, &buf[0], file.len);
         file.write(fn + ".dir", buf);
     };
-    for (auto &f : p.files)
-        read_write_any_file(f.second);
     fclose(f);
 }
 
