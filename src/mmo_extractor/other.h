@@ -29,8 +29,8 @@
 
 struct MechGroup
 {
-    char name[0x20];
-    char org[0x20];
+    std::string name;
+    std::string org;
     uint32_t type1 = 0;
     uint32_t len1 = 0;
     char name1[0x70];
@@ -50,8 +50,8 @@ struct MechGroup
 
     void load(buffer &b)
     {
-        READ(b, name);
-        READ(b, org);
+        READ_STRING(b, name);
+        READ_STRING(b, org);
         READ(b, type1);
         READ(b, len1);
         READ(b, name1);
@@ -134,14 +134,14 @@ struct MapGoods
 
 struct MapSound
 {
-    char name[0x20];
+    std::string name;
     float unk1[4];
     uint32_t unk2 = 0;
     float unk3[4];
 
     void load(buffer &b)
     {
-        READ(b, name);
+        READ_STRING(b, name);
         READ(b, unk1);
         READ(b, unk2);
         READ(b, unk3);
@@ -165,31 +165,62 @@ struct MapSounds
     }
 };
 
+struct ModificatorMask
+{
+    enum class ItemType : uint8_t
+    {
+        Glider = 1,
+        Weapon,
+        Reactor,
+        Engine,
+        EnergyShield
+    };
+
+    uint8_t fight:4;
+    uint8_t trade:4;
+    uint8_t courier:4;
+    ItemType type:4;
+
+    uint16_t:16;
+};
+
 struct Price
 {
-    char tov_name[0x20];
-    uint32_t unk0 = 0;
-    uint32_t unk1 = 0;
-    float unk2[3];
+    enum class ItemType : uint32_t
+    {
+        Glider = 1,
+        Equipment,
+        Weapon,
+        Ammo,
+    };
+
+    std::string tov_name;
+    ItemType type;
+    ModificatorMask mask;
+    float price;
+    float unk2 = 0.0f; // count ?
+    float probability; // of appearence
 
     void load(buffer &b)
     {
-        READ(b, tov_name);
-        READ(b, unk0);
-        READ(b, unk1);
+        READ_STRING(b, tov_name);
+        READ(b, type);
+        READ(b, mask);
+        READ(b, price);
         READ(b, unk2);
+        READ(b, probability);
     }
 };
 
 struct BuildingPrice
 {
-    char name[0x20];
-    uint32_t n_tov = 0;
+    std::string name;
     std::vector<Price> prices;
 
     void load(buffer &b)
     {
-        READ(b, name);
+        READ_STRING(b, name);
+        uint32_t n_tov = 0;
         READ(b, n_tov);
         for (int i = 0; i < n_tov; i++)
         {
@@ -202,13 +233,12 @@ struct BuildingPrice
 
 struct BuildingPrices
 {
-    uint32_t n_tov = 0;
     std::vector<Price> prices;
-    uint32_t n_bases = 0;
     std::vector<BuildingPrice> buildingPrices;
 
     void load(buffer &b)
     {
+        uint32_t n_tov = 0;
         READ(b, n_tov);
         for (int i = 0; i < n_tov; i++)
         {
@@ -216,6 +246,7 @@ struct BuildingPrices
             s.load(b);
             prices.push_back(s);
         }
+        uint32_t n_bases = 0;
         READ(b, n_bases);
         for (int i = 0; i < n_bases; i++)
         {

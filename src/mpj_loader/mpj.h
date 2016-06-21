@@ -67,7 +67,7 @@ struct surface : public segment
 {
     struct value
     {
-        char name[0x20];
+        std::string name;
         uint32_t unk0;
     };
     std::vector<value> unk1;
@@ -151,16 +151,16 @@ struct gliders_n_goods : public segment
 {
     struct Good
     {
-        char name[0x20];
+        std::string name;
         int unk0[3];
 
         void load(buffer &b)
         {
-            READ(b, name);
+            READ_STRING(b, name);
             READ(b, unk0);
         }
     };
-    
+
     struct Goods
     {
         uint32_t n_goods;

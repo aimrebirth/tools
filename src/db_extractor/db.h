@@ -39,7 +39,7 @@ string getSqlType(FieldType type);
 struct table
 {
     uint32_t id;
-    char name[0x20];
+    std::string name;
     uint32_t unk4;
 
     void load(buffer &b);
@@ -49,7 +49,7 @@ struct field
 {
     uint32_t table_id;
     uint32_t id;
-    char name[0x20];
+    std::string name;
     FieldType type;
 
     void load(buffer &b);
@@ -79,7 +79,7 @@ struct field_value
 struct value
 {
     uint32_t table_id;
-    char name[0x20];
+    std::string name;
     uint32_t offset;
     uint32_t data_size;
     vector<field_value> fields;

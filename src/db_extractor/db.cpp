@@ -39,7 +39,7 @@ string getSqlType(FieldType type)
 void table::load(buffer &b)
 {
     READ(b, id);
-    READ(b, name);
+    READ_STRING(b, name);
     READ(b, unk4);
 }
 
@@ -47,7 +47,7 @@ void field::load(buffer &b)
 {
     READ(b, table_id);
     READ(b, id);
-    READ(b, name);
+    READ_STRING(b, name);
     READ(b, type);
 }
 
@@ -76,7 +76,7 @@ void tab::load(buffer &b)
 void value::load_index(buffer &b)
 {
     READ(b, table_id);
-    READ(b, name);
+    READ_STRING(b, name);
     READ(b, offset);
     READ(b, data_size);
 }

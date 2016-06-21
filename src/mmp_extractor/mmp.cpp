@@ -62,13 +62,13 @@ header_segment *header::create_segment(buffer &b)
 void header::load(buffer &b)
 {
     READ(b, unk0);
-    READ(b, name1);
-    READ(b, name2);
+    READ_WSTRING(b, name1);
+    READ_WSTRING(b, name2);
     READ(b, width);
     READ(b, height);
     READ(b, n_header_segs);
     segments.resize(n_header_segs);
-    READ(b, name);
+    READ_STRING_N(b, name, 0xA0);
     for (auto &s : segments)
     {
         s = create_segment(b);

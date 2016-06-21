@@ -71,27 +71,27 @@ struct weather
         float probability;
     };
 
-    char name[0x20];
-    char unk0[0x20];
+    std::string name;
+    std::string unk0;
     uint32_t unk1[2];
     color smoke_1; //3?
     color smoke_3; //1?
     SmokeType smokeType;
     uint32_t unk2[3];
-    char cloud_layer1[0x20];
-    char cloud_layer2[0x20];
+    std::string cloud_layer1;
+    std::string cloud_layer2;
     float cloud_layer1_speed;
     float cloud_layer2_speed;
     vector3 cloud_layer1_direction;
     vector3 cloud_layer2_direction;
-    char sun[0x20];
+    std::string sun;
     color general_color;
     color sun_color;
     color moon_color;
-    char moon[0x20];
+    std::string moon;
     float probability;
-    char day_night_gradient_name[0x20];
-    char dawn_dusk_gradient_name[0x20];
+    std::string day_night_gradient_name;
+    std::string dawn_dusk_gradient_name;
     color dawn_dusk_color;
     atmospheric_effects effects;
     color smoke_2;
@@ -115,12 +115,12 @@ struct weather_group
 struct water
 {
     float unk0[6];
-    char name1[0x20];
+    std::string name1;
     uint32_t unk1;
     float unk2;
     uint32_t unk3[16];
     float unk4;
-    char name2[0x20];
+    std::string name2;
     uint32_t unk5[16];
 
     void load(buffer &b);
@@ -135,7 +135,7 @@ struct water_group
 
 struct Good
 {
-    char name[0x20];
+    std::string name;
     char unk1[0x40];
     float unk1_2 = 0;
     float price = 0;
@@ -145,7 +145,7 @@ struct Good
 
     void load(buffer &b)
     {
-        READ(b, name);
+        READ_STRING(b, name);
         if (gameType == GameType::Aim1)
             READ(b, unk1);
         else
@@ -163,14 +163,14 @@ struct Good
 
 struct BuildingGoods
 {
-    char name[0x20];
+    std::string name;
     uint32_t n = 0;
 
     std::vector<Good> goods;
 
     void load(buffer &b)
     {
-        READ(b, name);
+        READ_STRING(b, name);
         READ(b, n);
 
         for (int i = 0; i < n; i++)
@@ -184,8 +184,8 @@ struct BuildingGoods
 
 struct MapMusic
 {
-    char name1[0x20];
-    char name2[0x20];
+    std::string name1;
+    std::string name2;
 
     uint32_t n1 = 0;
     std::vector<std::string> names1;
@@ -195,24 +195,20 @@ struct MapMusic
 
     void load(buffer &b)
     {
-        READ(b, name1);
-        READ(b, name2);
+        READ_STRING(b, name1);
+        READ_STRING(b, name2);
+
+        auto read_values = [&b](auto &v, auto &n)
+        {
+            for (int i = 0; i < n; i++)
+                v.push_back(b.read_string());
+        };
 
         READ(b, n1);
-        for (int i = 0; i < n1; i++)
-        {
-            char name[0x20];
-            READ(b, name);
-            names1.push_back(name);
-        }
+        read_values(names1, n1);
 
         READ(b, n2);
-        for (int i = 0; i < n2; i++)
-        {
-            char name[0x20];
-            READ(b, name);
-            names2.push_back(name);
-        }
+        read_values(names2, n2);
     }
 };
 
@@ -233,14 +229,14 @@ struct OrganizationConfig
 struct Organization
 {
     uint32_t unk0 = 0;
-    char name[0x20];
+    std::string name;
     char unk1[0xE0];
     OrganizationConfig configs[3];
 
     void load(buffer &b)
     {
         READ(b, unk0);
-        READ(b, name);
+        READ_STRING(b, name);
         READ(b, unk1);
         for (auto &c : configs)
             c.load(b);
@@ -268,14 +264,14 @@ struct Organizations
 
 struct OrganizationBase
 {
-    char base_name[0x20];
-    char org_name[0x20];
+    std::string base_name;
+    std::string org_name;
     uint32_t unk0 = 0;
 
     void load(buffer &b)
     {
-        READ(b, base_name);
-        READ(b, org_name);
+        READ_STRING(b, base_name);
+        READ_STRING(b, org_name);
         READ(b, unk0);
     }
 };

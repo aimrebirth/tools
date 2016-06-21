@@ -36,5 +36,9 @@ target_link_libraries(tm_converter common)
 file(GLOB name_generator_src "name_generator/*")
 add_executable(name_generator ${name_generator_src})
 
+file(GLOB save_loader_src "save_loader/*")
+add_executable(save_loader ${save_loader_src})
+target_link_libraries(save_loader common)
+
 add_subdirectory(common)
 add_subdirectory(script2txt)

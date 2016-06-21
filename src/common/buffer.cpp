@@ -102,6 +102,20 @@ buffer::buffer(buffer &rhs, uint32_t size, uint32_t offset)
     end_ = index_ + size_;
 }
 
+std::string buffer::read_string(uint32_t blocksize) const
+{
+    std::vector<uint8_t> data(blocksize);
+    read(data.data(), data.size());
+    return (const char *)data.data();
+}
+
+std::wstring buffer::read_wstring(uint32_t blocksize) const
+{
+    std::vector<uint16_t> data(blocksize);
+    read(data.data(), data.size());
+    return (const wchar_t *)data.data();
+}
+
 uint32_t buffer::_read(void *dst, uint32_t size, uint32_t offset) const
 {
     if (!buf_)

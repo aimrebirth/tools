@@ -61,12 +61,12 @@ struct weather_segment : public header_segment
 struct header
 {
     uint32_t unk0;
-    wchar_t name1[0x20];
-    wchar_t name2[0x20];
+    std::wstring name1;
+    std::wstring name2;
     uint32_t width;
     uint32_t height;
     uint32_t n_header_segs;
-    char name[0xA0];
+    std::string name;
     std::vector<header_segment*> segments;
 
     void load(buffer &b);
@@ -163,7 +163,7 @@ struct mmp
     mat<uint32_t> texmap;
     mat<uint32_t> texmap_colored;
     mat<uint32_t> colormap;
-    
+
     void load(buffer &b);
     void load(const std::string &filename);
     void loadTextureNames(const std::string &filename);

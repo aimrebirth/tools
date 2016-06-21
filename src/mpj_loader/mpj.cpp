@@ -99,7 +99,8 @@ void surface::load(buffer &b)
     while (!b.eof())
     {
         value v;
-        READ(b, v);
+        READ_STRING(b, v.name);
+        READ(b, v.unk0);
         unk1.push_back(v);
     }
 }

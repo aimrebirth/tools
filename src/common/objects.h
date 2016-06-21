@@ -93,7 +93,7 @@ struct Common
 {
     Vector4 m_rotate_z[3];
     Vector4 position;
-    
+
     void load(buffer &b)
     {
         READ(b, m_rotate_z);
@@ -103,15 +103,15 @@ struct Common
 
 struct MapObject : public Common
 {
-    char name1[0x20];
-    char name2[0x20];
+    std::string name1;
+    std::string name2;
 
     void load(buffer &b)
     {
         Common::load(b);
 
-        READ(b, name1);
-        READ(b, name2);
+        READ_STRING(b, name1);
+        READ_STRING(b, name2);
     }
 };
 
@@ -139,7 +139,7 @@ struct Sound : public Common
     void load(buffer &b)
     {
         Common::load(b);
-        
+
         READ(b, unk1);
         READ(b, name1);
     }

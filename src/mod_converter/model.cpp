@@ -44,11 +44,11 @@ void vertex::load(buffer &b, uint32_t flags)
 
     if (flags & F_UNK0)
         READ(b, unk0);
-    
+
     READ(b, nX);
     READ(b, nZ);
     READ(b, nY);
-    
+
     READ(b, t1);
     READ(b, t2);
 }
@@ -130,7 +130,7 @@ void animation::segment::loadData(buffer &b)
 std::string block::printMtl(const std::string &mtl_name) const
 {
     string s;
-    s += "newmtl " + mtl_name + "\n";  
+    s += "newmtl " + mtl_name + "\n";
     s += "\n";
     s += "Ka " + material.ambient.print() + "\n";
     s += "Kd " + material.diffuse.print() + "\n";
@@ -184,21 +184,21 @@ std::string block::printObj(const std::string &mtl_name) const
         z += "/" + z;
         s += "f " + x + " " + y + " " + z + "\n";
     }
-        
+
     s += "\n";
     s += "\n";
     return s;
 }
-    
+
 void block::load(buffer &b)
 {
     // header
     READ(b, type);
-    READ(b, name);
-    READ(b, tex_mask);
-    READ(b, tex_spec);
-    READ(b, tex3);
-    READ(b, tex4);
+    READ_STRING(b, name);
+    READ_STRING(b, tex_mask);
+    READ_STRING(b, tex_spec);
+    READ_STRING(b, tex3);
+    READ_STRING(b, tex4);
     READ(b, LODs);
     READ(b, unk1);
     READ(b, unk2);
@@ -208,7 +208,7 @@ void block::load(buffer &b)
 
     if (size == 0) // critical error!!! cannot survive
         throw std::runtime_error("model file has bad block size field (size == 0)");
-    
+
     // data
     buffer data = buffer(b, size);
 
@@ -254,7 +254,7 @@ void block::load(buffer &b)
         a.load(data);
     for (auto &dm : damage_models)
         dm.load(data);
-    
+
     if (!data.eof() && triangles_mult_7)
     {
         // unknown end of block

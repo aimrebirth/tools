@@ -126,7 +126,7 @@ struct damage_model
     uint32_t n_triangles;
     std::vector<vertex> vertices;
     std::vector<uint16_t> triangles;
-        
+
     virtual void load(buffer &b);
 };
 
@@ -159,11 +159,11 @@ struct block
 {
     // header
     BlockType type;
-    char name[0x20];
-    char tex_mask[0x20];
-    char tex_spec[0x20];
-    char tex3[0x20];
-    char tex4[0x20];
+    std::string name;
+    std::string tex_mask;
+    std::string tex_spec;
+    std::string tex3;
+    std::string tex4;
     union // LODs
     {
         struct

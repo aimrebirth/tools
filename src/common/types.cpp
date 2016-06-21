@@ -22,27 +22,27 @@ GameType gameType = GameType::Aim2;
 
 void weather::load(buffer &b)
 {
-    READ(b, name);
-    READ(b, unk0);
+    READ_STRING(b, name);
+    READ_STRING(b, unk0);
     READ(b, unk1);
     READ(b, smoke_1);
     READ(b, smoke_3);
     READ(b, smokeType);
     READ(b, unk2);
-    READ(b, cloud_layer1);
-    READ(b, cloud_layer2);
+    READ_STRING(b, cloud_layer1);
+    READ_STRING(b, cloud_layer2);
     READ(b, cloud_layer1_speed);
     READ(b, cloud_layer2_speed);
     READ(b, cloud_layer1_direction);
     READ(b, cloud_layer2_direction);
-    READ(b, sun);
+    READ_STRING(b, sun);
     READ(b, general_color);
     READ(b, sun_color);
     READ(b, moon_color);
-    READ(b, moon);
+    READ_STRING(b, moon);
     READ(b, probability);
-    READ(b, day_night_gradient_name);
-    READ(b, dawn_dusk_gradient_name);
+    READ_STRING(b, day_night_gradient_name);
+    READ_STRING(b, dawn_dusk_gradient_name);
     READ(b, dawn_dusk_color);
     READ(b, effects);
     READ(b, smoke_2);
@@ -64,12 +64,12 @@ void weather_group::load(buffer &b)
 void water::load(buffer &b)
 {
     READ(b, unk0);
-    READ(b, name1);
+    READ_STRING(b, name1);
     READ(b, unk1);
     READ(b, unk2);
     READ(b, unk3);
     READ(b, unk4);
-    READ(b, name2);
+    READ_STRING(b, name2);
     READ(b, unk5);
 }
 

@@ -25,6 +25,13 @@
 
 #define READ(b, var) b.read(&var)
 #define READ_N(b, var, sz) b.read(&var, sz)
+
+#define READ_STRING(b, var) var = b.read_string()
+#define READ_STRING_N(b, var, sz) var = b.read_string(sz)
+
+#define READ_WSTRING(b, var) var = b.read_wstring()
+#define READ_WSTRING_N(b, var, sz) var = b.read_wstring(sz)
+
 #define WRITE(b, var) b.write(&var)
 
 std::string version();
@@ -50,6 +57,8 @@ public:
     {
         return _read(dst, size * sizeof(T), 0);
     }
+    std::string read_string(uint32_t blocksize = 0x20) const;
+    std::wstring read_wstring(uint32_t blocksize = 0x20) const;
     template <typename T>
     uint32_t readfrom(T *dst, uint32_t size, uint32_t offset) const
     {
