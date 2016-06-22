@@ -42,7 +42,7 @@ struct table
     std::string name;
     uint32_t unk4;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct field
@@ -52,7 +52,7 @@ struct field
     std::string name;
     FieldType type;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct tab
@@ -63,7 +63,7 @@ struct tab
     map<uint32_t, table> tables;
     map<uint32_t, field> fields;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct field_value
@@ -84,7 +84,7 @@ struct value
     uint32_t data_size;
     vector<field_value> fields;
 
-    void load_index(buffer &b);
+    void load_index(const buffer &b);
     void load_fields(const tab &tab, buffer &b);
 };
 
@@ -95,5 +95,5 @@ struct db
     tab t;
     vector<value> values;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };

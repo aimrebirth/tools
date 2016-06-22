@@ -69,8 +69,8 @@ struct Segment
     uint32_t n_objects = 0;
 
     virtual ~Segment(){}
-    static Segment *create_segment(buffer &b);
-    virtual void load(buffer &b) = 0;
+    static Segment *create_segment(const buffer &b);
+    virtual void load(const buffer &b) = 0;
 };
 
 template <class T>
@@ -78,7 +78,7 @@ struct SegmentObjects : public Segment
 {
     std::vector<T*> objects;
 
-    virtual void load(buffer &b)
+    virtual void load(const buffer &b)
     {
         for (int i = 0; i < n_objects; i++)
         {
@@ -91,10 +91,10 @@ struct SegmentObjects : public Segment
 
 struct Common
 {
-    Vector4 m_rotate_z[3];
-    Vector4 position;
+    vector4 m_rotate_z[3];
+    vector4 position;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ(b, m_rotate_z);
         READ(b, position);
@@ -106,7 +106,7 @@ struct MapObject : public Common
     std::string name1;
     std::string name2;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         Common::load(b);
 
@@ -120,7 +120,7 @@ struct MapObjectWithArray : public MapObject
     uint32_t len = 0;
     std::vector<uint32_t> unk0;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         MapObject::load(b);
 
@@ -136,7 +136,7 @@ struct Sound : public Common
     uint32_t unk1[11];
     char name1[0x14];
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         Common::load(b);
 
@@ -162,15 +162,14 @@ KNOWN_OBJECT(Tower);
 KNOWN_OBJECT(SoundZone);
 
 #define UNKNOWN_OBJECT(name) \
-    struct name : public MapObject { void load(buffer &b){ int pos = b.index(); assert(false); } }
+    struct name : public MapObject { void load(const buffer &b){ int pos = b.index(); assert(false); } }
 
 UNKNOWN_OBJECT(unk0);
 UNKNOWN_OBJECT(unk1);
 
 struct Objects
 {
-    uint32_t n_segments = 0;
     std::vector<Segment *> segments;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };

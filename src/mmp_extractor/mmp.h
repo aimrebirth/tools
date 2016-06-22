@@ -41,21 +41,21 @@ struct header_segment
     uint32_t unk0;
     uint32_t len;
 
-    virtual void load(buffer &b) = 0;
+    virtual void load(const buffer &b) = 0;
 };
 
 struct water_segment : public header_segment
 {
     water_group wg;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct weather_segment : public header_segment
 {
     weather_group wg;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct header
@@ -69,10 +69,10 @@ struct header
     std::string name;
     std::vector<header_segment*> segments;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 
 private:
-    header_segment *create_segment(buffer &b);
+    header_segment *create_segment(const buffer &b);
 };
 
 struct segment
@@ -139,7 +139,7 @@ struct segment
     description desc;
     data d;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct mmp
@@ -164,7 +164,7 @@ struct mmp
     mat<uint32_t> texmap_colored;
     mat<uint32_t> colormap;
 
-    void load(buffer &b);
+    void load(const buffer &b);
     void load(const std::string &filename);
     void loadTextureNames(const std::string &filename);
 

@@ -48,7 +48,7 @@ struct MechGroup
     std::vector<std::string> configs;
     char unk100;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, name);
         READ_STRING(b, org);
@@ -82,16 +82,17 @@ struct MechGroup
 
 struct MechGroups
 {
-    uint32_t length = 0;
-    uint32_t n = 0;
     char prefix[0x30];
+    std::vector<MechGroup> mechGroups;
 
-    std::vector<MechGroup> mgs;
-
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         if (gameType == GameType::Aim2)
+        {
+            uint32_t length = 0;
             READ(b, length);
+        }
+        uint32_t n = 0;
         READ(b, n);
         READ(b, prefix);
 
@@ -99,28 +100,28 @@ struct MechGroups
         {
             MechGroup mg;
             mg.load(b);
-            mgs.push_back(mg);
+            mechGroups.push_back(mg);
         }
     }
 };
 
 struct MapGoods
 {
-    uint32_t length = 0;
     uint32_t unk2 = 0;
     uint32_t unk3 = 0;
-    uint32_t n = 0;
 
     std::vector<BuildingGoods> bgs;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
+        uint32_t length = 0;
         READ(b, length);
         READ(b, unk2);
         if (gameType != GameType::Aim2)
             READ(b, unk3);
-        READ(b, n);
 
+        uint32_t n = 0;
+        READ(b, n);
         for (int i = 0; i < n; i++)
         {
             BuildingGoods bg;
@@ -139,7 +140,7 @@ struct MapSound
     uint32_t unk2 = 0;
     float unk3[4];
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, name);
         READ(b, unk1);
@@ -150,38 +151,12 @@ struct MapSound
 
 struct MapSounds
 {
-    uint32_t n = 0;
     std::vector<MapSound> sounds;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
-        READ(b, n);
-        for (int i = 0; i < n; i++)
-        {
-            MapSound s;
-            s.load(b);
-            sounds.push_back(s);
-        }
+        b.read_vector(sounds);
     }
-};
-
-struct ModificatorMask
-{
-    enum class ItemType : uint8_t
-    {
-        Glider = 1,
-        Weapon,
-        Reactor,
-        Engine,
-        EnergyShield
-    };
-
-    uint8_t fight:4;
-    uint8_t trade:4;
-    uint8_t courier:4;
-    ItemType type:4;
-
-    uint16_t:16;
 };
 
 struct Price
@@ -201,7 +176,7 @@ struct Price
     float unk2 = 0.0f; // count ?
     float probability; // of appearence
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, tov_name);
         READ(b, type);
@@ -217,17 +192,10 @@ struct BuildingPrice
     std::string name;
     std::vector<Price> prices;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, name);
-        uint32_t n_tov = 0;
-        READ(b, n_tov);
-        for (int i = 0; i < n_tov; i++)
-        {
-            Price s;
-            s.load(b);
-            prices.push_back(s);
-        }
+        b.read_vector(prices);
     }
 };
 
@@ -236,35 +204,21 @@ struct BuildingPrices
     std::vector<Price> prices;
     std::vector<BuildingPrice> buildingPrices;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
-        uint32_t n_tov = 0;
-        READ(b, n_tov);
-        for (int i = 0; i < n_tov; i++)
-        {
-            Price s;
-            s.load(b);
-            prices.push_back(s);
-        }
-        uint32_t n_bases = 0;
-        READ(b, n_bases);
-        for (int i = 0; i < n_bases; i++)
-        {
-            BuildingPrice s;
-            s.load(b);
-            buildingPrices.push_back(s);
-        }
+        b.read_vector(prices);
+        b.read_vector(buildingPrices);
     }
 };
 
 struct Prices
 {
-    uint32_t len = 0;
     uint32_t unk0 = 0;
     BuildingPrices buildingPrices;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
+        uint32_t len = 0;
         READ(b, len);
         READ(b, unk0);
         buildingPrices.load(b);

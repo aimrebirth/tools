@@ -37,7 +37,7 @@ struct vector3
     float z = 0;
 };
 
-struct Vector4
+struct vector4
 {
     float x = 0;
     float y = 0;
@@ -100,7 +100,7 @@ struct weather
     uint32_t slider_1;
     float unk8[11];
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct weather_group
@@ -109,7 +109,7 @@ struct weather_group
     char name[0xA0];
     std::vector<weather> segments;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct water
@@ -123,14 +123,14 @@ struct water
     std::string name2;
     uint32_t unk5[16];
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct water_group
 {
     std::vector<water> segments;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct Good
@@ -143,7 +143,7 @@ struct Good
     float unk2_1[2];
     uint32_t unk2_2[2];
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, name);
         if (gameType == GameType::Aim1)
@@ -168,7 +168,7 @@ struct BuildingGoods
 
     std::vector<Good> goods;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, name);
         READ(b, n);
@@ -187,13 +187,10 @@ struct MapMusic
     std::string name1;
     std::string name2;
 
-    uint32_t n1 = 0;
     std::vector<std::string> names1;
-
-    uint32_t n2 = 0;
     std::vector<std::string> names2;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, name1);
         READ_STRING(b, name2);
@@ -204,9 +201,11 @@ struct MapMusic
                 v.push_back(b.read_string());
         };
 
+        uint32_t n1 = 0;
         READ(b, n1);
         read_values(names1, n1);
 
+        uint32_t n2 = 0;
         READ(b, n2);
         read_values(names2, n2);
     }
@@ -217,7 +216,7 @@ struct OrganizationConfig
     uint32_t n_configs = 0;
     std::vector<std::string> configs;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ(b, n_configs);
         configs.resize(n_configs, std::string(0x20, 0));
@@ -233,7 +232,7 @@ struct Organization
     char unk1[0xE0];
     OrganizationConfig configs[3];
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ(b, unk0);
         READ_STRING(b, name);
@@ -245,13 +244,13 @@ struct Organization
 
 struct Organizations
 {
-    uint32_t len = 0;
-    uint32_t n = 0;
     std::vector<Organization> organizations;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
+        uint32_t len = 0;
         READ(b, len);
+        uint32_t n = 0;
         READ(b, n);
         for (int i = 0; i < n; i++)
         {
@@ -268,7 +267,7 @@ struct OrganizationBase
     std::string org_name;
     uint32_t unk0 = 0;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ_STRING(b, base_name);
         READ_STRING(b, org_name);
@@ -278,11 +277,11 @@ struct OrganizationBase
 
 struct OrganizationBases
 {
-    uint32_t n = 0;
     std::vector<OrganizationBase> organizationBases;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
+        uint32_t n = 0;
         READ(b, n);
         for (int i = 0; i < n; i++)
         {
@@ -291,4 +290,23 @@ struct OrganizationBases
             organizationBases.push_back(s);
         }
     }
+};
+
+struct ModificatorMask
+{
+    enum class ItemType : uint8_t
+    {
+        Glider = 1,
+        Weapon,
+        Reactor,
+        Engine,
+        EnergyShield
+    };
+
+    uint8_t fight : 4;
+    uint8_t trade : 4;
+    uint8_t courier : 4;
+    ItemType type : 4;
+
+    uint16_t : 16;
 };

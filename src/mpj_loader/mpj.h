@@ -50,8 +50,8 @@ struct segment
 
     virtual ~segment() {}
 
-    static segment *create_segment(buffer &b);
-    virtual void load(buffer &b) = 0;
+    static segment *create_segment(const buffer &b);
+    virtual void load(const buffer &b) = 0;
 };
 
 struct map_data : public segment
@@ -60,7 +60,7 @@ struct map_data : public segment
     std::vector<uint32_t> unk2;
     std::vector<uint32_t> unk3;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct surface : public segment
@@ -72,42 +72,42 @@ struct surface : public segment
     };
     std::vector<value> unk1;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct weather_data : public segment
 {
     weather_group wg;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct objects_data : public segment
 {
     Objects objects;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct segment7 : public segment
 {
     std::vector<uint32_t> data;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct water_data : public segment
 {
     water_group wg;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct segment9 : public segment
 {
     std::vector<uint32_t> data;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct building_goods : public segment
@@ -117,7 +117,7 @@ struct building_goods : public segment
         BuildingGoods bg;
         uint32_t unk0;
 
-        void load(buffer &b)
+        void load(const buffer &b)
         {
             bg.load(b);
             READ(b, unk0);
@@ -127,7 +127,7 @@ struct building_goods : public segment
     uint32_t n;
     std::vector<bg_internal> bgs;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct map_music : public segment
@@ -135,7 +135,7 @@ struct map_music : public segment
     std::vector<MapMusic> mms;
     uint32_t unk1;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct organizations : public segment
@@ -144,7 +144,7 @@ struct organizations : public segment
     std::vector<Organization> orgs;
     OrganizationBases bases;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct gliders_n_goods : public segment
@@ -154,7 +154,7 @@ struct gliders_n_goods : public segment
         std::string name;
         int unk0[3];
 
-        void load(buffer &b)
+        void load(const buffer &b)
         {
             READ_STRING(b, name);
             READ(b, unk0);
@@ -166,7 +166,7 @@ struct gliders_n_goods : public segment
         uint32_t n_goods;
         std::vector<Good> goods;
 
-        void load(buffer &b)
+        void load(const buffer &b)
         {
             READ(b, n_goods);
             goods.resize(n_goods);
@@ -181,7 +181,7 @@ struct gliders_n_goods : public segment
     uint32_t unk1;
     std::vector<Goods> goods;
 
-    virtual void load(buffer &b) override;
+    virtual void load(const buffer &b) override;
 };
 
 struct header
@@ -196,7 +196,7 @@ struct header
     char unk4[0x3F4];
     std::vector<segment*> segments;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };
 
 struct mpj
@@ -206,6 +206,6 @@ struct mpj
     //
     std::string filename;
 
-    void load(buffer &b);
+    void load(const buffer &b);
     void load(const std::string &filename);
 };

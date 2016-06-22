@@ -18,7 +18,7 @@
 
 #include "objects.h"
 
-Segment *Segment::create_segment(buffer &b)
+Segment *Segment::create_segment(const buffer &b)
 {
     ObjectType segment_type;
     READ(b, segment_type);
@@ -81,8 +81,9 @@ Segment *Segment::create_segment(buffer &b)
     return segment;
 }
 
-void Objects::load(buffer &b)
+void Objects::load(const buffer &b)
 {
+    uint32_t n_segments = 0;
     READ(b, n_segments);
 
     for (int s = 0; s < n_segments; s++)

@@ -22,17 +22,17 @@
 #include <fstream>
 #include <iomanip>
 
-void water_segment::load(buffer &b)
+void water_segment::load(const buffer &b)
 {
     wg.load(b);
 }
 
-void weather_segment::load(buffer &b)
+void weather_segment::load(const buffer &b)
 {
     wg.load(b);
 }
 
-header_segment *header::create_segment(buffer &b)
+header_segment *header::create_segment(const buffer &b)
 {
     HeaderSegmentType type;
     READ(b, type);
@@ -59,7 +59,7 @@ header_segment *header::create_segment(buffer &b)
     return segment;
 }
 
-void header::load(buffer &b)
+void header::load(const buffer &b)
 {
     READ(b, unk0);
     READ_WSTRING(b, name1);
@@ -78,7 +78,7 @@ void header::load(buffer &b)
     }
 }
 
-void segment::load(buffer &b)
+void segment::load(const buffer &b)
 {
     READ(b, desc);
     buffer b2(b);
@@ -86,7 +86,7 @@ void segment::load(buffer &b)
     READ(b2, d);
 }
 
-void mmp::load(buffer &b)
+void mmp::load(const buffer &b)
 {
     h.load(b);
     xsegs = (h.width - 1) / 64;

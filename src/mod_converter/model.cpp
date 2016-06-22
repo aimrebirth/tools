@@ -36,7 +36,7 @@ std::string Vector4::print() const
     return s;
 }
 
-void vertex::load(buffer &b, uint32_t flags)
+void vertex::load(const buffer &b, uint32_t flags)
 {
     READ(b, vX);
     READ(b, vZ);
@@ -74,7 +74,7 @@ std::string vertex::printTex() const
     return s;
 }
 
-void damage_model::load(buffer &b)
+void damage_model::load(const buffer &b)
 {
     READ(b, n_polygons);
     polygons.resize(n_polygons);
@@ -94,7 +94,7 @@ void damage_model::load(buffer &b)
         READ(b, t);
 }
 
-void animation::load(buffer &b)
+void animation::load(const buffer &b)
 {
     READ(b, type);
     READ(b, name);
@@ -105,14 +105,14 @@ void animation::load(buffer &b)
         s.loadData(b);
 }
 
-void animation::segment::loadHeader(buffer &b)
+void animation::segment::loadHeader(const buffer &b)
 {
     READ(b, n);
     READ(b, unk0);
     READ(b, unk1);
 }
 
-void animation::segment::loadData(buffer &b)
+void animation::segment::loadData(const buffer &b)
 {
     if (n == 0)
         return;
@@ -190,7 +190,7 @@ std::string block::printObj(const std::string &mtl_name) const
     return s;
 }
 
-void block::load(buffer &b)
+void block::load(const buffer &b)
 {
     // header
     READ(b, type);
@@ -267,7 +267,7 @@ void block::load(buffer &b)
         throw std::logic_error("extraction error: block #" + std::string(name));
 }
 
-void model::load(buffer &b)
+void model::load(const buffer &b)
 {
     READ(b, n_blocks);
     if (n_blocks > 1000) // probably bad file

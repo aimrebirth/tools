@@ -20,7 +20,7 @@
 
 GameType gameType = GameType::Aim2;
 
-void weather::load(buffer &b)
+void weather::load(const buffer &b)
 {
     READ_STRING(b, name);
     READ_STRING(b, unk0);
@@ -52,7 +52,7 @@ void weather::load(buffer &b)
     READ(b, unk8);
 }
 
-void weather_group::load(buffer &b)
+void weather_group::load(const buffer &b)
 {
     READ(b, n_segs);
     segments.resize(n_segs);
@@ -61,7 +61,7 @@ void weather_group::load(buffer &b)
         s.load(b);
 }
 
-void water::load(buffer &b)
+void water::load(const buffer &b)
 {
     READ(b, unk0);
     READ_STRING(b, name1);
@@ -73,7 +73,7 @@ void water::load(buffer &b)
     READ(b, unk5);
 }
 
-void water_group::load(buffer &b)
+void water_group::load(const buffer &b)
 {
     while (!b.eof())
     {

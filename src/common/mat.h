@@ -57,6 +57,7 @@ public:
     int getWidth() const { return width; }
     int getHeight() const { return height; }
     int size() const { return width * height; }
+    int getBytesLength() const { return size() * sizeof(T); }
     int getPos(const T *const elem) const { return elem - &data[0]; }
     const std::vector<T> &getData() const { return data; }
     std::vector<T> &getData() { return data; }
@@ -101,7 +102,7 @@ void write_mat_tga(const std::string &filename, const mat<T> &m)
     FILE *f = fopen(filename.c_str(), "wb");
     if (f == nullptr)
         return;
-    
+
     tga t;
     t.width = m.getWidth();
     t.height = m.getHeight();
@@ -109,7 +110,7 @@ void write_mat_tga(const std::string &filename, const mat<T> &m)
     // header
     fwrite(&t, sizeof(tga), 1, f);
     fwrite(t.label(), t.idlength, 1, f);
-    
+
     // data
     fwrite(&m(0, 0), m.size() * sizeof(T), 1, f);
     fclose(f);

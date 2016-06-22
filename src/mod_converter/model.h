@@ -77,7 +77,7 @@ struct vertex
     float t1;
     float t2;
 
-    void load(buffer &b, uint32_t flags);
+    void load(const buffer &b, uint32_t flags);
 
     std::string printVertex() const;
     std::string printNormal() const;
@@ -103,15 +103,15 @@ struct animation
         std::vector<triangle> triangles;
         std::vector<unk_float6> unk2;
 
-        void loadHeader(buffer &b);
-        void loadData(buffer &b);
+        void loadHeader(const buffer &b);
+        void loadData(const buffer &b);
     };
 
     uint32_t type;
     char name[0xC];
     segment segments[4];
 
-    virtual void load(buffer &b);
+    virtual void load(const buffer &b);
 };
 
 struct damage_model
@@ -127,7 +127,7 @@ struct damage_model
     std::vector<vertex> vertices;
     std::vector<uint16_t> triangles;
 
-    virtual void load(buffer &b);
+    virtual void load(const buffer &b);
 };
 
 struct material
@@ -212,7 +212,7 @@ struct block
     std::vector<animation> animations;
     std::vector<damage_model> damage_models;
 
-    void load(buffer &b);
+    void load(const buffer &b);
     std::string printMtl(const std::string &mtl_name) const;
     std::string printObj(const std::string &mtl_name) const;
 };
@@ -223,5 +223,5 @@ struct model
     char header[0x40];
     std::vector<block> blocks;
 
-    void load(buffer &b);
+    void load(const buffer &b);
 };

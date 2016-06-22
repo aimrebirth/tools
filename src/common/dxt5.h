@@ -47,7 +47,7 @@ struct dxt5_block
     };
 
     dxt5_block() {}
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ(b, alpha_part);
         READ(b, color_part);
@@ -114,13 +114,13 @@ struct dxt5
     uint32_t height;
     std::vector<dxt5_block> blocks;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ(b, width);
         READ(b, height);
         load_blocks(b);
     }
-    void load_blocks(buffer &b)
+    void load_blocks(const buffer &b)
     {
         blocks.resize(width * height / 16);
         for (auto &d : blocks)

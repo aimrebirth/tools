@@ -81,7 +81,7 @@ buffer::buffer(const std::vector<uint8_t> &buf, uint32_t data_offset)
     end_ = index_ + size_;
 }
 
-buffer::buffer(buffer &rhs, uint32_t size)
+buffer::buffer(const buffer &rhs, uint32_t size)
     : buf_(rhs.buf_)
 {
     index_ = rhs.index_;
@@ -92,7 +92,7 @@ buffer::buffer(buffer &rhs, uint32_t size)
     rhs.skip(size);
 }
 
-buffer::buffer(buffer &rhs, uint32_t size, uint32_t offset)
+buffer::buffer(const buffer &rhs, uint32_t size, uint32_t offset)
     : buf_(rhs.buf_)
 {
     index_ = offset;

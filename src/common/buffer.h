@@ -32,6 +32,8 @@
 #define READ_WSTRING(b, var) var = b.read_wstring()
 #define READ_WSTRING_N(b, var, sz) var = b.read_wstring(sz)
 
+#define READ_PASCAL_STRING(b, var) var = b.read_pascal_string()
+
 #define WRITE(b, var) b.write(&var)
 
 std::string version();
@@ -44,18 +46,13 @@ public:
     buffer();
     buffer(size_t size);
     buffer(const std::vector<uint8_t> &buf, uint32_t data_offset = 0);
-    buffer(buffer &rhs, uint32_t size);
-    buffer(buffer &rhs, uint32_t size, uint32_t offset);
+    buffer(const buffer &rhs, uint32_t size);
+    buffer(const buffer &rhs, uint32_t size, uint32_t offset);
 
     template <typename T>
-    uint32_t read(T *dst) const
+    uint32_t read(T *dst, uint32_t size = 1) const
     {
-        return _read(dst, sizeof(T), 0);
-    }
-    template <typename T>
-    uint32_t read(T *dst, uint32_t size) const
-    {
-        return _read(dst, size * sizeof(T), 0);
+        return _read((void *)dst, size * sizeof(T), 0);
     }
     std::string read_string(uint32_t blocksize = 0x20) const;
     std::wstring read_wstring(uint32_t blocksize = 0x20) const;
@@ -81,7 +78,37 @@ public:
         return _write(src, sizeof(T));
     }
 
-    void seek(uint32_t size) const;
+    template <class T, class SizeType = uint32_t>
+    void read_vector(std::vector<T> &v, int n) const
+    {
+        v.clear();
+        v.reserve(n);
+        for (int i = 0; i < n; i++)
+        {
+            T t;
+            t.load(*this);
+            v.push_back(t);
+        }
+    }
+
+    template <class T, class SizeType = uint32_t>
+    void read_vector(std::vector<T> &v) const
+    {
+        SizeType n = 0;
+        read(&n);
+        read_vector<T, SizeType>(v, n);
+    }
+
+    std::string read_pascal_string() const
+    {
+        uint32_t n = 0;
+        read(&n);
+        std::string s(n, 0);
+        read(s.data(), n);
+        return s;
+    }
+
+    void seek(uint32_t size) const; // setpos
     void skip(int n) const;
     bool eof() const;
     bool check(int index) const;

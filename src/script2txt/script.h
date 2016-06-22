@@ -36,7 +36,7 @@ struct script
     //
     std::vector<std::string> lines;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ(b, file_size);
         READ(b, unk0);

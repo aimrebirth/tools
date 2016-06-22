@@ -23,7 +23,7 @@
 #include <fstream>
 #include <iomanip>
 
-segment *segment::create_segment(buffer &b)
+segment *segment::create_segment(const buffer &b)
 {
     SegmentType type;
     READ(b, type);
@@ -79,7 +79,7 @@ segment *segment::create_segment(buffer &b)
     return segment;
 }
 
-void map_data::load(buffer &b)
+void map_data::load(const buffer &b)
 {
     auto sz = b.size();
     assert(sz % 3 == 0);
@@ -94,7 +94,7 @@ void map_data::load(buffer &b)
 #undef READ_SEG
 }
 
-void surface::load(buffer &b)
+void surface::load(const buffer &b)
 {
     while (!b.eof())
     {
@@ -105,36 +105,36 @@ void surface::load(buffer &b)
     }
 }
 
-void weather_data::load(buffer &b)
+void weather_data::load(const buffer &b)
 {
     wg.load(b);
 }
 
-void objects_data::load(buffer &b)
+void objects_data::load(const buffer &b)
 {
     objects.load(b);
 }
 
-void segment7::load(buffer &b)
+void segment7::load(const buffer &b)
 {
     auto n = b.size() / sizeof(decltype(data)::value_type);
     data.resize(n);
     READ_N(b, data[0], n);
 }
 
-void water_data::load(buffer &b)
+void water_data::load(const buffer &b)
 {
     wg.load(b);
 }
 
-void segment9::load(buffer &b)
+void segment9::load(const buffer &b)
 {
     auto n = b.size() / sizeof(decltype(data)::value_type);
     data.resize(n);
     READ_N(b, data[0], n);
 }
 
-void building_goods::load(buffer &b)
+void building_goods::load(const buffer &b)
 {
     READ(b, unk1);
     READ(b, n);
@@ -143,7 +143,7 @@ void building_goods::load(buffer &b)
         bg.load(b);
 }
 
-void map_music::load(buffer &b)
+void map_music::load(const buffer &b)
 {
     while (!b.eof())
     {
@@ -154,7 +154,7 @@ void map_music::load(buffer &b)
     }
 }
 
-void organizations::load(buffer &b)
+void organizations::load(const buffer &b)
 {
     READ(b, n);
     orgs.resize(n);
@@ -163,7 +163,7 @@ void organizations::load(buffer &b)
     bases.load(b);
 }
 
-void gliders_n_goods::load(buffer &b)
+void gliders_n_goods::load(const buffer &b)
 {
     READ(b, n_good_groups);
     READ(b, n_gliders);
@@ -176,7 +176,7 @@ void gliders_n_goods::load(buffer &b)
         g.load(b);
 }
 
-void header::load(buffer &b)
+void header::load(const buffer &b)
 {
     READ(b, magic);
     if (memcmp(magic, "MPRJ", 4) != 0)
@@ -212,7 +212,7 @@ void header::load(buffer &b)
     }
 }
 
-void mpj::load(buffer &b)
+void mpj::load(const buffer &b)
 {
     h.load(b);
 }

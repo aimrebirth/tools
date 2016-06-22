@@ -36,14 +36,14 @@ string getSqlType(FieldType type)
     return "";
 }
 
-void table::load(buffer &b)
+void table::load(const buffer &b)
 {
     READ(b, id);
     READ_STRING(b, name);
     READ(b, unk4);
 }
 
-void field::load(buffer &b)
+void field::load(const buffer &b)
 {
     READ(b, table_id);
     READ(b, id);
@@ -51,7 +51,7 @@ void field::load(buffer &b)
     READ(b, type);
 }
 
-void tab::load(buffer &b)
+void tab::load(const buffer &b)
 {
     READ(b, number_of_tables);
     READ(b, number_of_fields);
@@ -73,7 +73,7 @@ void tab::load(buffer &b)
     }
 }
 
-void value::load_index(buffer &b)
+void value::load_index(const buffer &b)
 {
     READ(b, table_id);
     READ_STRING(b, name);
@@ -122,7 +122,7 @@ void value::load_fields(const tab &tab, buffer &b)
     }
 }
 
-void db::load(buffer &b)
+void db::load(const buffer &b)
 {
     READ(b, number_of_values);
 

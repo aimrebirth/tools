@@ -54,7 +54,7 @@ struct storage
     OrganizationBases orgsBases;
     Prices prices;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         objects.load(b);
         mechGroups.load(b);

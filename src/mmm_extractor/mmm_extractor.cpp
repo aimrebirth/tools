@@ -32,7 +32,7 @@ struct mmm
     uint32_t unk2;
     dxt5 data;
 
-    void load(buffer &b)
+    void load(const buffer &b)
     {
         READ(b, unk1);
         READ(b, unk2);
