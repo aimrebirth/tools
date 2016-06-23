@@ -37,6 +37,17 @@ struct int_variable
     }
 };
 
+template <class T = uint32_t>
+struct single_int
+{
+    T val;
+
+    void load(const buffer &b)
+    {
+        READ(b, val);
+    }
+};
+
 struct single_string
 {
     std::string name;
@@ -381,8 +392,39 @@ struct mech_segment : public segment
         }
     };
 
+    struct ammo
+    {
+        std::string name;
+
+        void load(const buffer &b)
+        {
+            READ_STRING(b, name);
+        }
+    };
+
+    struct ammo_count
+    {
+        std::string name;
+        uint32_t count;
+
+        void load(const buffer &b)
+        {
+            READ_STRING(b, name);
+            READ(b, count);
+        }
+    };
+
     struct glider
     {
+        enum class unk_flag : uint32_t
+        {
+            unk0 = 0b0'0001,
+            unk1 = 0b0'0010,
+            unk2 = 0b0'0100,
+            unk3 = 0b0'1000,
+            unk4 = 0b1'0000,
+        };
+
         moddable_equipment glider_;
         moddable_equipment weapon1;
         moddable_equipment weapon2;
@@ -394,9 +436,14 @@ struct mech_segment : public segment
         moddable_equipment armor;
 
         uint32_t unk0;
-        uint32_t unk1;
-        std::string unk2; // fast bomb
-        uint32_t unk3;
+        uint32_t unk1 = 0;
+        unk_flag unk2;
+
+        std::vector<ammo> ammos;
+        std::vector<ammo> ammos1;
+        std::vector<ammo> ammos2;
+
+        unk_flag unk3;
 
         unk_equ ureactor1;
         unk_equ ureactor2;
@@ -406,11 +453,19 @@ struct mech_segment : public segment
         unk_equ uarmor;
 
         std::string unk4;
-        uint32_t unk5[3];
+        uint32_t unk5[2];
+
+        std::vector<ammo_count> ammos3;
 
         float money;
 
         std::vector<hold_item> items;
+
+        uint32_t unk6[28][3];
+        float unk7 = 0;
+        float unk8;
+        uint32_t unk9;
+        uint8_t unk10;
 
         void load(const buffer &b)
         {
@@ -426,10 +481,45 @@ struct mech_segment : public segment
 
             // ?
             READ(b, unk0);
-            READ(b, unk1);
-            if (unk0)
-                READ_STRING(b, unk2);
-            READ(b, unk3);
+            if (unk0 == 0)
+                READ(b, unk1);
+            READ(b, unk2);
+
+            if (unk0 == 0)
+                b.read_vector(ammos, unk1);
+
+            b.read_vector(ammos1, unk0);
+
+            if (unk0 != 0 || unk1 != 0)
+            {
+                READ(b, unk3);
+                //if (unk3 != 0 && unk3 != 10)
+                //if ((uint32_t)unk3 & (uint32_t)unk_flag::unk1)
+                if (unk0 > 0)
+                {
+                    //int n = ((uint32_t)unk3 & (uint32_t)unk_flag::unk2) ? 3 : 2;
+                    //uint32_t n = 3;
+                    //if ((uint32_t)unk3 & (uint32_t)unk_flag::unk3)
+                    //    n = 2;
+                    uint32_t n;
+                    b.skip(-8);
+                    READ(b, n);
+                    b.skip(4);
+                    b.read_vector(ammos2, n);
+                    std::vector<single_int<>> v;
+                    b.read_vector(v, n);
+                }
+                //else if (unk3 == 10)
+                //else if ((uint32_t)unk3 & (uint32_t)unk_flag::unk3 ||
+                //    (uint32_t)unk3 & (uint32_t)unk_flag::unk2)
+                //else if (unk1 != 0)
+                if (unk1 > 0)
+                {
+                    unk1--;
+                    while (unk1--)
+                        READ(b, unk3);
+                }
+            }
 
             ureactor1.load(b);
             ureactor2.load(b);
@@ -441,15 +531,36 @@ struct mech_segment : public segment
             READ_STRING(b, unk4);
             READ(b, unk5);
 
+            b.read_vector(ammos3);
+
             READ(b, money);
 
             b.read_vector(items);
 
-            if (unk0)
-                b.skip(0x15D);
-            else
-                b.skip(0x150);
+            READ(b, unk6);
+            //if (unk0 == 1)
+            //if ((uint32_t)unk2 == 15)
+            if ((uint32_t)unk3 == 0)
+            {
+                READ(b, unk7);
+                if (unk7 != 0)
+                {
+                    b.skip(-4);
+                    return;
+                }
+                READ(b, unk8);
+                READ(b, unk9);
+                READ(b, unk10);
+            }
         }
+    };
+
+    enum class MechFlags : uint32_t
+    {
+        unk0    = 0x1,
+        unk1    = 0x0100,
+        Dead    = 0x010000,
+        Dead2   = 0x01000000,
     };
 
     struct mech
@@ -460,10 +571,17 @@ struct mech_segment : public segment
         std::string org;
         std::string building;
 
-        //Common pos;
-        uint8_t unk2;
-        uint32_t unk3;
+        MechFlags flags;
+        uint8_t unk11;
+        float unk12[3];
+        uint32_t unk13[3];
+        uint8_t unk14;
+        uint32_t unk15;
+        uint32_t unk15_1;
+        uint32_t unk16;
+
         std::vector<equipment> equipments;
+
         uint32_t unk4[8];
         glider g;
 
@@ -478,12 +596,35 @@ struct mech_segment : public segment
             READ_STRING(b, org);
             READ_STRING(b, building);
 
-                //READ(b, pos);
-            READ(b, unk2);
-            READ(b, unk3);
-            b.read_vector(equipments);
-            READ(b, unk4);
-            g.load(b);
+            READ(b, flags);
+            READ(b, unk11);
+            READ(b, unk12);
+            READ(b, unk13);
+            READ(b, unk14);
+
+            auto f = (uint32_t)flags;
+            if (f == 0x01000101 ||
+                f == 0x00000001 ||
+                f == 0x00000101 ||
+                f == 0x01000001)
+            {
+                READ(b, unk15);
+
+                if (unk14 == 0)
+                    return;
+
+                READ(b, unk15_1);
+
+                b.read_vector(equipments);
+
+                READ(b, unk4);
+
+                g.load(b);
+            }
+            else
+            {
+                READ(b, unk16);
+            }
         }
     };
 
@@ -651,18 +792,25 @@ struct tradeeqp_segment : public segment
 // todo
 struct objects_segment : public segment
 {
-    struct object
+    struct base
     {
+        std::string name;
+        uint32_t unk0[26];
+        uint16_t unk1;
+
         void load(const buffer &b)
         {
+            READ_STRING(b, name);
+            READ(b, unk0);
+            READ(b, unk1);
         }
     };
 
-    std::vector<object> objects;
+    std::vector<base> bases;
 
     void load(const buffer &b)
     {
-        b.read_vector(objects);
+        b.read_vector(bases);
     }
 };
 
@@ -690,6 +838,7 @@ struct mms_c_config_segment : public segment
 
     void load(const buffer &b)
     {
+        // todo: insert config read from mech
         b.read_vector(objects);
     }
 };
@@ -717,7 +866,6 @@ struct mainmech_segment : public segment
 struct segment_desc
 {
     std::string name;
-    uint32_t len2;
     segment *seg = nullptr;
 
     void load(const buffer &b)
@@ -731,6 +879,7 @@ struct segment_desc
         READ(b, offset);
         uint32_t unk1;
         READ(b, unk1);
+        uint32_t len2;
         READ(b, len2);
 
         uint32_t start = b.index();
@@ -752,7 +901,7 @@ struct segment_desc
         //CASE("ENV", env_segment);
         //CASE("ORGREL", orgrel_segment);
         CASE("OTHERS", others_segment);
-        //CASE("MECH", mech_segment);
+        CASE("MECH", mech_segment);
         //CASE("GROUPS", groups_segment);
         CASE("ORGDATA", orgdata_segment);
         CASE("BUILDS", builds_segment);
@@ -760,7 +909,7 @@ struct segment_desc
         CASE("TRADEEQP", tradeeqp_segment);
         //CASE("OBJECTS", objects_segment);
         CASE("MMS_STATE", mms_state_segment);
-        //CASE("MMS_C_CONFIG", mms_c_config_segment);
+        //CASE("MMS_C_CONFIG", mms_c_config_segment); // (my) clan config
         CASE("MMS_WORLD_DATA", mms_world_data_segment);
         CASE("MAINMECH", mainmech_segment);
         DEFAULT
@@ -781,19 +930,20 @@ struct segment_desc
 struct save
 {
     uint32_t magick;
-    uint32_t unk0;
+    uint32_t version;
     std::vector<segment_desc> segments;
 
     void load(const buffer &b)
     {
         READ(b, magick);
-        READ(b, unk0);
+        READ(b, version);
 
         while (!b.eof())
         {
             segment_desc sd;
             sd.load(b);
-            segments.push_back(sd);
+            if (sd.seg)
+                segments.push_back(sd);
         }
     }
 };
