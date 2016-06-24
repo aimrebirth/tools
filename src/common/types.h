@@ -296,11 +296,11 @@ struct ModificatorMask
 {
     enum class ItemType : uint8_t
     {
-        Glider = 1,
-        Weapon,
-        Reactor,
-        Engine,
-        EnergyShield
+        Glider          = 1,
+        Weapon          = 2,
+        Reactor         = 3,
+        Engine          = 4,
+        EnergyShield    = 5,
     };
 
     uint8_t fight : 4;

@@ -77,6 +77,13 @@ public:
     {
         return _write(src, sizeof(T));
     }
+    uint32_t write(const std::string &s)
+    {
+        auto sz = s.size() + 1;
+        _write(s.c_str(), sz);
+        skip(0x20 - sz);
+        return 0x20;
+    }
 
     template <class T, class SizeType = uint32_t>
     void read_vector(std::vector<T> &v, int n) const
@@ -117,6 +124,8 @@ public:
     uint32_t index() const;
     uint32_t size() const;
     const std::vector<uint8_t> &buf() const;
+
+    const uint8_t *getPtr() const { return ptr; }
 
 private:
     std::shared_ptr<std::vector<uint8_t>> buf_;

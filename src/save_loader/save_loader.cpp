@@ -21,14 +21,6 @@
 
 #include "save.h"
 
-save read_save(const std::string &fn)
-{
-    buffer f(readFile(fn));
-    save s;
-    s.load(f);
-    return s;
-}
-
 int main(int argc, char *argv[])
 try
 {
@@ -37,7 +29,19 @@ try
         printf("Usage: %s file.sav\n", argv[0]);
         return 1;
     }
-    auto s = read_save(argv[1]);
+
+    //save_changes.mech_org = "ORG_PLAYER";
+    save_changes.money = 999999999.0f;
+    save_changes.upgrade_equ_for_player = true;
+
+    buffer f(readFile(argv[1]));
+    save_changes.out = buffer(f.buf());
+
+    save s;
+    s.load(f);
+
+    writeFile(argv[1], save_changes.out.buf());
+
     return 0;
 }
 catch (std::exception &e)

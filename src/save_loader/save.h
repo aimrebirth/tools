@@ -23,6 +23,49 @@
 #include <objects.h>
 #include <types.h>
 
+// possible save operations
+
+struct changes
+{
+    buffer out;
+
+    std::string mech_org;
+    float money = 0;
+    bool upgrade_equ_for_player = false;
+
+    void rewrite_mech_org(const buffer &b, std::string &org)
+    {
+        if (mech_org.empty())
+            return;
+
+        // setpos
+        out.seek(b.index());
+        out.skip(-0x20);
+        out.write(mech_org);
+
+        org = mech_org;
+    }
+
+    void rewrite_money(const buffer &b)
+    {
+        if (money == 0)
+            return;
+        out.seek(b.index());
+        out.skip(-4);
+        out.write(money);
+    }
+
+    void rewrite_upgrade_equ_for_player(const buffer &b, uint32_t value)
+    {
+        if (!upgrade_equ_for_player)
+            return;
+        out.seek(b.index());
+        out.skip(-4);
+        out.write(value);
+    }
+
+} save_changes;
+
 // common structs
 
 struct int_variable
@@ -321,7 +364,6 @@ struct others_segment : public segment
     }
 };
 
-// todo
 struct mech_segment : public segment
 {
     struct equipment
@@ -352,19 +394,19 @@ struct mech_segment : public segment
         }
     };
 
-    struct unk_equ
+    struct moddable_equipment2
     {
         uint8_t id;
         std::string name;
-        uint32_t unk0;
-        uint32_t unk1;
+        uint32_t unk0; // health?
+        ModificatorMask mask;
 
         void load(const buffer &b)
         {
             READ(b, id);
             READ_STRING(b, name);
             READ(b, unk0);
-            READ(b, unk1);
+            READ(b, mask);
         }
     };
 
@@ -414,147 +456,6 @@ struct mech_segment : public segment
         }
     };
 
-    struct glider
-    {
-        enum class unk_flag : uint32_t
-        {
-            unk0 = 0b0'0001,
-            unk1 = 0b0'0010,
-            unk2 = 0b0'0100,
-            unk3 = 0b0'1000,
-            unk4 = 0b1'0000,
-        };
-
-        moddable_equipment glider_;
-        moddable_equipment weapon1;
-        moddable_equipment weapon2;
-        moddable_equipment reactor1;
-        moddable_equipment reactor2;
-        moddable_equipment engine1;
-        moddable_equipment engine2;
-        moddable_equipment energy_shield;
-        moddable_equipment armor;
-
-        uint32_t unk0;
-        uint32_t unk1 = 0;
-        unk_flag unk2;
-
-        std::vector<ammo> ammos;
-        std::vector<ammo> ammos1;
-        std::vector<ammo> ammos2;
-
-        unk_flag unk3;
-
-        unk_equ ureactor1;
-        unk_equ ureactor2;
-        unk_equ uengine1;
-        unk_equ uengine2;
-        unk_equ uenergy_shield;
-        unk_equ uarmor;
-
-        std::string unk4;
-        uint32_t unk5[2];
-
-        std::vector<ammo_count> ammos3;
-
-        float money;
-
-        std::vector<hold_item> items;
-
-        uint32_t unk6[28][3];
-        float unk7 = 0;
-        float unk8;
-        uint32_t unk9;
-        uint8_t unk10;
-
-        void load(const buffer &b)
-        {
-            glider_.load(b);
-            weapon1.load(b);
-            weapon2.load(b);
-            reactor1.load(b);
-            reactor2.load(b);
-            engine1.load(b);
-            engine2.load(b);
-            energy_shield.load(b);
-            armor.load(b);
-
-            // ?
-            READ(b, unk0);
-            if (unk0 == 0)
-                READ(b, unk1);
-            READ(b, unk2);
-
-            if (unk0 == 0)
-                b.read_vector(ammos, unk1);
-
-            b.read_vector(ammos1, unk0);
-
-            if (unk0 != 0 || unk1 != 0)
-            {
-                READ(b, unk3);
-                //if (unk3 != 0 && unk3 != 10)
-                //if ((uint32_t)unk3 & (uint32_t)unk_flag::unk1)
-                if (unk0 > 0)
-                {
-                    //int n = ((uint32_t)unk3 & (uint32_t)unk_flag::unk2) ? 3 : 2;
-                    //uint32_t n = 3;
-                    //if ((uint32_t)unk3 & (uint32_t)unk_flag::unk3)
-                    //    n = 2;
-                    uint32_t n;
-                    b.skip(-8);
-                    READ(b, n);
-                    b.skip(4);
-                    b.read_vector(ammos2, n);
-                    std::vector<single_int<>> v;
-                    b.read_vector(v, n);
-                }
-                //else if (unk3 == 10)
-                //else if ((uint32_t)unk3 & (uint32_t)unk_flag::unk3 ||
-                //    (uint32_t)unk3 & (uint32_t)unk_flag::unk2)
-                //else if (unk1 != 0)
-                if (unk1 > 0)
-                {
-                    unk1--;
-                    while (unk1--)
-                        READ(b, unk3);
-                }
-            }
-
-            ureactor1.load(b);
-            ureactor2.load(b);
-            uengine1.load(b);
-            uengine2.load(b);
-            uenergy_shield.load(b);
-            uarmor.load(b);
-
-            READ_STRING(b, unk4);
-            READ(b, unk5);
-
-            b.read_vector(ammos3);
-
-            READ(b, money);
-
-            b.read_vector(items);
-
-            READ(b, unk6);
-            //if (unk0 == 1)
-            //if ((uint32_t)unk2 == 15)
-            if ((uint32_t)unk3 == 0)
-            {
-                READ(b, unk7);
-                if (unk7 != 0)
-                {
-                    b.skip(-4);
-                    return;
-                }
-                READ(b, unk8);
-                READ(b, unk9);
-                READ(b, unk10);
-            }
-        }
-    };
-
     enum class MechFlags : uint32_t
     {
         unk0    = 0x1,
@@ -578,15 +479,58 @@ struct mech_segment : public segment
         uint8_t unk14;
         uint32_t unk15;
         uint32_t unk15_1;
-        uint32_t unk16;
+        uint32_t unk16 = 0;
 
         std::vector<equipment> equipments;
 
-        uint32_t unk4[8];
-        glider g;
+        float unk40;
+        uint32_t unk4[7];
 
-        uint32_t unk5[8];
-        uint8_t unk6;
+        // glider
+        // g_unk = glider unknown
+
+        // mask works only for weapons
+        moddable_equipment glider;
+        moddable_equipment weapon1;
+        moddable_equipment weapon2;
+        moddable_equipment reactor1;
+        moddable_equipment reactor2;
+        moddable_equipment engine1;
+        moddable_equipment engine2;
+        moddable_equipment energy_shield;
+        moddable_equipment armor;
+
+        uint32_t g_unk0;
+        uint32_t g_unk1 = 0;
+        uint32_t g_unk2;
+
+        std::vector<ammo> ammos;
+        std::vector<ammo> ammos1;
+        std::vector<ammo> ammos2;
+
+        uint32_t g_unk3 = 0;
+
+        // mask works for all except uarmor
+        moddable_equipment2 ureactor1;
+        moddable_equipment2 ureactor2;
+        moddable_equipment2 uengine1;
+        moddable_equipment2 uengine2;
+        moddable_equipment2 uenergy_shield;
+        moddable_equipment2 uarmor;
+        moddable_equipment g_unk4;
+        ModificatorMask glider_mask;
+
+        std::vector<ammo_count> ammos3;
+
+        float money;
+
+        std::vector<hold_item> items;
+
+        uint32_t g_unk6[28][3] = { 0 };
+        float g_unk7 = 0;
+        float g_unk8 = 0;
+        uint32_t g_unk9 = 0;
+        uint8_t g_unk10 = 0;
 
         void load(const buffer &b)
         {
@@ -594,6 +538,7 @@ struct mech_segment : public segment
             READ_STRING(b, name);
             READ_STRING(b, name2);
             READ_STRING(b, org);
+            save_changes.rewrite_mech_org(b, org);
             READ_STRING(b, building);
 
             READ(b, flags);
@@ -603,28 +548,134 @@ struct mech_segment : public segment
             READ(b, unk14);
 
             auto f = (uint32_t)flags;
-            if (f == 0x01000101 ||
+            if (!(f == 0x01000101 ||
                 f == 0x00000001 ||
                 f == 0x00000101 ||
-                f == 0x01000001)
-            {
-                READ(b, unk15);
-
-                if (unk14 == 0)
-                    return;
-
-                READ(b, unk15_1);
-
-                b.read_vector(equipments);
-
-                READ(b, unk4);
-
-                g.load(b);
-            }
-            else
+                f == 0x01000001))
             {
                 READ(b, unk16);
+                return;
             }
+
+            READ(b, unk15);
+
+            if (unk14 == 0)
+                return;
+
+            READ(b, unk15_1);
+
+            b.read_vector(equipments);
+
+            READ(b, unk40);
+            READ(b, unk4);
+
+            //
+            glider.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
+            weapon1.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
+            weapon2.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
+            reactor1.load(b);
+            reactor2.load(b);
+            engine1.load(b);
+            engine2.load(b);
+            energy_shield.load(b);
+            armor.load(b);
+
+            // ?
+            READ(b, g_unk0);
+            if (g_unk0 == 0)
+                READ(b, g_unk1);
+            READ(b, g_unk2);
+
+            if (g_unk0 == 0)
+                b.read_vector(ammos, g_unk1);
+
+            b.read_vector(ammos1, g_unk0);
+
+            if (g_unk0 != 0 || g_unk1 != 0)
+            {
+                READ(b, g_unk3);
+                if (g_unk0 > 0)
+                {
+                    uint32_t n;
+                    b.skip(-8);
+                    READ(b, n);
+                    b.skip(4);
+                    b.read_vector(ammos2, n);
+                    std::vector<single_int<>> v;
+                    b.read_vector(v, n);
+                }
+                if (g_unk1 > 0)
+                {
+                    g_unk1--;
+                    while (g_unk1--)
+                        READ(b, g_unk3);
+                }
+            }
+
+            ureactor1.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
+            ureactor2.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
+            uengine1.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
+            uengine2.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
+            uenergy_shield.load(b);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x5666);
+            uarmor.load(b);
+
+            g_unk4.load(b);
+
+            READ(b, glider_mask);
+            if (isPlayer())
+                save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
+
+            b.read_vector(ammos3);
+
+            READ(b, money);
+            if (name == "PLAYER")
+                save_changes.rewrite_money(b);
+
+            b.read_vector(items);
+
+            READ(b, g_unk6);
+
+            // TODO
+
+            //if (g_unk0 == 1)
+            //if ((uint32_t)g_unk2 == 15)
+            //if ((uint32_t)g_unk3 == 0)
+            //if (unk13[0] == 5)
+            if (g_unk6[26][0] != 0 &&
+                strcmp((const char *)b.getPtr(), "GROUPS") != 0)
+            {
+
+                READ(b, g_unk7);
+                /*if (g_unk7 != 0)
+                {
+                    b.skip(-4);
+                    return;
+                }*/
+                READ(b, g_unk8);
+                READ(b, g_unk9);
+                READ(b, g_unk10);
+            }
+        }
+
+        bool isPlayer() const
+        {
+            return name == "PLAYER";
         }
     };
 
@@ -639,17 +690,42 @@ struct mech_segment : public segment
 // todo
 struct groups_segment : public segment
 {
+    struct mech
+    {
+        std::string name;
+        uint32_t unk0;
+        float unk1[4];
+        uint32_t unk2[2];
+        float unk3;
+
+        void load(const buffer &b)
+        {
+            READ_STRING(b, name);
+            READ(b, unk0);
+            READ(b, unk1);
+            READ(b, unk2);
+            READ(b, unk3);
+        }
+    };
+
     struct group
     {
         vector3 pos;
         std::string org;
-        float unk0[12];
+        std::string base;
+        float unk0[4];
+        uint16_t unk1;
+
+        std::vector<mech> mechs;
 
         void load(const buffer &b)
         {
             READ(b, pos);
             READ_STRING(b, org);
+            READ_STRING(b, base);
             READ(b, unk0);
+            READ(b, unk1);
+            b.read_vector(mechs);
         }
     };
 
