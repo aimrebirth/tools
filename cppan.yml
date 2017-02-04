@@ -1,0 +1,6 @@
+local_settings:
+    dependencies:
+        #- name: pvt.lzwdgc.polygon4.data_manager
+        - name: data_manager
+          local: k:/AIM/DataManager
+

@@ -29,14 +29,7 @@ endif(MSVC)
 add_definitions(-DPOLYGON4_TOOLS=1)
 add_definitions(-DPOLYGON4_STATIC=1)
 
-if (NOT DATA_MANAGER_DIR)
-    message(FATAL_ERROR "DATA_MANAGER_DIR variable is not set!")
-else()
-    set(SOLUTION_FOLDER Extern)
-    add_subdirectory(${DATA_MANAGER_DIR} DataManager)
-    include_directories(${DATA_MANAGER_DIR}/include)
-    include_directories(${DATA_MANAGER_ADDITIONAL_INCLUDES})
-endif()
+add_subdirectory(.cppan)
 
 if (Git_FOUND)
     add_custom_target(version ALL

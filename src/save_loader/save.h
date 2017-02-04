@@ -562,7 +562,7 @@ struct mech_segment : public segment
             if (unk14 == 0)
                 return;
 
-            READ(b, unk15_1);
+            READ(b, unk15_1); // size?
 
             b.read_vector(equipments);
 
