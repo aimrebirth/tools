@@ -31,6 +31,7 @@
 #include "other.h"
 
 #include <Polygon4/DataManager/Storage.h>
+#include <Polygon4/DataManager/Types.h>
 
 #include <buffer.h>
 #include <types.h>

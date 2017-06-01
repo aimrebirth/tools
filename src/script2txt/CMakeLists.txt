@@ -21,7 +21,7 @@ BISON_TARGET(grammar
 FLEX_TARGET(lexer
     "${CMAKE_CURRENT_SOURCE_DIR}/lexer.ll"
     "${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp"
-    COMPILE_FLAGS --header-file="${CMAKE_CURRENT_BINARY_DIR}/lexer.h"
+    COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/lexer.h
 )
 ADD_FLEX_BISON_DEPENDENCY(lexer grammar)
 
@@ -45,4 +45,4 @@ set(script2txt_src ${script2txt_src}
 )
 
 add_executable              (script2txt ${script2txt_src} ${script2txt_inc})
-target_link_libraries       (script2txt common schema)
+target_link_libraries       (script2txt common pvt.lzwdgc.polygon4.data_manager.schema)

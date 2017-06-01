@@ -309,92 +309,92 @@ types:
             type: u4
 
           - id: roads
-            if: type == segment_type::ROAD
+            if: type == segment_type::road
             repeat: expr
             repeat-expr: n_objects
             type: map_object_with_array
 
           - id: boundaries
-            if: type == segment_type::BOUNDARY
+            if: type == segment_type::boundary
             repeat: expr
             repeat-expr: n_objects
             type: map_object_with_array
 
           - id: stones
-            if: type == segment_type::STONE
+            if: type == segment_type::stone
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: trees
-            if: type == segment_type::TREE
+            if: type == segment_type::tree
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: helpers
-            if: type == segment_type::HELPER
+            if: type == segment_type::helper
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: buildings
-            if: type == segment_type::BUILDING
+            if: type == segment_type::building
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: lamps
-            if: type == segment_type::LAMP
+            if: type == segment_type::lamp
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: images
-            if: type == segment_type::IMAGE
+            if: type == segment_type::image
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: anomalies
-            if: type == segment_type::ANOMALY
+            if: type == segment_type::anomaly
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: towers
-            if: type == segment_type::TOWER
+            if: type == segment_type::tower
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: sound_zones
-            if: type == segment_type::SOUND_ZONE
+            if: type == segment_type::sound_zone
             repeat: expr
             repeat-expr: n_objects
             type: map_object
 
           - id: sounds
-            if: type == segment_type::SOUND
+            if: type == segment_type::sound
             repeat: expr
             repeat-expr: n_objects
             type: sound
 
         enums:
             segment_type:
-                1:  TEXTURE
-                3:  STONE
-                4:  TREE
-                7:  HELPER
-                8:  ROAD
-                11: BUILDING
-                12: IMAGE
-                13: LAMP
-                19: SOUND
-                20: ANOMALY
-                22: TOWER
-                23: BOUNDARY
-                24: SOUND_ZONE
+                1:  texture
+                3:  stone
+                4:  tree
+                7:  helper
+                8:  road
+                11: building
+                12: image
+                13: lamp
+                19: sound
+                20: anomaly
+                22: tower
+                23: boundary
+                24: sound_zone
                 21: unk0
                 27: unk1
 
@@ -475,5 +475,4 @@ types:
             repeat: expr
             repeat-expr: length
             type: u4
-
 

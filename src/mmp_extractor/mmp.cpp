@@ -212,7 +212,7 @@ void mmp::process()
     const int unreal_koef = 51200;
     const int aim_koef = 10;
     const double diff = h_max - h_min;
-    const double scale = aim_koef / (unreal_koef / diff);
+    scale = aim_koef / (unreal_koef / diff);
 
     for (auto &s : segments)
     {
@@ -251,6 +251,7 @@ void mmp::writeFileInfo()
     ofile << "h_max: " << h_max << "\n";
     ofile << "h_diff: " << h_max - h_min << "\n";
     ofile << "scale16: " << scale16 << "\n";
+    ofile << "scale: " << scale << "\n";
 }
 
 void mmp::writeTexturesList()

@@ -159,6 +159,7 @@ struct mmp
     Height h_min;
     Height h_max;
     double scale16 = 0;
+    double scale = 0;
     mat<uint16_t> heightmap;
     mat<uint32_t> texmap;
     mat<uint32_t> texmap_colored;

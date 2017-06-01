@@ -11,11 +11,11 @@ endif()
 
 file(GLOB mmm_extractor_src "mmm_extractor/*")
 add_executable(mmm_extractor ${mmm_extractor_src})
-target_link_libraries(mmm_extractor common data_manager)
+target_link_libraries(mmm_extractor common pvt.lzwdgc.polygon4.data_manager.data_manager)
 
 file(GLOB mmo_extractor_src "mmo_extractor/*")
 add_executable(mmo_extractor ${mmo_extractor_src})
-target_link_libraries(mmo_extractor common data_manager)
+target_link_libraries(mmo_extractor common pvt.lzwdgc.polygon4.data_manager.data_manager)
 
 file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})

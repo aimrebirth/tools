@@ -54,7 +54,7 @@ void tm2tga(string fn)
     src.seek(0x10);
     src.read(&dxt5_flag, 1);
     src.seek(0x4C);
-    
+
     if (dxt5_flag)
     {
         dxt5 d;
