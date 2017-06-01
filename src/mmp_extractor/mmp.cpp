@@ -251,7 +251,7 @@ void mmp::writeFileInfo()
     ofile << "h_max: " << h_max << "\n";
     ofile << "h_diff: " << h_max - h_min << "\n";
     ofile << "scale16: " << scale16 << "\n";
-    ofile << "scale: " << scale << "\n";
+    ofile << "scale: " << scale * 100 << "\n";
 }
 
 void mmp::writeTexturesList()
