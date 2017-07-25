@@ -25,6 +25,8 @@
 
 #include <buffer.h>
 
+#include <iostream>
+
 using namespace std;
 
 std::string version();
@@ -77,20 +79,20 @@ std::string vertex::printTex() const
 void damage_model::load(const buffer &b)
 {
     READ(b, n_polygons);
-    polygons.resize(n_polygons);
+    model_polygons.resize(n_polygons);
     READ(b, unk8);
     READ(b, name);
-    for (auto &t : polygons)
+    for (auto &t : model_polygons)
         READ(b, t);
     READ(b, unk6);
     READ(b, flags);
     READ(b, n_vertex);
     vertices.resize(n_vertex);
     READ(b, n_triangles);
-    triangles.resize(n_triangles);
+    damage_triangles.resize(n_triangles / 3);
     for (auto &v : vertices)
         v.load(b, flags);
-    for (auto &t : triangles)
+    for (auto &t : damage_triangles)
         READ(b, t);
 }
 
@@ -100,7 +102,7 @@ void animation::load(const buffer &b)
     READ(b, name);
     for (auto &s : segments)
         s.loadHeader(b);
-    if (segments[0].n)
+    //if (segments[0].n)
     for (auto &s : segments)
         s.loadData(b);
 }
@@ -118,8 +120,8 @@ void animation::segment::loadData(const buffer &b)
         return;
     if (unk0)
     {
-        triangles.resize(n);
-        for (auto &t : triangles)
+        model_polygons.resize(n);
+        for (auto &t : model_polygons)
             READ(b, t);
     }
     unk2.resize(n);
@@ -174,15 +176,17 @@ std::string block::printObj(const std::string &mtl_name) const
     s += "\n";
 
     if (n_triangles)
-    for (int i = 0; i <= n_triangles - 3; i += 3)
     {
-        auto x = to_string(triangles[i] + 1);
-        auto y = to_string(triangles[i + 2] + 1);
-        auto z = to_string(triangles[i + 1] + 1);
-        x += "/" + x;
-        y += "/" + y;
-        z += "/" + z;
-        s += "f " + x + " " + y + " " + z + "\n";
+        for (auto &t : triangles)
+        {
+            auto x = to_string(t.x + 1);
+            auto y = to_string(t.y + 1);
+            auto z = to_string(t.z + 1);
+            x += "/" + x;
+            y += "/" + y;
+            z += "/" + z;
+            s += "f " + x + " " + y + " " + z + "\n";
+        }
     }
 
     s += "\n";
@@ -200,7 +204,6 @@ void block::load(const buffer &b)
     READ_STRING(b, tex3);
     READ_STRING(b, tex4);
     READ(b, LODs);
-    READ(b, unk1);
     READ(b, unk2);
     READ(b, unk3);
     READ(b, size);
@@ -221,7 +224,7 @@ void block::load(const buffer &b)
     READ(data, material);
 
     // unk
-    READ(data, unk_flags0);
+    READ(data, effect);
     READ(data, unk7);
     READ(data, unk9);
     READ(data, unk10);
@@ -243,7 +246,7 @@ void block::load(const buffer &b)
     READ(data, n_triangles);
     if (triangles_mult_7 && (flags & F_UNK0) && !unk11)
         n_triangles *= 7;
-    triangles.resize(n_triangles);
+    triangles.resize(n_triangles / 3);
     for (auto &v : vertices)
         v.load(data, flags);
     for (auto &t : triangles)
@@ -255,6 +258,14 @@ void block::load(const buffer &b)
     for (auto &dm : damage_models)
         dm.load(data);
 
+    string s = "extraction error: block #" + std::string(name);
+    if (!data.eof())
+    {
+        cerr << s << "\n";
+        return;
+    }
+
+    // unknown how to proceed
     if (!data.eof() && triangles_mult_7)
     {
         // unknown end of block
@@ -264,7 +275,7 @@ void block::load(const buffer &b)
             READ(data, t);
     }
     if (!data.eof())
-        throw std::logic_error("extraction error: block #" + std::string(name));
+        throw std::logic_error(s);
 }
 
 void model::load(const buffer &b)

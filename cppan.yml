@@ -1,4 +1,4 @@
 local_settings:
     dependencies:
-        - pvt.lzwdgc.polygon4.data_manager: master
+        - pvt.lzwdgc.polygon4.data_manager.data_manager: master
 

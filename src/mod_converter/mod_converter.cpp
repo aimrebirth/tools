@@ -39,7 +39,7 @@ void print(const block &b, const std::string &fn)
 {
     if (b.type == BlockType::ParticleEmitter)
         return;
-    
+
     auto obj_fn = fn;
     if (!printMaxPolygonBlock)
         obj_fn += string(".") + b.name;

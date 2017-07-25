@@ -52,6 +52,15 @@ enum class BlockType : uint32_t
     ParticleEmitter
 };
 
+enum class EffectType : uint32_t
+{
+    Texture = 0x0,
+    TextureWithGlareMap = 0x1,
+    TextureWithGlareMapAndMask = 0x32,
+    AlphaTextureDoubleSided = 0x6,
+    MaterialOnly = 0x14,
+};
+
 struct Vector4
 {
     float x;
@@ -84,7 +93,12 @@ struct vertex
     std::string printTex() const;
 };
 
-typedef uint16_t triangle;
+struct triangle
+{
+    uint16_t x;
+    uint16_t y;
+    uint16_t z;
+};
 
 struct animation
 {
@@ -100,7 +114,7 @@ struct animation
         uint32_t unk0;
         uint32_t unk1;
 
-        std::vector<triangle> triangles;
+        std::vector<uint16_t> model_polygons;
         std::vector<unk_float6> unk2;
 
         void loadHeader(const buffer &b);
@@ -119,21 +133,21 @@ struct damage_model
     uint32_t n_polygons;
     float unk8[3];
     char name[0x3C];
-    std::vector<uint16_t> polygons;
+    std::vector<uint16_t> model_polygons;
     uint8_t unk6;
     uint32_t flags;
     uint32_t n_vertex;
     uint32_t n_triangles;
     std::vector<vertex> vertices;
-    std::vector<uint16_t> triangles;
+    std::vector<triangle> damage_triangles;
 
     virtual void load(const buffer &b);
 };
 
 struct material
 {
-    Vector4 ambient;
     Vector4 diffuse;
+    Vector4 ambient;
     Vector4 specular;
     Vector4 emissive;
     float power;
@@ -176,8 +190,7 @@ struct block
         } _;
         uint32_t LODs;
     };
-    uint32_t unk1;
-    uint32_t unk2[2];
+    uint32_t unk2[3];
     uint32_t unk3;
     uint32_t size;
     uint32_t unk4[10];
@@ -187,7 +200,7 @@ struct block
     material material;
 
     //unk (anim + transform settings?)
-    uint32_t unk_flags0;
+    EffectType effect;
     uint32_t unk7;
     float unk9;
     uint32_t unk10;
@@ -206,7 +219,7 @@ struct block
     uint32_t n_vertex;
     uint32_t n_triangles;
     std::vector<vertex> vertices;
-    std::vector<uint16_t> triangles;
+    std::vector<triangle> triangles;
 
     // animations
     std::vector<animation> animations;
