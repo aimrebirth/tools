@@ -26,7 +26,7 @@ class buffer;
 
 enum
 {
-    F_UNK0  =   0x4,
+    F_USE_W_COORDINATE  =   0x4,
 };
 
 enum class AdditionalParameter : uint32_t
@@ -61,30 +61,35 @@ enum class EffectType : uint32_t
     MaterialOnly = 0x14,
 };
 
-struct Vector4
+template <typename T>
+struct aim_vector3
 {
-    float x;
-    float y;
-    float z;
-    float w;
+    T x;
+    T y;
+    T z;
+
+    void load(const buffer &b);
+};
+
+struct aim_vector4 : aim_vector3<float>
+{
+    float w = 1.0f;
 
     std::string print() const;
+    void load(const buffer &b, uint32_t flags = 0);
+};
+
+struct uv
+{
+    float u;
+    float v;
 };
 
 struct vertex
 {
-    float vX;
-    float vZ;
-    float vY;
-
-    float unk0;
-
-    float nX;
-    float nZ;
-    float nY;
-
-    float t1;
-    float t2;
+    aim_vector4 coordinates;
+    aim_vector3<float> normal;
+    uv texture_coordinates;
 
     void load(const buffer &b, uint32_t flags);
 
@@ -93,12 +98,7 @@ struct vertex
     std::string printTex() const;
 };
 
-struct triangle
-{
-    uint16_t x;
-    uint16_t y;
-    uint16_t z;
-};
+using triangle = aim_vector3<uint16_t>;
 
 struct animation
 {
@@ -111,10 +111,11 @@ struct animation
         };
 
         uint32_t n;
+        std::vector<uint16_t> model_polygons;
+
+        // unk
         uint32_t unk0;
         uint32_t unk1;
-
-        std::vector<uint16_t> model_polygons;
         std::vector<unk_float6> unk2;
 
         void loadHeader(const buffer &b);
@@ -122,7 +123,7 @@ struct animation
     };
 
     uint32_t type;
-    char name[0xC];
+    std::string name;
     segment segments[4];
 
     virtual void load(const buffer &b);
@@ -131,26 +132,29 @@ struct animation
 struct damage_model
 {
     uint32_t n_polygons;
-    float unk8[3];
-    char name[0x3C];
+    std::string name;
     std::vector<uint16_t> model_polygons;
-    uint8_t unk6;
     uint32_t flags;
     uint32_t n_vertex;
     uint32_t n_triangles;
     std::vector<vertex> vertices;
     std::vector<triangle> damage_triangles;
 
+    uint8_t unk6;
+    float unk8[3];
+
     virtual void load(const buffer &b);
 };
 
 struct material
 {
-    Vector4 diffuse;
-    Vector4 ambient;
-    Vector4 specular;
-    Vector4 emissive;
+    aim_vector4 ambient;
+    aim_vector4 diffuse;
+    aim_vector4 specular;
+    aim_vector4 emissive;
     float power;
+
+    void load(const buffer &b);
 };
 
 struct rotation
@@ -159,8 +163,8 @@ struct rotation
     float speed;
     // center of rotating axis
     float x;
-    float y;
-    float z;
+    float y; // z?
+    float z; // y?
 };
 
 struct additional_parameters
@@ -190,10 +194,6 @@ struct block
         } _;
         uint32_t LODs;
     };
-    uint32_t unk2[3];
-    uint32_t unk3;
-    uint32_t size;
-    uint32_t unk4[10];
 
     // data
     uint32_t n_animations;
@@ -201,14 +201,8 @@ struct block
 
     //unk (anim + transform settings?)
     EffectType effect;
-    uint32_t unk7;
-    float unk9;
-    uint32_t unk10;
     uint32_t auto_animation;
     float animation_cycle;
-    float unk8;
-    uint32_t unk11;
-    uint32_t unk12;
     uint32_t triangles_mult_7;
     //
 
@@ -217,17 +211,31 @@ struct block
     rotation rot;
     uint32_t flags;
     uint32_t n_vertex;
-    uint32_t n_triangles;
+    uint32_t n_faces;
     std::vector<vertex> vertices;
-    std::vector<triangle> triangles;
+    std::vector<triangle> faces;
 
     // animations
     std::vector<animation> animations;
     std::vector<damage_model> damage_models;
 
+    // stuff
+    uint32_t size;
+
+    // unk
+    uint32_t unk2[3];
+    uint16_t unk3[2];
+    uint32_t unk4[10];
+    uint32_t unk7;
+    float unk9;
+    uint32_t unk10;
+    float unk8;
+    uint32_t unk11;
+    uint32_t unk12;
+
     void load(const buffer &b);
-    std::string printMtl(const std::string &mtl_name) const;
-    std::string printObj(const std::string &mtl_name) const;
+    std::string printMtl() const;
+    std::string printObj() const;
 };
 
 struct model
@@ -237,4 +245,5 @@ struct model
     std::vector<block> blocks;
 
     void load(const buffer &b);
+    void print(const std::string &fn);
 };

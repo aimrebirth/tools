@@ -56,7 +56,7 @@ void print(const block &b, const std::string &fn)
         mtl += string(".") + b.name;
     o << "mtllib " << mtl << ".mtl\n";
     o << "\n";
-    o << b.printObj(mtl);
+    //o << b.printObj(mtl);
 
     auto mtl_fn = fn;
     if (!printMaxPolygonBlock)
@@ -67,7 +67,7 @@ void print(const block &b, const std::string &fn)
     m << "# A.I.M. Model Converter (ver. " << version() << ")\n";
     m << "#" << "\n";
     m << "\n";
-    m << b.printMtl(mtl);
+    //m << b.printMtl(mtl);
 }
 
 void convert_model(string fn)
@@ -82,6 +82,10 @@ void convert_model(string fn)
         ss << hex << b.index() << " != " << hex << b.size();
         throw std::logic_error(ss.str());
     }
+
+    // write all
+    m.print(filename);
+    return;
 
     // write obj and mtl
     if (printMaxPolygonBlock)

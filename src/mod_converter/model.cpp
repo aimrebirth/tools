@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <map>
 #include <set>
 #include <string>
 
@@ -29,9 +30,112 @@
 
 using namespace std;
 
+const map<char, string> transliteration =
+{
+    { 'à',"a" },
+    { 'á',"b" },
+    { 'â',"v" },
+    { 'ã',"g" },
+    { 'ä',"d" },
+    { 'å',"e" },
+    { '¸',"yo" },
+    { 'æ',"zh" },
+    { 'ç',"z" },
+    { 'è',"i" },
+    { 'é',"y" },
+    { 'ê',"k" },
+    { 'ë',"l" },
+    { 'ì',"m" },
+    { 'í',"n" },
+    { 'î',"o" },
+    { 'ï',"p" },
+    { 'ð',"r" },
+    { 'ñ',"s" },
+    { 'ò',"t" },
+    { 'ó',"u" },
+    { 'ô',"f" },
+    { 'õ',"kh" },
+    { 'ö',"ts" },
+    { '÷',"ch" },
+    { 'ø',"sh" },
+    { 'ù',"shch" },
+    { 'ú',"_" },
+    { 'û',"y" },
+    { 'ü',"_" },
+    { 'ý',"e" },
+    { 'þ',"yu" },
+    { 'ÿ',"ya" },
+
+    { 'À',"A" },
+    { 'Á',"B" },
+    { 'Â',"V" },
+    { 'Ã',"G" },
+    { 'Ä',"D" },
+    { 'Å',"E" },
+    { '¨',"Yo" },
+    { 'Æ',"Zh" },
+    { 'Ç',"Z" },
+    { 'È',"I" },
+    { 'É',"Y" },
+    { 'Ê',"K" },
+    { 'Ë',"L" },
+    { 'Ì',"M" },
+    { 'Í',"N" },
+    { 'Î',"O" },
+    { 'Ï',"P" },
+    { 'Ð',"R" },
+    { 'Ñ',"S" },
+    { 'Ò',"T" },
+    { 'Ó',"U" },
+    { 'Ô',"F" },
+    { 'Õ',"Kh" },
+    { 'Ö',"Ts" },
+    { '×',"Ch" },
+    { 'Ø',"Sh" },
+    { 'Ù',"Shch" },
+    { 'Ú',"_" },
+    { 'Û',"Y" },
+    { 'Ü',"_" },
+    { 'Ý',"E" },
+    { 'Þ',"Yu" },
+    { 'ß',"Ya" },
+
+    { ' ',"_" },
+}
+;
+
 std::string version();
 
-std::string Vector4::print() const
+string translate(const string &s)
+{
+    string o;
+    for (auto c : s)
+    {
+        auto i = transliteration.find(c);
+        if (i == transliteration.end())
+            o += c;
+        else
+            o += i->second;
+    }
+    return o;
+}
+
+template <typename T>
+void aim_vector3<T>::load(const buffer &b)
+{
+    READ(b, x);
+    READ(b, z);
+    READ(b, y);
+}
+
+void aim_vector4::load(const buffer &b, uint32_t flags)
+{
+    aim_vector3::load(b);
+    if (flags & F_USE_W_COORDINATE)
+        READ(b, w);
+}
+
+std::string aim_vector4::print() const
 {
     string s;
     s += to_string(x) + " " + to_string(y) + " " + to_string(z);
@@ -40,39 +144,29 @@ std::string Vector4::print() const
 
 void vertex::load(const buffer &b, uint32_t flags)
 {
-    READ(b, vX);
-    READ(b, vZ);
-    READ(b, vY);
-
-    if (flags & F_UNK0)
-        READ(b, unk0);
-
-    READ(b, nX);
-    READ(b, nZ);
-    READ(b, nY);
-
-    READ(b, t1);
-    READ(b, t2);
+    coordinates.load(b, flags);
+    READ(b, normal);
+    READ(b, texture_coordinates);
 }
 
 std::string vertex::printVertex() const
 {
     string s;
-    s = "v  " + to_string(-vX) + " " + to_string(vY) + " " + to_string(-vZ);
+    s = "v  " + to_string(-coordinates.x) + " " + to_string(coordinates.y) + " " + to_string(-coordinates.z);
     return s;
 }
 
 std::string vertex::printNormal() const
 {
     string s;
-    s = "vn " + to_string(-nX) + " " + to_string(nY) + " " + to_string(-nZ);
+    s = "vn " + to_string(-normal.x) + " " + to_string(normal.y) + " " + to_string(-normal.z);
     return s;
 }
 
 std::string vertex::printTex() const
 {
     string s;
-    s = "vt " + to_string(t1) + " " + to_string(1 - t2) + " " + to_string(0);
+    s = "vt " + to_string(texture_coordinates.u) + " " + to_string(1 - texture_coordinates.v);
     return s;
 }
 
@@ -81,7 +175,7 @@ void damage_model::load(const buffer &b)
     READ(b, n_polygons);
     model_polygons.resize(n_polygons);
     READ(b, unk8);
-    READ(b, name);
+    READ_STRING_N(b, name, 0x3C);
     for (auto &t : model_polygons)
         READ(b, t);
     READ(b, unk6);
@@ -96,10 +190,19 @@ void damage_model::load(const buffer &b)
         READ(b, t);
 }
 
+void material::load(const buffer &b)
+{
+    READ(b, diffuse);
+    READ(b, ambient);
+    READ(b, specular);
+    READ(b, emissive);
+    READ(b, power);
+}
+
 void animation::load(const buffer &b)
 {
     READ(b, type);
-    READ(b, name);
+    READ_STRING_N(b, name, 0xC);
     for (auto &s : segments)
         s.loadHeader(b);
     //if (segments[0].n)
@@ -129,10 +232,12 @@ void animation::segment::loadData(const buffer &b)
         READ(b, unk);
 }
 
-std::string block::printMtl(const std::string &mtl_name) const
+std::string block::printMtl() const
 {
+    static const string ext = ".TM.bmp";
+
     string s;
-    s += "newmtl " + mtl_name + "\n";
+    s += "newmtl " + name + "\n";
     s += "\n";
     s += "Ka " + material.ambient.print() + "\n";
     s += "Kd " + material.diffuse.print() + "\n";
@@ -142,27 +247,27 @@ std::string block::printMtl(const std::string &mtl_name) const
     // illum
     s += "\n";
     if (string(tex_mask) != "_DEFAULT_")
-        s += "map_Ka " + string(tex_mask) + ".tga" + "\n";
+        s += "map_Ka " + string(tex_mask) + ext + "\n";
     if (string(tex_mask) != "_DEFAULT_")
-        s += "map_Kd " + string(tex_mask) + ".tga" + "\n";
+        s += "map_Kd " + string(tex_mask) + ext + "\n";
     if (string(tex_spec) != "_DEFAULT_")
-        s += "map_Ks " + string(tex_spec) + ".tga" + "\n";
+        s += "map_Ks " + string(tex_spec) + ext + "\n";
     if (string(tex_spec) != "_DEFAULT_")
-        s += "map_Ns " + string(tex_spec) + ".tga" + "\n";
+        s += "map_Ns " + string(tex_spec) + ext + "\n";
     s += "\n";
     return s;
 }
 
-std::string block::printObj(const std::string &mtl_name) const
+std::string block::printObj() const
 {
     string s;
+    s += "usemtl " + name + "\n";
+    s += "\n";
     // UE does not recognize russian strings in .obj
     //s += string("o ") + name + "\n";
     //s += string("g ") + name + "\n";
-    s += "g group1\n";
-    s += "s off\n";
-    s += "\n";
-    s += "usemtl " + mtl_name + "\n";
+    s += "g " + name + "\n";
+    s += "s 1\n";
     s += "\n";
 
     for (auto &v : vertices)
@@ -175,16 +280,16 @@ std::string block::printObj(const std::string &mtl_name) const
         s += v.printTex() + "\n";
     s += "\n";
 
-    if (n_triangles)
+    if (n_faces)
     {
-        for (auto &t : triangles)
+        for (auto &t : faces)
         {
             auto x = to_string(t.x + 1);
             auto y = to_string(t.y + 1);
             auto z = to_string(t.z + 1);
-            x += "/" + x;
-            y += "/" + y;
-            z += "/" + z;
+            x += "/" + x + "/" + x;
+            y += "/" + y + "/" + y;
+            z += "/" + z + "/" + z;
             s += "f " + x + " " + y + " " + z + "\n";
         }
     }
@@ -199,6 +304,7 @@ void block::load(const buffer &b)
     // header
     READ(b, type);
     READ_STRING(b, name);
+    name = translate(name);
     READ_STRING(b, tex_mask);
     READ_STRING(b, tex_spec);
     READ_STRING(b, tex3);
@@ -221,7 +327,7 @@ void block::load(const buffer &b)
 
     READ(data, n_animations);
     animations.resize(n_animations);
-    READ(data, material);
+    material.load(data);
 
     // unk
     READ(data, effect);
@@ -243,13 +349,13 @@ void block::load(const buffer &b)
     READ(data, flags);
     READ(data, n_vertex);
     vertices.resize(n_vertex);
-    READ(data, n_triangles);
-    if (triangles_mult_7 && (flags & F_UNK0) && !unk11)
-        n_triangles *= 7;
-    triangles.resize(n_triangles / 3);
+    READ(data, n_faces);
+    if (triangles_mult_7 && (flags & F_USE_W_COORDINATE) && !unk11)
+        n_faces *= 7;
     for (auto &v : vertices)
         v.load(data, flags);
-    for (auto &t : triangles)
+    faces.resize(n_faces / 3);
+    for (auto &t : faces)
         READ(data, t);
 
     // animations
@@ -269,7 +375,7 @@ void block::load(const buffer &b)
     if (!data.eof() && triangles_mult_7)
     {
         // unknown end of block
-        auto triangles2 = triangles;
+        auto triangles2 = faces;
         triangles2.resize((data.size() - data.index()) / sizeof(triangle));
         for (auto &t : triangles2)
             READ(data, t);
@@ -287,4 +393,32 @@ void model::load(const buffer &b)
     blocks.resize(n_blocks);
     for (auto &f : blocks)
         f.load(b);
+}
+
+void model::print(const std::string &fn)
+{
+    auto title = [](auto &o)
+    {
+        o << "#" << "\n";
+        o << "# A.I.M. Model Converter (ver. " << version() << ")\n";
+        o << "#" << "\n";
+        o << "\n";
+    };
+
+    auto obj_fn = fn + ".obj";
+    ofstream o(obj_fn);
+    title(o);
+    o << "mtllib " + fn + ".mtl\n\n";
+    o << "o " << fn << "\n\n";
+
+    auto mtl_fn = fn + ".mtl";
+    ofstream m(mtl_fn);
+    title(m);
+    for (auto &b : blocks)
+    {
+        if (b.type == BlockType::ParticleEmitter)
+            return;
+        o << b.printObj() << "\n";
+        m << b.printMtl() << "\n";
+    }
 }
