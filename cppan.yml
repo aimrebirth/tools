@@ -1,4 +1,5 @@
 local_settings:
     dependencies:
         - pvt.lzwdgc.polygon4.data_manager.data_manager: master
+        - pvt.cppan.demo.eigen: 3
 

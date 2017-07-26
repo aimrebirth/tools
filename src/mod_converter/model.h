@@ -26,7 +26,7 @@ class buffer;
 
 enum
 {
-    F_USE_W_COORDINATE  =   0x4,
+    F_USE_W_COORDINATE  =   0x4, // F_USE_QUANTERNION?
 };
 
 enum class AdditionalParameter : uint32_t
@@ -97,7 +97,7 @@ struct vertex
 
     void load(const buffer &b, uint32_t flags);
 
-    std::string printVertex() const;
+    std::string printVertex(bool rotate_x_90 = false) const;
     std::string printNormal() const;
     std::string printTex() const;
 };
@@ -236,7 +236,9 @@ struct block
 
     void load(const buffer &b);
     std::string printMtl() const;
-    std::string printObj(int group_offset) const;
+    std::string printObj(int group_offset, bool rotate_x_90 = false) const;
+
+    bool canPrint() const;
 };
 
 struct model

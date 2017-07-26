@@ -23,7 +23,10 @@ target_link_libraries(mmp_extractor common)
 
 file(GLOB mod_converter_src "mod_converter/*")
 add_executable(mod_converter ${mod_converter_src})
-target_link_libraries(mod_converter common)
+target_link_libraries(mod_converter
+    common
+    pvt.cppan.demo.eigen
+)
 
 file(GLOB mpj_loader_src "mpj_loader/*")
 add_executable(mpj_loader ${mpj_loader_src})

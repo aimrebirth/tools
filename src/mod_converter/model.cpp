@@ -23,8 +23,12 @@
 #include <map>
 #include <set>
 #include <string>
+#include <math.h>
 
 #include <buffer.h>
+
+//#include <Eigen/Core>
+//#include <Eigen/Dense>
 
 #include <iostream>
 
@@ -150,15 +154,36 @@ void vertex::load(const buffer &b, uint32_t flags)
     READ(b, texture_coordinates);
 }
 
-std::string vertex::printVertex() const
+std::string vertex::printVertex(bool rotate_x_90) const
 {
+    // rotate by 90 grad over Ox axis
+/*#define M_PI_2     1.57079632679489661923
+    Eigen::Vector3f x;
+    x << -coordinates.x, coordinates.y, -coordinates.z;
+
+    Eigen::AngleAxis<float> rx(M_PI_2, Eigen::Vector3f(1, 0, 0));
+    auto x2 = rx * x;*/
+
     string s;
-    s = "v  " +
-        to_string(-coordinates.x) + " " +
-        to_string(coordinates.y) + " " +
-        to_string(-coordinates.z) + " " +
-        to_string(coordinates.w)
-        ;
+    if (rotate_x_90)
+    {
+        // that rotation is really equivalent to exchanging y and z and z sign
+        s = "v " +
+            to_string(-coordinates.x) + " " +
+            to_string(coordinates.z) + " " +
+            to_string(coordinates.y) + " " +
+            to_string(coordinates.w)
+            ;
+    }
+    else
+    {
+        s = "v " +
+            to_string(-coordinates.x) + " " +
+            to_string(coordinates.y) + " " +
+            to_string(-coordinates.z) + " " +
+            to_string(coordinates.w)
+            ;
+    }
     return s;
 }
 
@@ -267,7 +292,7 @@ std::string block::printMtl() const
     return s;
 }
 
-std::string block::printObj(int group_offset) const
+std::string block::printObj(int group_offset, bool rotate_x_90) const
 {
     string s;
     s += "usemtl " + name + "\n";
@@ -277,7 +302,7 @@ std::string block::printObj(int group_offset) const
     s += "\n";
 
     for (auto &v : vertices)
-        s += v.printVertex() + "\n";
+        s += v.printVertex(rotate_x_90) + "\n";
     s += "\n";
     for (auto &v : vertices)
         s += v.printNormal() + "\n";
@@ -390,6 +415,17 @@ void block::load(const buffer &b)
         throw std::logic_error(s);
 }
 
+bool block::canPrint() const
+{
+    if (type == BlockType::ParticleEmitter)
+        return false;
+    if (type != BlockType::VisibleObject)
+        return false;
+    if (!(all_lods == 15 || LODs.lod1))
+        return false;
+    return true;
+}
+
 void model::load(const buffer &b)
 {
     READ(b, n_blocks);
@@ -411,27 +447,29 @@ void model::print(const std::string &fn)
         o << "\n";
     };
 
-    auto obj_fn = fn + ".obj";
-    ofstream o(obj_fn);
-    title(o);
-    o << "mtllib " + fn + ".mtl\n\n";
-    o << "o " << fn << "\n\n";
+    auto print_obj = [&](const auto &n, bool rotate_x_90 = false)
+    {
+        ofstream o(n);
+        title(o);
+        o << "mtllib " + fn + ".mtl\n\n";
+        o << "o " << fn << "\n\n";
+        int n_vert = 0;
+        for (auto &b : blocks)
+        {
+            if (!b.canPrint())
+                continue;
+
+            o << b.printObj(n_vert, rotate_x_90) << "\n";
+            n_vert += b.n_vertex;
+        }
+    };
 
     auto mtl_fn = fn + ".mtl";
     ofstream m(mtl_fn);
     title(m);
-
-    int n_vert = 0;
     for (auto &b : blocks)
-    {
-        if (b.type == BlockType::ParticleEmitter)
-            continue;
-        if (b.type != BlockType::VisibleObject)
-            continue;
-        if (!(b.all_lods == 15 || b.LODs.lod1))
-            continue;
-        o << b.printObj(n_vert) << "\n";
         m << b.printMtl() << "\n";
-        n_vert += b.n_vertex;
-    }
+
+    print_obj(fn + "_fbx.obj");
+    print_obj(fn + "_ue4.obj", true);
 }
