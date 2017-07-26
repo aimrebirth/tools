@@ -32,7 +32,7 @@ enum
 enum class AdditionalParameter : uint32_t
 {
     None,
-    DetalizationCoefficient
+    DetalizationCoefficient,
 };
 
 enum class ModelRotation : uint32_t
@@ -40,7 +40,7 @@ enum class ModelRotation : uint32_t
     None,
     Vertical,
     Horizontal,
-    Other
+    Other,
 };
 
 enum class BlockType : uint32_t
@@ -49,7 +49,7 @@ enum class BlockType : uint32_t
     HelperObject,
     BitmapAlpha,
     BitmapGrass,
-    ParticleEmitter
+    ParticleEmitter,
 };
 
 enum class EffectType : uint32_t
@@ -62,12 +62,16 @@ enum class EffectType : uint32_t
 };
 
 template <typename T>
-struct aim_vector3
+struct vector3
 {
     T x;
     T y;
     T z;
+};
 
+template <typename T>
+struct aim_vector3 : vector3<T>
+{
     void load(const buffer &b);
 };
 
@@ -161,10 +165,7 @@ struct rotation
 {
     ModelRotation type;
     float speed;
-    // center of rotating axis
-    float x;
-    float y; // z?
-    float z; // y?
+    vector3<float> center_of_rotating_axis;
 };
 
 struct additional_parameters
@@ -191,8 +192,8 @@ struct block
             uint8_t lod3 : 1;
             uint8_t lod4 : 1;
             uint8_t      : 4;
-        } _;
-        uint32_t LODs;
+        } LODs;
+        uint32_t all_lods;
     };
 
     // data
@@ -235,7 +236,7 @@ struct block
 
     void load(const buffer &b);
     std::string printMtl() const;
-    std::string printObj() const;
+    std::string printObj(int group_offset) const;
 };
 
 struct model

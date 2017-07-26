@@ -106,6 +106,7 @@ const map<char, string> transliteration =
 
 std::string version();
 
+// UE does not recognize russian strings in .obj
 string translate(const string &s)
 {
     string o;
@@ -152,7 +153,12 @@ void vertex::load(const buffer &b, uint32_t flags)
 std::string vertex::printVertex() const
 {
     string s;
-    s = "v  " + to_string(-coordinates.x) + " " + to_string(coordinates.y) + " " + to_string(-coordinates.z);
+    s = "v  " +
+        to_string(-coordinates.x) + " " +
+        to_string(coordinates.y) + " " +
+        to_string(-coordinates.z) + " " +
+        to_string(coordinates.w)
+        ;
     return s;
 }
 
@@ -166,7 +172,10 @@ std::string vertex::printNormal() const
 std::string vertex::printTex() const
 {
     string s;
-    s = "vt " + to_string(texture_coordinates.u) + " " + to_string(1 - texture_coordinates.v);
+    float i;
+    auto u = modf(fabs(texture_coordinates.u), &i);
+    auto v = modf(fabs(texture_coordinates.v), &i);
+    s = "vt " + to_string(u) + " " + to_string(1 - v);
     return s;
 }
 
@@ -258,16 +267,13 @@ std::string block::printMtl() const
     return s;
 }
 
-std::string block::printObj() const
+std::string block::printObj(int group_offset) const
 {
     string s;
     s += "usemtl " + name + "\n";
     s += "\n";
-    // UE does not recognize russian strings in .obj
-    //s += string("o ") + name + "\n";
-    //s += string("g ") + name + "\n";
     s += "g " + name + "\n";
-    s += "s 1\n";
+    s += "s 1\n"; // still unk how to use
     s += "\n";
 
     for (auto &v : vertices)
@@ -284,9 +290,9 @@ std::string block::printObj() const
     {
         for (auto &t : faces)
         {
-            auto x = to_string(t.x + 1);
-            auto y = to_string(t.y + 1);
-            auto z = to_string(t.z + 1);
+            auto x = to_string(t.x + 1 + group_offset);
+            auto y = to_string(t.y + 1 + group_offset);
+            auto z = to_string(t.z + 1 + group_offset);
             x += "/" + x + "/" + x;
             y += "/" + y + "/" + y;
             z += "/" + z + "/" + z;
@@ -309,7 +315,7 @@ void block::load(const buffer &b)
     READ_STRING(b, tex_spec);
     READ_STRING(b, tex3);
     READ_STRING(b, tex4);
-    READ(b, LODs);
+    READ(b, all_lods);
     READ(b, unk2);
     READ(b, unk3);
     READ(b, size);
@@ -414,11 +420,18 @@ void model::print(const std::string &fn)
     auto mtl_fn = fn + ".mtl";
     ofstream m(mtl_fn);
     title(m);
+
+    int n_vert = 0;
     for (auto &b : blocks)
     {
         if (b.type == BlockType::ParticleEmitter)
-            return;
-        o << b.printObj() << "\n";
+            continue;
+        if (b.type != BlockType::VisibleObject)
+            continue;
+        if (!(b.all_lods == 15 || b.LODs.lod1))
+            continue;
+        o << b.printObj(n_vert) << "\n";
         m << b.printMtl() << "\n";
+        n_vert += b.n_vertex;
     }
 }
