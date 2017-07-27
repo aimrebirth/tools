@@ -21,12 +21,21 @@ file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
 target_link_libraries(mmp_extractor common)
 
-file(GLOB mod_converter_src "mod_converter/*")
-add_executable(mod_converter ${mod_converter_src})
-target_link_libraries(mod_converter
-    common
-    pvt.cppan.demo.eigen
-)
+if (DEFINED FBX_SDK_ROOT)
+    file(GLOB mod_converter_src "mod_converter/*")
+    add_executable(mod_converter ${mod_converter_src})
+    target_link_libraries(mod_converter
+        common
+        #pvt.cppan.demo.eigen
+        debug "${FBX_SDK_ROOT}/lib/vs2015/x86/debug/libfbxsdk.lib"
+        optimized "${FBX_SDK_ROOT}/lib/vs2015/x86/release/libfbxsdk.lib"
+    )
+    target_include_directories(mod_converter
+        PUBLIC "${FBX_SDK_ROOT}/include"
+    )
+else()
+    message(STATUS "provide fbx sdk path to build mod converter")
+endif()
 
 file(GLOB mpj_loader_src "mpj_loader/*")
 add_executable(mpj_loader ${mpj_loader_src})

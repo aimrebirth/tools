@@ -85,6 +85,7 @@ void convert_model(string fn)
 
     // write all
     m.print(filename);
+    m.printFbx(filename);
     return;
 
     // write obj and mtl

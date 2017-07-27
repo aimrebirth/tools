@@ -249,4 +249,5 @@ struct model
 
     void load(const buffer &b);
     void print(const std::string &fn);
+    void printFbx(const std::string &fn);
 };

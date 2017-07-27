@@ -27,6 +27,8 @@
 
 #include <buffer.h>
 
+#include <fbxsdk.h>
+
 //#include <Eigen/Core>
 //#include <Eigen/Dense>
 
@@ -324,7 +326,7 @@ std::string block::printObj(int group_offset, bool rotate_x_90) const
             x += "/" + x + "/" + x;
             y += "/" + y + "/" + y;
             z += "/" + z + "/" + z;
-            s += "f " + x + " " + y + " " + z + "\n";
+            s += "f " + x + " " + z + " " + y + "\n";
         }
     }
 
