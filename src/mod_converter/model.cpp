@@ -187,10 +187,13 @@ std::string vertex::printVertex(bool rotate_x_90) const
     return s;
 }
 
-std::string vertex::printNormal() const
+std::string vertex::printNormal(bool rotate_x_90) const
 {
     string s;
-    s = "vn " + to_string(-normal.x) + " " + to_string(normal.y) + " " + to_string(-normal.z);
+    if (rotate_x_90)
+        s = "vn " + to_string(-normal.x) + " " + to_string(-normal.z) + " " + to_string(normal.y);
+    else
+        s = "vn " + to_string(-normal.x) + " " + to_string(normal.y) + " " + to_string(-normal.z);
     return s;
 }
 
@@ -305,7 +308,7 @@ std::string block::printObj(int group_offset, bool rotate_x_90) const
         s += v.printVertex(rotate_x_90) + "\n";
     s += "\n";
     for (auto &v : vertices)
-        s += v.printNormal() + "\n";
+        s += v.printNormal(rotate_x_90) + "\n";
     s += "\n";
     for (auto &v : vertices)
         s += v.printTex() + "\n";

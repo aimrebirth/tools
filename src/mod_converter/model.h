@@ -98,7 +98,7 @@ struct vertex
     void load(const buffer &b, uint32_t flags);
 
     std::string printVertex(bool rotate_x_90 = false) const;
-    std::string printNormal() const;
+    std::string printNormal(bool rotate_x_90 = false) const;
     std::string printTex() const;
 };
 
