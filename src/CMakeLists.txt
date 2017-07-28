@@ -27,8 +27,8 @@ if (DEFINED FBX_SDK_ROOT)
     target_link_libraries(mod_converter
         common
         #pvt.cppan.demo.eigen
-        debug "${FBX_SDK_ROOT}/lib/vs2015/x86/debug/libfbxsdk.lib"
-        optimized "${FBX_SDK_ROOT}/lib/vs2015/x86/release/libfbxsdk.lib"
+        debug "${FBX_SDK_ROOT}/lib/vs2015/x86/debug/libfbxsdk-md.lib"
+        optimized "${FBX_SDK_ROOT}/lib/vs2015/x86/release/libfbxsdk-md.lib"
     )
     target_include_directories(mod_converter
         PUBLIC "${FBX_SDK_ROOT}/include"

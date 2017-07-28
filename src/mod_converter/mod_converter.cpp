@@ -29,46 +29,12 @@
 using namespace std;
 
 // options
+bool all_formats = false;
 bool silent = false;
 bool printMaxPolygonBlock = false;
 string filename;
 
 bool parse_cmd(int argc, char *argv[]);
-
-void print(const block &b, const std::string &fn)
-{
-    if (b.type == BlockType::ParticleEmitter)
-        return;
-
-    auto obj_fn = fn;
-    if (!printMaxPolygonBlock)
-        obj_fn += string(".") + b.name;
-    obj_fn += ".obj";
-    ofstream o(obj_fn);
-    o << "#" << "\n";
-    o << "# A.I.M. Model Converter (ver. " << version() << ")\n";
-    o << "#" << "\n";
-    o << "\n";
-    int p1 = fn.rfind("\\");
-    int p2 = fn.rfind("/");
-    auto mtl = fn.substr(std::max(p1, p2) + 1);
-    if (!printMaxPolygonBlock)
-        mtl += string(".") + b.name;
-    o << "mtllib " << mtl << ".mtl\n";
-    o << "\n";
-    //o << b.printObj(mtl);
-
-    auto mtl_fn = fn;
-    if (!printMaxPolygonBlock)
-        mtl_fn += string(".") + b.name;
-    mtl_fn += ".mtl";
-    ofstream m(mtl_fn);
-    m << "#" << "\n";
-    m << "# A.I.M. Model Converter (ver. " << version() << ")\n";
-    m << "#" << "\n";
-    m << "\n";
-    //m << b.printMtl(mtl);
-}
 
 void convert_model(string fn)
 {
@@ -84,30 +50,9 @@ void convert_model(string fn)
     }
 
     // write all
-    m.print(filename);
+    if (all_formats)
+        m.print(filename);
     m.printFbx(filename);
-    return;
-
-    // write obj and mtl
-    if (printMaxPolygonBlock)
-    {
-        int max = 0;
-        int maxBlock = -1;
-        for (int i = 0; i < m.blocks.size(); i++)
-        {
-            if (m.blocks[i].n_vertex > max)
-            {
-                max = m.blocks[i].n_vertex;
-                maxBlock = i;
-            }
-        }
-        print(m.blocks[maxBlock], filename);
-    }
-    else
-    {
-        for (auto &f : m.blocks)
-            print(f, filename);
-    }
 }
 
 int main(int argc, char *argv[])
@@ -166,6 +111,9 @@ bool parse_cmd(int argc, char *argv[])
         }
         switch (arg[1])
         {
+        case 'a':
+            all_formats = true;
+            break;
         case 's':
             silent = true;
             break;

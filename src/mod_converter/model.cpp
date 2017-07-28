@@ -36,6 +36,8 @@
 
 using namespace std;
 
+const float scale_mult = 30.0f;
+
 const map<char, string> transliteration =
 {
     { 'à',"a" },
@@ -171,18 +173,18 @@ std::string vertex::printVertex(bool rotate_x_90) const
     {
         // that rotation is really equivalent to exchanging y and z and z sign
         s = "v " +
-            to_string(-coordinates.x) + " " +
-            to_string(coordinates.z) + " " +
-            to_string(coordinates.y) + " " +
+            to_string(-coordinates.x * scale_mult) + " " +
+            to_string(coordinates.z * scale_mult) + " " +
+            to_string(coordinates.y * scale_mult) + " " +
             to_string(coordinates.w)
             ;
     }
     else
     {
         s = "v " +
-            to_string(-coordinates.x) + " " +
-            to_string(coordinates.y) + " " +
-            to_string(-coordinates.z) + " " +
+            to_string(-coordinates.x * scale_mult) + " " +
+            to_string(coordinates.y * scale_mult) + " " +
+            to_string(-coordinates.z * scale_mult) + " " +
             to_string(coordinates.w)
             ;
     }
@@ -211,6 +213,7 @@ std::string vertex::printTex() const
 
 void damage_model::load(const buffer &b)
 {
+    uint32_t n_polygons;
     READ(b, n_polygons);
     model_polygons.resize(n_polygons);
     READ(b, unk8);
@@ -219,13 +222,15 @@ void damage_model::load(const buffer &b)
         READ(b, t);
     READ(b, unk6);
     READ(b, flags);
+    uint32_t n_vertex;
+    uint32_t n_faces;
     READ(b, n_vertex);
     vertices.resize(n_vertex);
-    READ(b, n_triangles);
-    damage_triangles.resize(n_triangles / 3);
+    READ(b, n_faces);
+    faces.resize(n_faces / 3);
     for (auto &v : vertices)
         v.load(b, flags);
-    for (auto &t : damage_triangles)
+    for (auto &t : faces)
         READ(b, t);
 }
 
@@ -236,6 +241,18 @@ void material::load(const buffer &b)
     READ(b, specular);
     READ(b, emissive);
     READ(b, power);
+
+    auto delim_by_3 = [](auto &v)
+    {
+        v.x /= 3.0f;
+        v.y /= 3.0f;
+        v.z /= 3.0f;
+    };
+
+    // in aim - those values lie in interval [0,3] instead of [0,1]
+    delim_by_3(diffuse);
+    delim_by_3(ambient);
+    delim_by_3(specular);
 }
 
 void animation::load(const buffer &b)
@@ -273,15 +290,15 @@ void animation::segment::loadData(const buffer &b)
 
 std::string block::printMtl() const
 {
-    static const string ext = ".TM.bmp";
+    static const string ext = ".TM.tga";
 
     string s;
     s += "newmtl " + name + "\n";
     s += "\n";
-    s += "Ka " + material.ambient.print() + "\n";
-    s += "Kd " + material.diffuse.print() + "\n";
-    s += "Ks " + material.specular.print() + "\n";
-    s += "   Ns " + to_string(material.power) + "\n";
+    s += "Ka " + mat.ambient.print() + "\n";
+    s += "Kd " + mat.diffuse.print() + "\n";
+    s += "Ks " + mat.specular.print() + "\n";
+    s += "   Ns " + to_string(mat.power) + "\n";
     // d 1.0
     // illum
     s += "\n";
@@ -316,18 +333,15 @@ std::string block::printObj(int group_offset, bool rotate_x_90) const
         s += v.printTex() + "\n";
     s += "\n";
 
-    if (n_faces)
+    for (auto &t : faces)
     {
-        for (auto &t : faces)
-        {
-            auto x = to_string(t.x + 1 + group_offset);
-            auto y = to_string(t.y + 1 + group_offset);
-            auto z = to_string(t.z + 1 + group_offset);
-            x += "/" + x + "/" + x;
-            y += "/" + y + "/" + y;
-            z += "/" + z + "/" + z;
-            s += "f " + x + " " + z + " " + y + "\n";
-        }
+        auto x = to_string(t.x + 1 + group_offset);
+        auto y = to_string(t.y + 1 + group_offset);
+        auto z = to_string(t.z + 1 + group_offset);
+        x += "/" + x + "/" + x;
+        y += "/" + y + "/" + y;
+        z += "/" + z + "/" + z;
+        s += "f " + x + " " + z + " " + y + "\n";
     }
 
     s += "\n";
@@ -361,9 +375,10 @@ void block::load(const buffer &b)
     if (type == BlockType::ParticleEmitter)
         return;
 
+    uint32_t n_animations;
     READ(data, n_animations);
     animations.resize(n_animations);
-    material.load(data);
+    mat.load(data);
 
     // unk
     READ(data, effect);
@@ -379,10 +394,13 @@ void block::load(const buffer &b)
     //
 
     READ(data, additional_params);
+    uint32_t n_damage_models;
     READ(data, n_damage_models);
     damage_models.resize(n_damage_models);
     READ(data, rot);
     READ(data, flags);
+    uint32_t n_vertex;
+    uint32_t n_faces;
     READ(data, n_vertex);
     vertices.resize(n_vertex);
     READ(data, n_faces);
@@ -412,7 +430,7 @@ void block::load(const buffer &b)
     {
         // unknown end of block
         auto triangles2 = faces;
-        triangles2.resize((data.size() - data.index()) / sizeof(triangle));
+        triangles2.resize((data.size() - data.index()) / sizeof(face));
         for (auto &t : triangles2)
             READ(data, t);
     }
@@ -433,9 +451,11 @@ bool block::canPrint() const
 
 void model::load(const buffer &b)
 {
+    int n_blocks;
     READ(b, n_blocks);
     if (n_blocks > 1000) // probably bad file
         throw std::runtime_error("Model file has bad block count (should be <= 1000). Probably not a model.");
+    char header[0x40];
     READ(b, header);
     blocks.resize(n_blocks);
     for (auto &f : blocks)
@@ -465,7 +485,7 @@ void model::print(const std::string &fn)
                 continue;
 
             o << b.printObj(n_vert, rotate_x_90) << "\n";
-            n_vert += b.n_vertex;
+            n_vert += b.vertices.size();
         }
     };
 

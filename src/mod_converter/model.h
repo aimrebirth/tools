@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+extern const float scale_mult;
+
 class buffer;
 
 enum
@@ -102,7 +104,7 @@ struct vertex
     std::string printTex() const;
 };
 
-using triangle = aim_vector3<uint16_t>;
+using face = aim_vector3<uint16_t>;
 
 struct animation
 {
@@ -135,14 +137,11 @@ struct animation
 
 struct damage_model
 {
-    uint32_t n_polygons;
     std::string name;
     std::vector<uint16_t> model_polygons;
     uint32_t flags;
-    uint32_t n_vertex;
-    uint32_t n_triangles;
     std::vector<vertex> vertices;
-    std::vector<triangle> damage_triangles;
+    std::vector<face> faces;
 
     uint8_t unk6;
     float unk8[3];
@@ -197,8 +196,7 @@ struct block
     };
 
     // data
-    uint32_t n_animations;
-    material material;
+    material mat;
 
     //unk (anim + transform settings?)
     EffectType effect;
@@ -208,13 +206,10 @@ struct block
     //
 
     additional_parameters additional_params;
-    uint32_t n_damage_models;
     rotation rot;
     uint32_t flags;
-    uint32_t n_vertex;
-    uint32_t n_faces;
     std::vector<vertex> vertices;
-    std::vector<triangle> faces;
+    std::vector<face> faces;
 
     // animations
     std::vector<animation> animations;
@@ -243,8 +238,6 @@ struct block
 
 struct model
 {
-    int n_blocks;
-    char header[0x40];
     std::vector<block> blocks;
 
     void load(const buffer &b);
