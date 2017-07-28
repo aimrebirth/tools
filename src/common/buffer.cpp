@@ -134,16 +134,14 @@ uint32_t buffer::_write(const void *src, uint32_t size)
     if (!buf_)
     {
         buf_ = std::make_shared<std::vector<uint8_t>>(size);
-        size_ = buf_->size();
-        end_ = index_ + size_;
+        end_ = size_ = buf_->size();
     }
     if (index_ > end_)
         throw std::logic_error("buffer: out of range");
     if (index_ + size > end_)
     {
         buf_->resize(index_ + size);
-        size_ = buf_->size();
-        end_ = index_ + size_;
+        end_ = size_ = buf_->size();
     }
     memcpy((uint8_t *)buf_->data() + index_, src, size);
     skip(size);
