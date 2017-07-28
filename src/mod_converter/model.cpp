@@ -27,8 +27,6 @@
 
 #include <buffer.h>
 
-#include <fbxsdk.h>
-
 //#include <Eigen/Core>
 //#include <Eigen/Dense>
 
@@ -235,6 +233,13 @@ void damage_model::load(const buffer &b)
         READ(b, t);
 }
 
+std::string mat_color::print() const
+{
+    string s;
+    s += to_string(r) + " " + to_string(g) + " " + to_string(b);
+    return s;
+}
+
 void material::load(const buffer &b)
 {
     READ(b, diffuse);
@@ -245,9 +250,12 @@ void material::load(const buffer &b)
 
     auto delim_by_3 = [](auto &v)
     {
-        v.x /= 3.0f;
-        v.y /= 3.0f;
-        v.z /= 3.0f;
+        //if (v.r > 1)
+            //v.r /= 3.0f;
+        //if (v.g > 1)
+            //v.g /= 3.0f;
+        //if (v.b > 1)
+            //v.b /= 3.0f;
     };
 
     // in aim - those values lie in interval [0,3] instead of [0,1]
@@ -292,7 +300,7 @@ void animation::segment::loadData(const buffer &b)
 std::string block::printMtl() const
 {
     string s;
-    s += "newmtl " + name + "\n";
+    s += "newmtl " + h.name + "\n";
     s += "\n";
     s += "Ka " + mat.ambient.print() + "\n";
     s += "Kd " + mat.diffuse.print() + "\n";
@@ -301,14 +309,14 @@ std::string block::printMtl() const
     // d 1.0
     // illum
     s += "\n";
-    if (string(tex_mask) != "_DEFAULT_")
-        s += "map_Ka " + string(tex_mask) + texture_extension + "\n";
-    if (string(tex_mask) != "_DEFAULT_")
-        s += "map_Kd " + string(tex_mask) + texture_extension + "\n";
-    if (string(tex_spec) != "_DEFAULT_")
-        s += "map_Ks " + string(tex_spec) + texture_extension + "\n";
-    if (string(tex_spec) != "_DEFAULT_")
-        s += "map_Ns " + string(tex_spec) + texture_extension + "\n";
+    if (h.tex_mask != "_DEFAULT_")
+        s += "map_Ka " + h.tex_mask + texture_extension + "\n";
+    if (h.tex_mask != "_DEFAULT_")
+        s += "map_Kd " + h.tex_mask + texture_extension + "\n";
+    if (h.tex_spec != "_DEFAULT_")
+        s += "map_Ks " + h.tex_spec + texture_extension + "\n";
+    if (h.tex_spec != "_DEFAULT_")
+        s += "map_Ns " + h.tex_spec + texture_extension + "\n";
     s += "\n";
     return s;
 }
@@ -316,9 +324,9 @@ std::string block::printMtl() const
 std::string block::printObj(int group_offset, bool rotate_x_90) const
 {
     string s;
-    s += "usemtl " + name + "\n";
+    s += "usemtl " + h.name + "\n";
     s += "\n";
-    s += "g " + name + "\n";
+    s += "g " + h.name + "\n";
     s += "s 1\n"; // still unk how to use
     s += "\n";
 
@@ -348,9 +356,8 @@ std::string block::printObj(int group_offset, bool rotate_x_90) const
     return s;
 }
 
-void block::load(const buffer &b)
+void block::header::load(const buffer &b)
 {
-    // header
     READ(b, type);
     READ_STRING(b, name);
     name = translate(name);
@@ -363,17 +370,27 @@ void block::load(const buffer &b)
     READ(b, unk3);
     READ(b, size);
     READ(b, unk4);
+}
 
-    if (size == 0) // critical error!!! cannot survive
+void block::load(const buffer &b)
+{
+    h.load(b);
+
+    if (h.size == 0) // critical error!!! cannot survive
         throw std::runtime_error("model file has bad block size field (size == 0)");
 
     // data
-    buffer data = buffer(b, size);
+    buffer data = buffer(b, h.size);
 
     // we cannot process this type at the moment
-    if (type == BlockType::ParticleEmitter)
+    if (h.type == BlockType::ParticleEmitter)
         return;
 
+    loadPayload(data);
+}
+
+void block::loadPayload(const buffer &data)
+{
     // anims
     uint32_t n_animations;
     READ(data, n_animations);
@@ -420,7 +437,7 @@ void block::load(const buffer &b)
     for (auto &dm : damage_models)
         dm.load(data);
 
-    string s = "extraction error: block #" + std::string(name);
+    string s = "extraction error: block #" + std::string(h.name);
     if (!data.eof())
     {
         cerr << s << "\n";
@@ -442,11 +459,11 @@ void block::load(const buffer &b)
 
 bool block::canPrint() const
 {
-    if (type == BlockType::ParticleEmitter)
+    if (h.type == BlockType::ParticleEmitter)
         return false;
-    if (type != BlockType::VisibleObject)
+    if (h.type != BlockType::VisibleObject)
         return false;
-    if (!(all_lods == 15 || LODs.lod1))
+    if (!(h.all_lods == 15 || h.LODs.lod1))
         return false;
     return true;
 }

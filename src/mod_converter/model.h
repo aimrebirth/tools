@@ -150,12 +150,22 @@ struct damage_model
     virtual void load(const buffer &b);
 };
 
+struct mat_color
+{
+    float r;
+    float g;
+    float b;
+    float alpha;
+
+    std::string print() const;
+};
+
 struct material
 {
-    aim_vector4 ambient;
-    aim_vector4 diffuse;
-    aim_vector4 specular;
-    aim_vector4 emissive;
+    mat_color ambient;
+    mat_color diffuse;
+    mat_color specular;
+    mat_color emissive;
     float power;
 
     void load(const buffer &b);
@@ -176,25 +186,39 @@ struct additional_parameters
 
 struct block
 {
-    // header
-    BlockType type;
-    std::string name;
-    std::string tex_mask;
-    std::string tex_spec;
-    std::string tex3;
-    std::string tex4;
-    union // LODs
+    struct header
     {
-        struct
+        BlockType type;
+        std::string name;
+        std::string tex_mask;
+        std::string tex_spec;
+        std::string tex3;
+        std::string tex4;
+        union // LODs
         {
-            uint8_t lod1 : 1;
-            uint8_t lod2 : 1;
-            uint8_t lod3 : 1;
-            uint8_t lod4 : 1;
-            uint8_t      : 4;
-        } LODs;
-        uint32_t all_lods;
+            struct
+            {
+                uint8_t lod1 : 1;
+                uint8_t lod2 : 1;
+                uint8_t lod3 : 1;
+                uint8_t lod4 : 1;
+                uint8_t : 4;
+            } LODs;
+            uint32_t all_lods;
+        };
+
+        // stuff
+        uint32_t size;
+
+        // unk
+        uint32_t unk2[3];
+        uint32_t unk3;
+        uint32_t unk4[10];
+
+        void load(const buffer &b);
     };
+
+    header h;
 
     // data
     material mat;
@@ -216,13 +240,7 @@ struct block
     std::vector<animation> animations;
     std::vector<damage_model> damage_models;
 
-    // stuff
-    uint32_t size;
-
     // unk
-    uint32_t unk2[3];
-    uint16_t unk3[2];
-    uint32_t unk4[10];
     uint32_t unk7;
     float unk9;
     uint32_t unk10;
@@ -231,6 +249,7 @@ struct block
     uint32_t unk12;
 
     void load(const buffer &b);
+    void loadPayload(const buffer &b);
     std::string printMtl() const;
     std::string printObj(int group_offset, bool rotate_x_90 = false) const;
 

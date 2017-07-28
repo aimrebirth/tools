@@ -231,7 +231,7 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
         if (!b.canPrint())
             continue;
 
-        auto block_name = name + "/" + b.name;
+        auto block_name = name + "/" + b.h.name;
 
         // mesh
         auto m = FbxMesh::Create(pSdkManager, block_name.c_str());
@@ -296,10 +296,10 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
         {
             FbxString lMaterialName = block_name.c_str();
             FbxString lShadingName = "Phong";
-            FbxDouble3 lAmbientColor(b.mat.ambient.x, b.mat.ambient.y, b.mat.ambient.z);
-            FbxDouble3 lSpecularColor(b.mat.specular.x, b.mat.specular.y, b.mat.specular.z);
-            FbxDouble3 lDiffuseColor(b.mat.diffuse.x, b.mat.diffuse.y, b.mat.diffuse.z);
-            FbxDouble3 lEmissiveColor(b.mat.emissive.x, b.mat.emissive.y, b.mat.emissive.z);
+            FbxDouble3 lAmbientColor(b.mat.ambient.r, b.mat.ambient.g, b.mat.ambient.b);
+            FbxDouble3 lSpecularColor(b.mat.specular.r, b.mat.specular.g, b.mat.specular.b);
+            FbxDouble3 lDiffuseColor(b.mat.diffuse.r, b.mat.diffuse.g, b.mat.diffuse.b);
+            FbxDouble3 lEmissiveColor(b.mat.emissive.r, b.mat.emissive.g, b.mat.emissive.b);
 
             FbxLayer* lLayer = m->GetLayer(0);
 
@@ -322,14 +322,14 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
 
             // Generate primary and secondary colors.
             lMaterial->Emissive.Set(lEmissiveColor);
-            //lMaterial->EmissiveFactor.Set(b.material.emissive.x);
+            lMaterial->EmissiveFactor.Set(b.mat.emissive.r);
 
             lMaterial->Ambient.Set(lAmbientColor);
-            //lMaterial->AmbientFactor.Set(b.mat.ambient.x);
+            lMaterial->AmbientFactor.Set(b.mat.ambient.r);
 
             // Add texture for diffuse channel
             lMaterial->Diffuse.Set(lDiffuseColor);
-            //lMaterial->DiffuseFactor.Set(b.mat.diffuse.x);
+            lMaterial->DiffuseFactor.Set(b.mat.diffuse.r);
 
             //lMaterial->TransparencyFactor.Set(0.4);
             //lMaterial->ShadingModel.Set(lShadingName);
@@ -340,49 +340,46 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
             node->AddMaterial(lMaterial);
         }
 
-        FbxFileTexture* lTexture;
+        if (b.mat_type != MaterialType::MaterialOnly)
+        {
+            FbxFileTexture* lTexture;
 
-        // Set texture properties.
-        lTexture = FbxFileTexture::Create(pScene, "Diffuse Texture");
-        lTexture->SetFileName((b.tex_mask + texture_extension).c_str()); // Resource file is in current directory.
-        lTexture->SetTextureUse(FbxTexture::eStandard);
-        lTexture->SetMappingType(FbxTexture::eUV);
-        lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
-        lTexture->UVSet.Set(gDiffuseElementName);
-        if (lMaterial)
-            lMaterial->Diffuse.ConnectSrcObject(lTexture);
+            // Set texture properties.
+            lTexture = FbxFileTexture::Create(pScene, "Diffuse Texture");
+            lTexture->SetFileName((b.h.tex_mask + texture_extension).c_str()); // Resource file is in current directory.
+            lTexture->SetTextureUse(FbxTexture::eStandard);
+            lTexture->SetMappingType(FbxTexture::eUV);
+            lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
+            lTexture->UVSet.Set(gDiffuseElementName);
+            if (lMaterial)
+                lMaterial->Diffuse.ConnectSrcObject(lTexture);
 
-        // Set texture properties.
-        lTexture = FbxFileTexture::Create(pScene, "Ambient Texture");
-        lTexture->SetFileName((b.tex_mask + texture_extension).c_str()); // Resource file is in current directory.
-        lTexture->SetTextureUse(FbxTexture::eStandard);
-        lTexture->SetMappingType(FbxTexture::eUV);
-        lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
-        lTexture->UVSet.Set(gAmbientElementName);
-        if (lMaterial)
-            lMaterial->Ambient.ConnectSrcObject(lTexture);
+            // Set texture properties.
+            lTexture = FbxFileTexture::Create(pScene, "Ambient Texture");
+            lTexture->SetFileName((b.h.tex_mask + texture_extension).c_str()); // Resource file is in current directory.
+            lTexture->SetTextureUse(FbxTexture::eStandard);
+            lTexture->SetMappingType(FbxTexture::eUV);
+            lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
+            lTexture->UVSet.Set(gAmbientElementName);
+            if (lMaterial)
+                lMaterial->Ambient.ConnectSrcObject(lTexture);
 
-        // Set texture properties.
-        lTexture = FbxFileTexture::Create(pScene, "Specular Texture");
-        lTexture->SetFileName((b.tex_spec + texture_extension).c_str()); // Resource file is in current directory.
-        lTexture->SetTextureUse(FbxTexture::eStandard);
-        lTexture->SetMappingType(FbxTexture::eUV);
-        lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
-        lTexture->UVSet.Set(gSpecularElementName);
-        if (lMaterial)
-            lMaterial->Specular.ConnectSrcObject(lTexture);
-
-
-
-
-
+            // Set texture properties.
+            lTexture = FbxFileTexture::Create(pScene, "Specular Texture");
+            lTexture->SetFileName((b.h.tex_spec + texture_extension).c_str()); // Resource file is in current directory.
+            lTexture->SetTextureUse(FbxTexture::eStandard);
+            lTexture->SetMappingType(FbxTexture::eUV);
+            lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
+            lTexture->UVSet.Set(gSpecularElementName);
+            if (lMaterial)
+                lMaterial->Specular.ConnectSrcObject(lTexture);
+        }
 
         // add smoothing groups
         FbxGeometryConverter lGeometryConverter(pSdkManager);
         lGeometryConverter.ComputeEdgeSmoothingFromNormals(m);
         //convert soft/hard edge info to smoothing group info
         lGeometryConverter.ComputePolygonSmoothingFromEdgeSmoothing(m);
-
 
         //
         pScene->GetRootNode()->AddChild(node);

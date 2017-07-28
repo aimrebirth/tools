@@ -50,6 +50,10 @@ else()
     message(STATUS "provide fbx sdk path to build mod converter")
 endif()
 
+file(GLOB mod_reader_src "mod_reader/*")
+add_executable(mod_reader ${mod_reader_src} mod_converter/model.cpp)
+target_link_libraries(mod_reader common)
+
 file(GLOB mpj_loader_src "mpj_loader/*")
 add_executable(mpj_loader ${mpj_loader_src})
 target_link_libraries(mpj_loader common)
