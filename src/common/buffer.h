@@ -37,7 +37,6 @@
 #define WRITE(b, var) b.write(&var)
 
 std::string version();
-std::vector<uint8_t> readFile(const std::string &fn);
 void writeFile(const std::string &fn, const std::vector<uint8_t> &data);
 
 class buffer
@@ -45,6 +44,7 @@ class buffer
 public:
     buffer();
     buffer(size_t size);
+    buffer(const std::string &s);
     buffer(const std::vector<uint8_t> &buf, uint32_t data_offset = 0);
     buffer(const buffer &rhs, uint32_t size);
     buffer(const buffer &rhs, uint32_t size, uint32_t offset);

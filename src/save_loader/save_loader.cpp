@@ -20,13 +20,14 @@
 #include <string>
 
 #include "save.h"
+#include <primitives/filesystem.h>
 
 int main(int argc, char *argv[])
 try
 {
     if (argc != 2)
     {
-        printf("Usage: %s file.sav\n", argv[0]);
+        printf("Usage: %s {file.sav,saves_dir}\n", argv[0]);
         return 1;
     }
 
@@ -34,13 +35,31 @@ try
     save_changes.money = 999999999.0f;
     save_changes.upgrade_equ_for_player = true;
 
-    buffer f(readFile(argv[1]));
-    save_changes.out = buffer(f.buf());
+    auto func = [](auto &p)
+    {
+        buffer f(read_file(p));
+        save_changes.out = buffer(f.buf());
 
-    save s;
-    s.load(f);
+        save s;
+        s.load(f);
 
-    writeFile(argv[1], save_changes.out.buf());
+        writeFile(p.string(), save_changes.out.buf());
+    };
+
+    path p = argv[1];
+    if (fs::is_regular_file(p))
+        func(p);
+    else if (fs::is_directory(p))
+    {
+        auto files = enumerate_files_like(p, ".*\\.sav", false);
+        for (auto &f : files)
+        {
+            std::cout << "processing: " << f << "\n";
+            func(f);
+        }
+    }
+    else
+        throw std::runtime_error("Bad fs object");
 
     return 0;
 }

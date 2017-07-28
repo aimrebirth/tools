@@ -24,6 +24,8 @@
 
 #include "mmp.h"
 
+#include <primitives/filesystem.h>
+
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -31,21 +33,41 @@ try
 {
     if (argc < 2 || argc > 3)
     {
-        cout << "Usage:\n" << argv[0] << " file.mmp [texture_ids.txt]" << "\n";
+        cout << "Usage:\n" << argv[0] << " {file.mmp,mmp_dir} [texture_ids.txt]" << "\n";
         return 1;
     }
-    mmp m;
-    if (argc > 2)
-        m.loadTextureNames(argv[2]);
-    m.load(argv[1]);
-    m.process();
-    m.writeFileInfo();
-    m.writeTexturesList();
-    m.writeHeightMap();
-    m.writeTextureMap();
-    m.writeTextureAlphaMaps();
-    m.writeTextureMapColored();
-    m.writeColorMap();
+
+    auto func = [&argc, &argv](auto &p)
+    {
+        mmp m;
+        if (argc > 2)
+            m.loadTextureNames(argv[2]);
+        m.load(p.string());
+        m.process();
+        m.writeFileInfo();
+        m.writeTexturesList();
+        m.writeHeightMap();
+        m.writeTextureMap();
+        m.writeTextureAlphaMaps();
+        m.writeTextureMapColored();
+        m.writeColorMap();
+    };
+
+    path p = argv[1];
+    if (fs::is_regular_file(p))
+        func(p);
+    else if (fs::is_directory(p))
+    {
+        auto files = enumerate_files_like(p, ".*\\.mmp", false);
+        for (auto &f : files)
+        {
+            std::cout << "processing: " << f << "\n";
+            func(f);
+        }
+    }
+    else
+        throw std::runtime_error("Bad fs object");
+
     return 0;
 }
 catch (std::exception &e)

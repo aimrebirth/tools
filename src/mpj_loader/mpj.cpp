@@ -23,6 +23,8 @@
 #include <fstream>
 #include <iomanip>
 
+#include <primitives/filesystem.h>
+
 segment *segment::create_segment(const buffer &b)
 {
     SegmentType type;
@@ -220,6 +222,6 @@ void mpj::load(const buffer &b)
 void mpj::load(const std::string &fn)
 {
     filename = fn;
-    buffer b(readFile(filename));
+    buffer b(read_file(filename));
     load(b);
 }

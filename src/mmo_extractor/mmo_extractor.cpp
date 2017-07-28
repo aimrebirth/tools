@@ -32,18 +32,23 @@
 
 #include <Polygon4/DataManager/Storage.h>
 #include <Polygon4/DataManager/Types.h>
+#include <primitives/filesystem.h>
 
 #include <buffer.h>
 #include <types.h>
+
+using namespace polygon4;
+using namespace polygon4::detail;
 
 #define RAD2GRAD(x) (x) = (x) / M_PI * 180.0
 #define ASSIGN(x, d) isnan(x) ? d : x
 
 std::string prefix;
+int inserted_all = 0;
 
-struct storage
+struct mmo_storage
 {
-    std::string name;
+    path name;
     Objects objects;
     MechGroups mechGroups;
     MapGoods mapGoods;
@@ -81,32 +86,18 @@ struct storage
     }
 };
 
-storage read_mmo(std::string fn)
+mmo_storage read_mmo(const path &fn)
 {
-    buffer f(readFile(fn));
-    storage s;
+    buffer f(read_file(fn));
+    mmo_storage s;
     s.name = fn;
     s.load(f);
     return s;
 }
 
-void write_mmo(std::string db, const storage &s)
+void write_mmo(Storage *storage, const mmo_storage &s)
 {
-    using namespace polygon4;
-    using namespace polygon4::detail;
-
-    auto storage = initStorage(db);
-    storage->load();
-
-    auto p1 = s.name.rfind('\\');
-    if (p1 == -1)
-        p1 = 0;
-    auto p2 = s.name.rfind('/');
-    if (p2 == -1)
-        p2 = 0;
-    int p = std::max(p1, p2);
-    std::string map_name = s.name.substr(p + 1);
-    map_name = map_name.substr(0, map_name.find('.'));
+    std::string map_name = s.name.filename().stem().string();
     if (!prefix.empty())
         map_name = prefix + "." + map_name;
     std::transform(map_name.begin(), map_name.end(), map_name.begin(), ::tolower);
@@ -256,8 +247,7 @@ void write_mmo(std::string db, const storage &s)
             }
         }
     }
-    if (inserted)
-        storage->save();
+    inserted_all += inserted;
     std::cout << "inserted: " << inserted << ", exist: " << exist << "\n";
 }
 
@@ -266,7 +256,7 @@ try
 {
     if (argc != 4)
     {
-        std::cout << "Usage:\n" << argv[0] << " db.sqlite file.mmo prefix" << "\n";
+        std::cout << "Usage:\n" << argv[0] << " db.sqlite {file.mmo,mmo_dir} prefix" << "\n";
         return 1;
     }
     prefix = argv[3];
@@ -276,8 +266,28 @@ try
         gameType = GameType::Aim2;
     else
         throw std::runtime_error("unknown prefix (game type)");
-    storage s = read_mmo(argv[2]);
-    write_mmo(argv[1], s);
+
+    auto storage = initStorage(argv[1]);
+    storage->load();
+
+    path p = argv[2];
+    if (fs::is_regular_file(p))
+        write_mmo(storage.get(), read_mmo(p));
+    else if (fs::is_directory(p))
+    {
+        auto files = enumerate_files_like(p, ".*\\.mmo", false);
+        for (auto &f : files)
+        {
+            std::cout << "processing: " << f << "\n";
+            write_mmo(storage.get(), read_mmo(f));
+        }
+    }
+    else
+        throw std::runtime_error("Bad fs object");
+
+    if (inserted_all)
+        storage->save();
+
     return 0;
 }
 catch (std::exception &e)

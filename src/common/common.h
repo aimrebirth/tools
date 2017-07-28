@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <string>
+#include <primitives/filesystem.h>
 
 template <typename T>
 bool replace_all(T &str, const T &from, const T &to)

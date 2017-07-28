@@ -22,6 +22,7 @@
 
 #include "ParserDriver.h"
 #include "script.h"
+#include <primitives/filesystem.h>
 
 using std::cout;
 using std::string;
@@ -31,46 +32,64 @@ try
 {
     if (argc != 2)
     {
-        cout << "Usage:\n" << argv[0] << " script.scr";
+        cout << "Usage:\n" << argv[0] << " {script.scr,scr_dir}";
         return 1;
     }
 
-    std::string filename = argv[1];
-
-    // read
-    buffer b(readFile(filename));
-    script s;
-    s.load(b);
-    auto str = s.get_text();
-
-    ParserDriver driver;
-    if (driver.parse(str))
+    auto func = [](auto filename)
     {
-        throw std::runtime_error("error during parsing input file");
-    }
-    auto &ctx = driver.getContext();
+        // read
+        buffer b(read_file(filename));
+        script s;
+        s.load(b);
+        auto str = s.get_text();
 
-    // write script
-    {
-        filename += ".txt";
-        std::ofstream ofile(filename);
-        if (ofile)
-            ofile << ctx.getText();
-    }
-
-    // write function calls
-    {
-        std::ofstream functions("functions.txt", std::ios::app);
-        if (functions)
+        ParserDriver driver;
+        if (driver.parse(str))
         {
-            for (auto &f : driver.functions)
+            throw std::runtime_error("error during parsing input file");
+        }
+        auto &ctx = driver.getContext();
+
+        // write script
+        {
+            filename += ".txt";
+            std::ofstream ofile(filename);
+            if (ofile)
+                ofile << ctx.getText();
+        }
+
+        // write function calls
+        {
+            std::ofstream functions("functions.txt", std::ios::app);
+            if (functions)
             {
-                std::string f2(f.size(), 0);
-                std::transform(f.begin(), f.end(), f2.begin(), tolower);
-                functions << f2 << "\n";
+                for (auto &f : driver.functions)
+                {
+                    std::string f2(f.size(), 0);
+                    std::transform(f.begin(), f.end(), f2.begin(), tolower);
+                    functions << f2 << "\n";
+                }
             }
         }
+    };
+
+    path p = argv[1];
+    if (fs::is_regular_file(p))
+        func(p.string());
+    else if (fs::is_directory(p))
+    {
+        auto files = enumerate_files_like(p, ".*\\.scr", false);
+        auto files2 = enumerate_files_like(p, ".*\\.QST", false);
+        files.insert(files2.begin(), files2.end());
+        for (auto &f : files)
+        {
+            std::cout << "processing: " << f << "\n";
+            func(f.string());
+        }
     }
+    else
+        throw std::runtime_error("Bad fs object");
 
     return 0;
 }

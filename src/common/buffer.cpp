@@ -73,6 +73,14 @@ buffer::buffer(size_t size)
     skip(0);
 }
 
+buffer::buffer(const std::string &s)
+    : buf_(new std::vector<uint8_t>(&s[0], &s[s.size()]))
+{
+    skip(0);
+    size_ = buf_->size();
+    end_ = index_ + size_;
+}
+
 buffer::buffer(const std::vector<uint8_t> &buf, uint32_t data_offset)
     : buf_(new std::vector<uint8_t>(buf)), data_offset(data_offset)
 {

@@ -2,45 +2,45 @@
 
 #include <stdint.h>
 
-using BYTE = uint8_t;
-using WORD = uint16_t;
-using DWORD = uint32_t;
-using LONG = uint32_t;
-
 #pragma pack(push, 1)
 
-typedef struct tagBITMAPFILEHEADER {
-    WORD    bfType;
-    DWORD   bfSize;
-    WORD    bfReserved1;
-    WORD    bfReserved2;
-    DWORD   bfOffBits;
-} BITMAPFILEHEADER;
+struct bmp_header
+{
+    int16_t bfType;
+    int32_t bfSize;
+    int16_t bfReserved1;
+    int16_t bfReserved2;
+    int32_t bfOffBits;
+};
 
-typedef struct tagBITMAPINFOHEADER {
-    DWORD      biSize;
-    LONG       biWidth;
-    LONG       biHeight;
-    WORD       biPlanes;
-    WORD       biBitCount;
-    DWORD      biCompression;
-    DWORD      biSizeImage;
-    LONG       biXPelsPerMeter;
-    LONG       biYPelsPerMeter;
-    DWORD      biClrUsed;
-    DWORD      biClrImportant;
-} BITMAPINFOHEADER;
+struct bmp_info_header
+{
+    int32_t biSize;
+    int32_t biWidth;
+    int32_t biHeight;
+    int16_t biPlanes;
+    int16_t biBitCount;
+    int32_t biCompression;
+    int32_t biSizeImage;
+    int32_t biXPelsPerMeter;
+    int32_t biYPelsPerMeter;
+    int32_t biClrUsed;
+    int32_t biClrImportant;
+};
 
-typedef struct tagRGBQUAD {
-    BYTE    rgbBlue;
-    BYTE    rgbGreen;
-    BYTE    rgbRed;
-    BYTE    rgbReserved;
-} RGBQUAD;
+struct rgb_quad
+{
+    int8_t rgbBlue;
+    int8_t rgbGreen;
+    int8_t rgbRed;
+    int8_t rgbReserved;
+};
 
-typedef struct tagBITMAPINFO {
-    BITMAPINFOHEADER    bmiHeader;
-    RGBQUAD             bmiColors[1];
-} BITMAPINFO;
+struct bmp_info
+{
+
+    bmp_info_header bmiHeader;
+    rgb_quad bmiColors[1];
+};
 
 #pragma pack(pop)

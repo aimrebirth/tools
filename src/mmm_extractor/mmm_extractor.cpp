@@ -44,7 +44,7 @@ struct mmm
 
 mmm read_mmm(const path &fn)
 {
-    buffer b(readFile(fn));
+    buffer b(read_file(fn, true));
     mmm m;
     m.load(b);
 
@@ -59,8 +59,8 @@ mmm read_mmm(const path &fn)
 
 void process_mmm(const path &fn)
 {
-    auto m = read_mmm(argv[1]);
-    write_mat_bmp(std::string(argv[1]) + ".bmp", m.data.unpack_mmm());
+    auto m = read_mmm(fn);
+    write_mat_bmp(fn.string() + ".bmp", m.data.unpack_mmm());
 }
 
 int main(int argc, char *argv[])
@@ -71,13 +71,17 @@ try
         cout << "Usage:\n" << argv[0] << " {file.mmm,dir}" << "\n";
         return 1;
     }
-    auto p = argv[1];
+    path p = argv[1];
     if (fs::is_regular_file(p))
         process_mmm(p);
     else if (fs::is_directory(p))
     {
-        auto f = enumerate_files(p, false);
-
+        auto files = enumerate_files_like(p, ".*\\.mmm", false);
+        for (auto &f : files)
+        {
+            std::cout << "processing: " << f << "\n";
+            process_mmm(f);
+        }
     }
     else
         throw std::runtime_error("Bad fs object");

@@ -28,6 +28,8 @@
 #include <buffer.h>
 #include <dxt5.h>
 
+#include <primitives/filesystem.h>
+
 using namespace std;
 
 void convert_simple(buffer &dst, const buffer &src, int width, int height)
@@ -44,19 +46,19 @@ void convert_simple(buffer &dst, const buffer &src, int width, int height)
     }
 }
 
-void convert(string fn)
+void convert(const path &fn)
 {
     int width, height;
     int dxt5_flag = 0;
 
-    buffer src(readFile(fn));
+    buffer src(read_file(fn));
     READ(src, width);
     READ(src, height);
     src.seek(0x10);
     src.read(&dxt5_flag, 1);
     src.seek(0x4C);
 
-    fn = fn + ".bmp";
+    auto s = fn.string() + ".bmp";
     mat<uint32_t> m(width, height);
     if (dxt5_flag)
     {
@@ -65,7 +67,6 @@ void convert(string fn)
         d.height = height;
         d.load_blocks(src);
         m = d.unpack_tm();
-        write_mat_bmp(fn, m);
     }
     else
     {
@@ -75,7 +76,7 @@ void convert(string fn)
         memcpy(&m(0,0), dst2.getPtr(), dst2.size());
         m = m.flip(); // flip tga (normal rows order) to bmp (inverse rows order)
     }
-    write_mat_bmp(fn, m);
+    write_mat_bmp(s, m);
 }
 
 int main(int argc, char *argv[])
@@ -86,7 +87,20 @@ try
         printf("Usage: %s file.tm\n", argv[0]);
         return 1;
     }
-    convert(argv[1]);
+    path p = argv[1];
+    if (fs::is_regular_file(p))
+        convert(p);
+    else if (fs::is_directory(p))
+    {
+        auto files = enumerate_files_like(p, ".*\\.TM", false);
+        for (auto &f : files)
+        {
+            std::cout << "processing: " << f << "\n";
+            convert(f);
+        }
+    }
+    else
+        throw std::runtime_error("Bad fs object");
     return 0;
 }
 catch (std::exception &e)

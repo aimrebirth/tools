@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <stdio.h>
 #include <stdint.h>
@@ -26,19 +27,21 @@
 #include <buffer.h>
 #include "model.h"
 
+#include <primitives/filesystem.h>
+
 using namespace std;
 
 // options
 bool all_formats = false;
 bool silent = false;
 bool printMaxPolygonBlock = false;
-string filename;
+path p;
 
 bool parse_cmd(int argc, char *argv[]);
 
-void convert_model(string fn)
+void convert_model(const path &fn)
 {
-    buffer b(readFile(fn));
+    buffer b(read_file(fn));
     model m;
     m.load(b);
 
@@ -51,8 +54,8 @@ void convert_model(string fn)
 
     // write all
     if (all_formats)
-        m.print(filename);
-    m.printFbx(filename);
+        m.print(fn.string());
+    m.printFbx(fn.string());
 }
 
 int main(int argc, char *argv[])
@@ -60,10 +63,24 @@ try
 {
     if (argc < 2 || !parse_cmd(argc, argv))
     {
-        printf("Usage: %s [OPTIONS] model_file\n", argv[0]);
+        printf("Usage: %s [OPTIONS] {model_file,model_dir}\n", argv[0]);
         return 1;
     }
-    convert_model(filename);
+    if (fs::is_regular_file(p))
+        convert_model(p);
+    else if (fs::is_directory(p))
+    {
+        auto files = enumerate_files(p, false);
+        for (auto &f : files)
+        {
+            if (f.has_extension())
+                continue;
+            std::cout << "processing: " << f << "\n";
+            convert_model(f);
+        }
+    }
+    else
+        throw std::runtime_error("Bad fs object");
     return 0;
 }
 catch (std::runtime_error &e)
@@ -71,12 +88,12 @@ catch (std::runtime_error &e)
     if (silent)
         return 1;
     string error;
-    error += filename;
+    error += p.string();
     error += "\n";
     error += "fatal error: ";
     error += e.what();
     error += "\n";
-    ofstream ofile(filename + ".error.txt");
+    ofstream ofile(p.string() + ".error.txt");
     ofile << error;
     return 1;
 }
@@ -84,7 +101,7 @@ catch (std::exception &e)
 {
     if (silent)
         return 1;
-    printf("%s\n", filename.c_str());
+    printf("%s\n", p.string().c_str());
     printf("error: %s\n", e.what());
     return 1;
 }
@@ -92,7 +109,7 @@ catch (...)
 {
     if (silent)
         return 1;
-    printf("%s\n", filename.c_str());
+    printf("%s\n", p.string().c_str());
     printf("error: unknown exception\n");
     return 1;
 }
@@ -106,7 +123,7 @@ bool parse_cmd(int argc, char *argv[])
         {
             if (i != argc - 1)
                 return false;
-            filename = arg;
+            p = arg;
             continue;
         }
         switch (arg[1])

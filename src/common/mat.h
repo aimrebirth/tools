@@ -118,11 +118,11 @@ inline void write_mat_bmp(const std::string &filename, int width, int height, in
     FILE *f = fopen(filename.c_str(), "wb");
     if (f == nullptr)
         return;
-    BITMAPFILEHEADER h = { 0 };
+    bmp_header h = { 0 };
     h.bfType = 0x4D42;
-    h.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + s;
-    h.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-    BITMAPINFOHEADER i = { 0 };
+    h.bfSize = sizeof(bmp_header) + sizeof(bmp_info_header) + s;
+    h.bfOffBits = sizeof(bmp_header) + sizeof(bmp_info_header);
+    bmp_info_header i = { 0 };
     i.biSize = sizeof(i);
     i.biWidth = width;
     i.biHeight = height;
@@ -134,8 +134,8 @@ inline void write_mat_bmp(const std::string &filename, int width, int height, in
     i.biYPelsPerMeter = 0;
     i.biClrUsed = 0;
     i.biClrImportant = 0;
-    fwrite(&h, sizeof(BITMAPFILEHEADER), 1, f);
-    fwrite(&i, sizeof(BITMAPINFOHEADER), 1, f);
+    fwrite(&h, sizeof(bmp_header), 1, f);
+    fwrite(&i, sizeof(bmp_info_header), 1, f);
     fwrite(b, s, 1, f);
     fclose(f);
 }

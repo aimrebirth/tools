@@ -21,14 +21,14 @@
 #include <fstream>
 
 #include <Windows.h>
-
 #include <buffer.h>
+#include <primitives/filesystem.h>
 
 void open_db(string path, db &db)
 {
-    db.t.load(buffer(readFile(path + ".tab")));
-    db.load(buffer(readFile(path + ".ind")));
-    buffer b(readFile(path + ".dat"));
+    db.t.load(buffer(read_file(path + ".tab")));
+    db.load(buffer(read_file(path + ".ind")));
+    buffer b(read_file(path + ".dat"));
     for (auto &v : db.values)
         v.load_fields(db.t, b);
 }
@@ -56,7 +56,7 @@ void create_sql(string path, const db &db)
     ofstream ofile(path + ".sql");
     if (!ofile)
         return;
-    
+
     string master_table_name = "DB_TABLE_LIST";
     const string id = "ID";
     const string row_type = "TEXT_ID";

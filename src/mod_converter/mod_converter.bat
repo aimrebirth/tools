@@ -1,1 +1,0 @@
-python mod_converter.py --dir "h:\\Games\\Epic Games\\Projects\\AIM\\models1\\"

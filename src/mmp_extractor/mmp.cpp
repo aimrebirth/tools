@@ -22,6 +22,8 @@
 #include <fstream>
 #include <iomanip>
 
+#include <primitives/filesystem.h>
+
 void water_segment::load(const buffer &b)
 {
     wg.load(b);
@@ -112,7 +114,7 @@ void mmp::load(const buffer &b)
 void mmp::load(const std::string &fn)
 {
     filename = fn;
-    buffer b(readFile(filename));
+    buffer b(read_file(filename));
     load(b);
 }
 
