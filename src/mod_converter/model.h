@@ -55,7 +55,7 @@ enum class BlockType : uint32_t
     ParticleEmitter,
 };
 
-enum class EffectType : uint32_t
+enum class MaterialType : uint32_t
 {
     Texture = 0x0,
     TextureWithGlareMap = 0x1,
@@ -198,9 +198,9 @@ struct block
 
     // data
     material mat;
+    MaterialType mat_type;
 
     //unk (anim + transform settings?)
-    EffectType effect;
     uint32_t auto_animation;
     float animation_cycle;
     uint32_t triangles_mult_7;

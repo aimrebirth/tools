@@ -24,6 +24,8 @@
 #include <buffer.h>
 #include <dxt5.h>
 
+#include <primitives/filesystem.h>
+
 using namespace std;
 
 struct mmm
@@ -40,7 +42,7 @@ struct mmm
     }
 };
 
-mmm read_mmm(string fn)
+mmm read_mmm(const path &fn)
 {
     buffer b(readFile(fn));
     mmm m;
@@ -55,16 +57,30 @@ mmm read_mmm(string fn)
     return m;
 }
 
+void process_mmm(const path &fn)
+{
+    auto m = read_mmm(argv[1]);
+    write_mat_bmp(std::string(argv[1]) + ".bmp", m.data.unpack_mmm());
+}
+
 int main(int argc, char *argv[])
 try
 {
     if (argc != 2)
     {
-        cout << "Usage:\n" << argv[0] << " file.mmp" << "\n";
+        cout << "Usage:\n" << argv[0] << " {file.mmm,dir}" << "\n";
         return 1;
     }
-    auto m = read_mmm(argv[1]);
-    write_mat_bmp(std::string(argv[1]) + ".bmp", m.data.unpack_mmm());
+    auto p = argv[1];
+    if (fs::is_regular_file(p))
+        process_mmm(p);
+    else if (fs::is_directory(p))
+    {
+        auto f = enumerate_files(p, false);
+
+    }
+    else
+        throw std::runtime_error("Bad fs object");
     return 0;
 }
 catch (std::exception &e)

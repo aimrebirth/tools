@@ -374,13 +374,16 @@ void block::load(const buffer &b)
     if (type == BlockType::ParticleEmitter)
         return;
 
+    // anims
     uint32_t n_animations;
     READ(data, n_animations);
     animations.resize(n_animations);
+
+    // mat
     mat.load(data);
+    READ(data, mat_type);
 
     // unk
-    READ(data, effect);
     READ(data, unk7);
     READ(data, unk9);
     READ(data, unk10);

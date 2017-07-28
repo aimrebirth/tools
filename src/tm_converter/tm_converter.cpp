@@ -73,7 +73,7 @@ void convert(string fn)
         convert_simple(dst2, src, width, height);
         dst2.reset();
         memcpy(&m(0,0), dst2.getPtr(), dst2.size());
-        m = m.flip(); // flip tga (normal) to bmp (inverse)
+        m = m.flip(); // flip tga (normal rows order) to bmp (inverse rows order)
     }
     write_mat_bmp(fn, m);
 }

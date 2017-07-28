@@ -1,4 +1,11 @@
-include_directories(common)
+file(GLOB common_src "common/*")
+add_library(common ${common_src})
+target_include_directories(common PUBLIC common)
+target_link_libraries(common
+    pvt.egorpugin.primitives.filesystem
+    pvt.egorpugin.primitives.executor
+)
+add_dependencies(common version)
 
 if (WIN32)
 file(GLOB unpaker_src "unpaker/*")
@@ -11,11 +18,17 @@ endif()
 
 file(GLOB mmm_extractor_src "mmm_extractor/*")
 add_executable(mmm_extractor ${mmm_extractor_src})
-target_link_libraries(mmm_extractor common pvt.lzwdgc.polygon4.data_manager.data_manager)
+target_link_libraries(mmm_extractor
+    common
+    pvt.lzwdgc.polygon4.data_manager.data_manager
+)
 
 file(GLOB mmo_extractor_src "mmo_extractor/*")
 add_executable(mmo_extractor ${mmo_extractor_src})
-target_link_libraries(mmo_extractor common pvt.lzwdgc.polygon4.data_manager.data_manager)
+target_link_libraries(mmo_extractor
+    common
+    pvt.lzwdgc.polygon4.data_manager.data_manager
+)
 
 file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
@@ -52,5 +65,4 @@ file(GLOB save_loader_src "save_loader/*")
 add_executable(save_loader ${save_loader_src})
 target_link_libraries(save_loader common)
 
-add_subdirectory(common)
 add_subdirectory(script2txt)

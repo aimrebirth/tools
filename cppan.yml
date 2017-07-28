@@ -2,4 +2,5 @@ local_settings:
     dependencies:
         - pvt.lzwdgc.polygon4.data_manager.data_manager: master
         - pvt.cppan.demo.eigen: 3
-
+        - pvt.egorpugin.primitives.filesystem: master
+        - pvt.egorpugin.primitives.executor: master
