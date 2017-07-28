@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <stdio.h>
+#include <iostream>
 
 #include "decode.h"
 
@@ -104,7 +105,12 @@ void segment::load_segment()
     auto f = file;
 
     fseek(f, offset, SEEK_SET);
-    assert(flags != 0);
+    if (flags == 0)
+    {
+        std::cerr << "Something is wrong. Maybe you trying to open aim2 files?\n";
+        std::cerr << "They can be opened with SDK extractor.\n";
+        throw std::runtime_error("error");
+    }
 
     FREAD(size1);
     size2 = size1;

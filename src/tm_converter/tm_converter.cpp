@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <stdio.h>
 #include <stdint.h>
@@ -29,7 +30,7 @@
 
 using namespace std;
 
-void convert_simple(buffer &dst, buffer &src, int width, int height)
+void convert_simple(buffer &dst, const buffer &src, int width, int height)
 {
     int size = width * height * 2;
     for (int i = 0; i < size; i++)
@@ -43,7 +44,7 @@ void convert_simple(buffer &dst, buffer &src, int width, int height)
     }
 }
 
-void tm2tga(string fn)
+void convert(string fn)
 {
     int width, height;
     int dxt5_flag = 0;
@@ -55,27 +56,26 @@ void tm2tga(string fn)
     src.read(&dxt5_flag, 1);
     src.seek(0x4C);
 
+    fn = fn + ".bmp";
+    mat<uint32_t> m(width, height);
     if (dxt5_flag)
     {
         dxt5 d;
         d.width = width;
         d.height = height;
         d.load_blocks(src);
-        write_mat_tga(fn + ".tga", d.unpack_tm());
+        m = d.unpack_tm();
+        write_mat_bmp(fn, m);
     }
     else
     {
-        buffer dst;
-        tga t;
-        t.width = width;
-        t.height = height;
-        t.write(dst);
-
-        convert_simple(dst, src, width, height);
-        transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
-        fn = fn.substr(0, fn.rfind(".tm")) + ".tga";
-        writeFile(fn, dst.buf());
+        buffer dst2;
+        convert_simple(dst2, src, width, height);
+        dst2.reset();
+        memcpy(&m(0,0), dst2.getPtr(), dst2.size());
+        m = m.flip(); // flip tga (normal) to bmp (inverse)
     }
+    write_mat_bmp(fn, m);
 }
 
 int main(int argc, char *argv[])
@@ -86,7 +86,7 @@ try
         printf("Usage: %s file.tm\n", argv[0]);
         return 1;
     }
-    tm2tga(argv[1]);
+    convert(argv[1]);
     return 0;
 }
 catch (std::exception &e)

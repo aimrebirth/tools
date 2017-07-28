@@ -37,6 +37,7 @@
 using namespace std;
 
 const float scale_mult = 30.0f;
+const std::string texture_extension = ".TM.bmp";
 
 const map<char, string> transliteration =
 {
@@ -290,8 +291,6 @@ void animation::segment::loadData(const buffer &b)
 
 std::string block::printMtl() const
 {
-    static const string ext = ".TM.tga";
-
     string s;
     s += "newmtl " + name + "\n";
     s += "\n";
@@ -303,13 +302,13 @@ std::string block::printMtl() const
     // illum
     s += "\n";
     if (string(tex_mask) != "_DEFAULT_")
-        s += "map_Ka " + string(tex_mask) + ext + "\n";
+        s += "map_Ka " + string(tex_mask) + texture_extension + "\n";
     if (string(tex_mask) != "_DEFAULT_")
-        s += "map_Kd " + string(tex_mask) + ext + "\n";
+        s += "map_Kd " + string(tex_mask) + texture_extension + "\n";
     if (string(tex_spec) != "_DEFAULT_")
-        s += "map_Ks " + string(tex_spec) + ext + "\n";
+        s += "map_Ks " + string(tex_spec) + texture_extension + "\n";
     if (string(tex_spec) != "_DEFAULT_")
-        s += "map_Ns " + string(tex_spec) + ext + "\n";
+        s += "map_Ns " + string(tex_spec) + texture_extension + "\n";
     s += "\n";
     return s;
 }

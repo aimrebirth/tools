@@ -23,6 +23,7 @@
 #include <vector>
 
 extern const float scale_mult;
+extern const std::string texture_extension;
 
 class buffer;
 
