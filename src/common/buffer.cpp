@@ -36,23 +36,6 @@ std::string version()
     return s;
 }
 
-std::vector<uint8_t> readFile(const std::string &fn)
-{
-    FILE *f = fopen(fn.c_str(), "rb");
-    if (!f)
-    {
-        printf("Cannot open file %s\n", fn.c_str());
-        throw std::runtime_error("Cannot open file " + fn);
-    }
-    fseek(f, 0, SEEK_END);
-    auto sz = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    std::vector<uint8_t> buf(sz);
-    fread(buf.data(), 1, sz, f);
-    fclose(f);
-    return buf;
-}
-
 void writeFile(const std::string &fn, const std::vector<uint8_t> &data)
 {
     FILE *f = fopen(fn.c_str(), "wb");

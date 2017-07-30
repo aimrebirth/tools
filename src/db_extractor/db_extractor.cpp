@@ -20,36 +20,7 @@
 
 #include <fstream>
 
-#include <Windows.h>
 #include <buffer.h>
-#include <primitives/filesystem.h>
-
-void open_db(string path, db &db)
-{
-    db.t.load(buffer(read_file(path + ".tab")));
-    db.load(buffer(read_file(path + ".ind")));
-    buffer b(read_file(path + ".dat"));
-    for (auto &v : db.values)
-        v.load_fields(db.t, b);
-}
-
-string str2utf8(string codepage_str)
-{
-    int size = MultiByteToWideChar(CP_ACP, MB_COMPOSITE, codepage_str.c_str(),
-                                   codepage_str.length(), nullptr, 0);
-    std::wstring utf16_str(size, '\0');
-    MultiByteToWideChar(CP_ACP, MB_COMPOSITE, codepage_str.c_str(),
-                        codepage_str.length(), &utf16_str[0], size);
-
-    int utf8_size = WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
-                                        utf16_str.length(), nullptr, 0,
-                                        nullptr, nullptr);
-    std::string utf8_str(utf8_size, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
-                        utf16_str.length(), &utf8_str[0], utf8_size,
-                        nullptr, nullptr);
-    return utf8_str;
-}
 
 void create_sql(string path, const db &db)
 {
@@ -157,10 +128,10 @@ try
         cout << "Usage:\n" << argv[0] << " path/to/aim_game/data/db" << "\n" << argv[0] << " path/to/aim_game/data/quest" << "\n";
         return 1;
     }
-    string path = argv[1];
+    path p = argv[1];
     db db;
-    open_db(path, db);
-    create_sql(path, db);
+    db.open(p);
+    create_sql(p.string(), db);
     return 0;
 }
 catch (std::exception &e)

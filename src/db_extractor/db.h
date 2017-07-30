@@ -16,6 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <buffer.h>
+
+#include <primitives/filesystem.h>
+
 #include <assert.h>
 #include <iostream>
 #include <map>
@@ -23,8 +27,6 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-
-#include <buffer.h>
 
 using namespace std;
 
@@ -47,7 +49,7 @@ struct table
 
 struct field
 {
-    uint32_t table_id;
+    uint32_t table_id = -1;
     uint32_t id;
     std::string name;
     FieldType type;
@@ -90,10 +92,13 @@ struct value
 
 struct db
 {
-    uint32_t number_of_values;
+    uint32_t number_of_values = 0;
 
     tab t;
     vector<value> values;
 
     void load(const buffer &b);
+    void open(const path &p);
 };
+
+std::string str2utf8(const std::string &codepage_str);

@@ -20,6 +20,8 @@
 
 #include <buffer.h>
 
+#include <Windows.h>
+
 string getSqlType(FieldType type)
 {
     switch (type)
@@ -45,6 +47,8 @@ void table::load(const buffer &b)
 
 void field::load(const buffer &b)
 {
+    if (b.eof())
+        return;
     READ(b, table_id);
     READ(b, id);
     READ_STRING(b, name);
@@ -69,6 +73,8 @@ void tab::load(const buffer &b)
     {
         field t;
         t.load(b);
+        if (t.table_id == -1)
+            continue;
         fields[t.id] = t;
     }
 }
@@ -104,6 +110,8 @@ void value::load_fields(const tab &tab, buffer &b)
         case FieldType::String:
             fv.s.resize(fv.size);
             READ_N(data, fv.s[0], fv.s.size());
+            while (!fv.s.empty() && fv.s.back() == '\0')
+                fv.s.resize(fv.s.size() - 1);
             break;
         case FieldType::Integer:
             READ(data, fv.i);
@@ -133,4 +141,32 @@ void db::load(const buffer &b)
         t.load_index(b);
         values.push_back(t);
     }
+}
+
+void db::open(const path &p)
+{
+    std::string fn = p.string();
+    t.load(buffer(read_file(fn + ".tab")));
+    load(buffer(read_file(fn + ".ind")));
+    buffer b(read_file(fn + ".dat"));
+    for (auto &v : values)
+        v.load_fields(t, b);
+}
+
+std::string str2utf8(const std::string &codepage_str)
+{
+    int size = MultiByteToWideChar(CP_ACP, MB_COMPOSITE, codepage_str.c_str(),
+        codepage_str.length(), nullptr, 0);
+    std::wstring utf16_str(size, '\0');
+    MultiByteToWideChar(CP_ACP, MB_COMPOSITE, codepage_str.c_str(),
+        codepage_str.length(), &utf16_str[0], size);
+
+    int utf8_size = WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
+        utf16_str.length(), nullptr, 0,
+        nullptr, nullptr);
+    std::string utf8_str(utf8_size, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
+        utf16_str.length(), &utf8_str[0], utf8_size,
+        nullptr, nullptr);
+    return utf8_str;
 }

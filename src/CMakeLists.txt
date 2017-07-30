@@ -8,12 +8,19 @@ target_link_libraries(common
 add_dependencies(common version)
 
 if (WIN32)
-file(GLOB unpaker_src "unpaker/*")
-add_executable(unpaker ${unpaker_src})
+file(GLOB db_add_language_src "db_add_language/*")
+add_executable(db_add_language ${db_add_language_src} db_extractor/db.cpp)
+target_link_libraries(db_add_language
+    common
+    pvt.lzwdgc.polygon4.data_manager.data_manager
+)
 
 file(GLOB db_extractor_src "db_extractor/*")
 add_executable(db_extractor ${db_extractor_src})
 target_link_libraries(db_extractor common)
+
+file(GLOB unpaker_src "unpaker/*")
+add_executable(unpaker ${unpaker_src})
 endif()
 
 file(GLOB mmm_extractor_src "mmm_extractor/*")
