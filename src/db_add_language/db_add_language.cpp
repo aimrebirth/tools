@@ -31,15 +31,31 @@
 using namespace polygon4;
 using namespace polygon4::detail;
 
+// MultiByteToWideChar: https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
+// code pages: https://msdn.microsoft.com/en-us/library/windows/desktop/dd317756(v=vs.85).aspx
+const std::map<std::string, int> code_pages
+{
+    { "en", 0 },
+    { "ru", 1251 },
+    { "et", 1257 },
+};
+
+int get_cp(const std::string &cp)
+{
+    auto i = code_pages.find(cp);
+    if (i == code_pages.end())
+        throw std::runtime_error("No code page for lang: " + cp);
+    return i->second;
+}
+
 struct string_index
 {
     std::wstring s;
     IdType i = -1;
 
-    string_index &operator=(const std::string &rhs)
+    void setString(const std::string &rhs, int cp)
     {
-        s = string2wstring(str2utf8(rhs));
-        return *this;
+        s = str2utf16(rhs, cp);
     }
 };
 
@@ -87,7 +103,7 @@ auto open(const path &p)
     return db;
 };
 
-AimKV get_kv(const db &db)
+AimKV get_kv(const db &db, int cp)
 {
     auto iter_tbl = std::find_if(db.t.tables.begin(), db.t.tables.end(), [](auto &t) {
         return t.second.name == "INFORMATION";
@@ -115,7 +131,7 @@ AimKV get_kv(const db &db)
         for (auto &f : v.fields)
         {
             if ((f.field_id == nid || f.field_id == tid) && !f.s.empty())
-                kv[v.name] = f.s;
+                kv[v.name].setString(f.s, cp);
         }
     }
     return kv;
@@ -145,8 +161,8 @@ AimKVResolved get_kv_resolved(const path &d, const Storage &storage)
         auto db1 = open(d / "ru" / "aim1");
         auto db2 = open(d / "ru" / "aim2");
 
-        auto kv1 = get_kv(db1);
-        auto kv2 = get_kv(db2);
+        auto kv1 = get_kv(db1, get_cp("ru"));
+        auto kv2 = get_kv(db2, get_cp("ru"));
         kv1.insert(kv2.begin(), kv2.end());
         auto sz = kv1.size();
         std::cout << "total kvs: " << sz << "\n";
@@ -185,12 +201,12 @@ void process_lang(Storage &s, const path &p, polygon4::String polygon4::Localize
     auto db3 = open(p / "aim2");
 
     AimKV kvm;
-    auto get_kv = [&kvm](auto &db)
+    auto get_kv = [&kvm, &p](auto &db)
     {
         AimKV kv1;
         if (db.number_of_values)
         {
-            kv1 = ::get_kv(db);
+            kv1 = ::get_kv(db, get_cp(p.filename().string()));
             kvm.insert(kv1.begin(), kv1.end());
         }
     };

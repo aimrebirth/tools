@@ -153,14 +153,9 @@ void db::open(const path &p)
         v.load_fields(t, b);
 }
 
-std::string str2utf8(const std::string &codepage_str)
+std::string str2utf8(const std::string &codepage_str, int cp)
 {
-    int size = MultiByteToWideChar(CP_ACP, MB_COMPOSITE, codepage_str.c_str(),
-        codepage_str.length(), nullptr, 0);
-    std::wstring utf16_str(size, '\0');
-    MultiByteToWideChar(CP_ACP, MB_COMPOSITE, codepage_str.c_str(),
-        codepage_str.length(), &utf16_str[0], size);
-
+    auto utf16_str = str2utf16(codepage_str, cp);
     int utf8_size = WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
         utf16_str.length(), nullptr, 0,
         nullptr, nullptr);
@@ -169,4 +164,18 @@ std::string str2utf8(const std::string &codepage_str)
         utf16_str.length(), &utf8_str[0], utf8_size,
         nullptr, nullptr);
     return utf8_str;
+}
+
+std::wstring str2utf16(const std::string &codepage_str, int cp)
+{
+    int size;
+    std::wstring utf16_str;
+
+    size = MultiByteToWideChar(cp, MB_COMPOSITE, codepage_str.c_str(),
+        codepage_str.length(), nullptr, 0);
+    utf16_str = std::wstring(size, '\0');
+    MultiByteToWideChar(cp, MB_COMPOSITE, codepage_str.c_str(),
+        codepage_str.length(), &utf16_str[0], size);
+
+    return utf16_str;
 }
