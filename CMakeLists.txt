@@ -21,14 +21,15 @@ find_package(Git)
 if (MSVC)
     set(disable_msvc_warnings "/W1 /wd4996")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP ${disable_msvc_warnings}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP ${disable_msvc_warnings}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP ${disable_msvc_warnings} /std:c++17")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++14")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++17")
 endif(MSVC)
 
 add_definitions(-DPOLYGON4_TOOLS=1)
 add_definitions(-DPOLYGON4_STATIC=1)
 
+set(CPPAN_BUILD_SHARED_LIBS 0)
 add_subdirectory(.cppan)
 
 if (Git_FOUND)

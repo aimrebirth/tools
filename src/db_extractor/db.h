@@ -28,15 +28,13 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 enum class FieldType : uint32_t
 {
     String,
     Integer,
     Float,
 };
-string getSqlType(FieldType type);
+std::string getSqlType(FieldType type);
 
 struct table
 {
@@ -62,8 +60,8 @@ struct tab
     uint32_t number_of_tables;
     uint32_t number_of_fields;
 
-    map<uint32_t, table> tables;
-    map<uint32_t, field> fields;
+    std::map<uint32_t, table> tables;
+    std::map<uint32_t, field> fields;
 
     void load(const buffer &b);
 };
@@ -75,7 +73,7 @@ struct field_value
 
     int i = 0;
     float f = 0.f;
-    string s;
+    std::string s;
 };
 
 struct value
@@ -84,7 +82,7 @@ struct value
     std::string name;
     uint32_t offset;
     uint32_t data_size;
-    vector<field_value> fields;
+    std::vector<field_value> fields;
 
     void load_index(const buffer &b);
     void load_fields(const tab &tab, buffer &b);
@@ -95,7 +93,7 @@ struct db
     uint32_t number_of_values = 0;
 
     tab t;
-    vector<value> values;
+    std::vector<value> values;
 
     void load(const buffer &b);
     void open(const path &p);

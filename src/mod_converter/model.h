@@ -254,6 +254,7 @@ struct block
     std::string printObj(int group_offset, bool rotate_x_90 = false) const;
 
     bool canPrint() const;
+    bool isEngineFx() const;
 };
 
 struct model

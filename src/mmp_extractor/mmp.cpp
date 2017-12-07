@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define NOMINMAX
+
 #include "mmp.h"
 
 #include <algorithm>
@@ -313,4 +315,3 @@ void mmp::writeColorMap()
     auto fn = filename + ".colormap.bmp";
     write_mat_bmp(fn, colormap);
 }
-

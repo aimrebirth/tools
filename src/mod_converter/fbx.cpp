@@ -30,7 +30,7 @@ void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
     pManager->LoadPluginsDirectory(lPath.Buffer());
 
     //Create an FBX scene. This object holds most objects imported/exported from/to files.
-    pScene = FbxScene::Create(pManager, "My Scene");
+    pScene = FbxScene::Create(pManager, "myScene");
     if (!pScene)
     {
         FBXSDK_printf("Error: Unable to create FBX scene!\n");
@@ -41,12 +41,13 @@ void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
 void DestroySdkObjects(FbxManager* pManager, bool pExitStatus)
 {
     //Delete the FBX Manager. All the objects that have been allocated using the FBX Manager and that haven't been explicitly destroyed are also automatically destroyed.
-    if (pManager) pManager->Destroy();
+    if (pManager)
+        pManager->Destroy();
     if (!pExitStatus)
         FBXSDK_printf("Error: Unable to destroy FBX Manager!\n");
 }
 
-bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename, bool pEmbedMedia, bool blender = false)
+bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename, bool blender = false)
 {
     int lMajor, lMinor, lRevision;
     bool lStatus = true;
@@ -60,13 +61,13 @@ bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename,
     // Set the export states. By default, the export states are always set to
     // true except for the option eEXPORT_TEXTURE_AS_EMBEDDED. The code below
     // shows how to change these states.
-    IOS_REF.SetBoolProp(EXP_FBX_MATERIAL, true);
+    /*IOS_REF.SetBoolProp(EXP_FBX_MATERIAL, true);
     IOS_REF.SetBoolProp(EXP_FBX_TEXTURE, true);
     IOS_REF.SetBoolProp(EXP_FBX_EMBEDDED, pEmbedMedia);
     IOS_REF.SetBoolProp(EXP_FBX_SHAPE, true);
     IOS_REF.SetBoolProp(EXP_FBX_GOBO, true);
     IOS_REF.SetBoolProp(EXP_FBX_ANIMATION, true);
-    IOS_REF.SetBoolProp(EXP_FBX_GLOBAL_SETTINGS, true);
+    IOS_REF.SetBoolProp(EXP_FBX_GLOBAL_SETTINGS, true);*/
 
     // Initialize the exporter by providing a filename.
     if (lExporter->Initialize(pFilename, pFileFormat, pManager->GetIOSettings()) == false)
@@ -212,9 +213,22 @@ void model::printFbx(const std::string &fn)
     // Create the scene.
     CreateScene(*this, fn, lSdkManager, lScene);
 
-    SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str(), true);
+    SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str());
     if (all_formats)
-        SaveScene(lSdkManager, lScene, (fn + "_blender.fbx").c_str(), true, true);
+        SaveScene(lSdkManager, lScene, (fn + "_blender.fbx").c_str(), true);
+
+    // Destroy all objects created by the FBX SDK.
+    DestroySdkObjects(lSdkManager, true);
+
+
+
+    // Prepare the FBX SDK.
+    InitializeSdkObjects(lSdkManager, lScene);
+
+    // Create the scene.
+    LoadScene(lSdkManager, lScene, "h:\\Games\\Steam\\steamapps\\common\\AIM2\\Data\\tex.pak\\DATA\\TM\\m.fbx");
+
+    SaveScene(lSdkManager, lScene, (fn + "_ue42.fbx").c_str());
 
     // Destroy all objects created by the FBX SDK.
     DestroySdkObjects(lSdkManager, true);
@@ -226,12 +240,47 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
     static const char* gAmbientElementName = "AmbientUV";
     static const char* gSpecularElementName = "SpecularUV";
 
+    //std::map<std::string,
+    int socket_id = 0;
     for (auto &b : model.blocks)
     {
         if (!b.canPrint())
             continue;
 
-        auto block_name = name + "/" + b.h.name;
+        //
+        if (b.isEngineFx())
+        {
+            /*{
+                FbxNode *sock = FbxNode::Create(parent, std::string("SOCKET_MOD_GL_M1_B_BASE_ue4_00").c_str());
+                auto m = FbxMesh::Create(pSdkManager, std::string("SOCKET_MOD_GL_M1_B_BASE_ue4_00").c_str());
+                sock->SetNodeAttribute(m);
+                sock->SetGeometricTranslation(FbxNode::EPivotSet::eSourcePivot, { 0,0,0,1 });
+                pScene->GetRootNode()->AddChild(sock);
+            }*/
+
+            {
+                FbxNode *sock2 = FbxNode::Create(pScene, std::string("SOCKET_MOD_GL_M1_B_BASE_ue4_00").c_str());
+                //sock2->SetGeometricTranslation(FbxNode::EPivotSet::eDestinationPivot, { 0,0,1,1 });
+                pScene->GetRootNode()->AddChild(sock2);
+            }
+
+            {
+                FbxNode *sock2 = FbxNode::Create(pScene, std::string("SOCKET_LOD0_00").c_str());
+                //sock2->SetNodeAttribute(nullptr);
+                sock2->LclTranslation.Set({1,2,3});
+                sock2->EvaluateGlobalTransform();
+                sock2->EvaluateLocalTransform();
+                sock2->AddNodeAttribute(nullptr);
+                //sock2->SetGeometricTranslation(FbxNode::EPivotSet::eDestinationPivot, { 0,0,1,1 });
+                pScene->GetRootNode()->AddChild(sock2);
+            }
+
+            //pScene->GetRootNode()->AddChild(node);
+            continue;
+        }
+
+        //auto block_name = name + "/" + b.h.name;
+        const auto block_name = b.h.name;
 
         // mesh
         auto m = FbxMesh::Create(pSdkManager, block_name.c_str());
@@ -292,7 +341,7 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
 
         // mats
         auto lMaterial = node->GetSrcObject<FbxSurfacePhong>(0);
-        if (lMaterial == NULL)
+        if (!lMaterial)
         {
             FbxString lMaterialName = block_name.c_str();
             FbxString lShadingName = "Phong";

@@ -24,12 +24,11 @@
 #include <primitives/filesystem.h>
 #include <primitives/executor.h>
 
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <math.h>
 #include <numeric>
-
-using namespace polygon4;
-using namespace polygon4::detail;
 
 // MultiByteToWideChar: https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
 // code pages: https://msdn.microsoft.com/en-us/library/windows/desktop/dd317756(v=vs.85).aspx
@@ -51,7 +50,7 @@ int get_cp(const std::string &cp)
 struct string_index
 {
     std::wstring s;
-    IdType i = -1;
+    polygon4::detail::IdType i = -1;
 
     void setString(const std::string &rhs, int cp)
     {
@@ -59,8 +58,8 @@ struct string_index
     }
 };
 
-using AimKV = std::unordered_map<std::string, string_index>;
-using AimKVResolved = std::unordered_map<std::string, IdType>;
+using AimKV = std::map<std::string, string_index>;
+using AimKVResolved = std::unordered_map<std::string, polygon4::detail::IdType>;
 AimKVResolved kv_resolved;
 
 template <class T>
@@ -137,7 +136,7 @@ AimKV get_kv(const db &db, int cp)
     return kv;
 }
 
-AimKVResolved get_kv_resolved(const path &d, const Storage &storage)
+AimKVResolved get_kv_resolved(const path &d, const polygon4::Storage &storage)
 {
     static const auto fn = "kv.resolved";
 
@@ -146,7 +145,7 @@ AimKVResolved get_kv_resolved(const path &d, const Storage &storage)
     {
         std::ifstream f(fn);
         std::string s;
-        IdType i;
+        polygon4::detail::IdType i;
         while (f)
         {
             f >> std::quoted(s);
@@ -174,7 +173,7 @@ AimKVResolved get_kv_resolved(const path &d, const Storage &storage)
             e.push([&storage, &i, &sz, &kv]()
             {
                 std::cout << "total kvs: " << ++i << "/" << sz << "\n";
-                std::map<int, IdType> m;
+                std::map<int, polygon4::detail::IdType> m;
                 for (auto &s : storage.strings)
                     m[levenshtein_distance<std::wstring>(kv.second.s, s.second->string.ru)] = s.first;
                 if (m.empty())
@@ -191,10 +190,19 @@ AimKVResolved get_kv_resolved(const path &d, const Storage &storage)
             f << std::quoted(kv.first) << " " << kv.second.i << "\n";
         }
     }
+
+    // make unique ids
+    std::unordered_map<AimKVResolved::mapped_type, AimKVResolved::key_type> u;
+    for (auto &kv : mres)
+        u[kv.second] = kv.first;
+    mres.clear();
+    for (auto &kv : u)
+        mres[kv.second] = kv.first;
+
     return mres;
 }
 
-void process_lang(Storage &s, const path &p, polygon4::String polygon4::LocalizedString::*field)
+void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4::LocalizedString::*field)
 {
     auto db1 = open(p);
     auto db2 = open(p / "aim1");
@@ -214,15 +222,38 @@ void process_lang(Storage &s, const path &p, polygon4::String polygon4::Localize
     get_kv(db2);
     get_kv(db3);
 
-    std::string str;
+    std::multimap<int, std::string> dist;
+    std::multimap<double, std::string> dist2;
     for (auto &kv : kvm)
     {
         auto i = kv_resolved.find(kv.first);
         if (i == kv_resolved.end())
             continue;
         auto &sold = s.strings[i->second]->string.*field;
+        auto d = levenshtein_distance<std::wstring>(sold, kv.second.s);
+        dist.insert({ d, kv.first });
+        //if (d == 0)
+        //    continue;
+        auto len_diff = abs((int)sold.size() - (int)kv.second.s.size());
+        auto min_len = (sold.size() + kv.second.s.size()) / 2.0;
+        //d -= len_diff;
+        //if (d == 0)
+        //    continue;
+        dist2.insert({ d / double(min_len), kv.first });
+    }
+
+    std::string str;
+    for (auto &d2 : dist2)
+    {
+        auto &kv = *kvm.find(d2.second);
+        auto i = kv_resolved.find(kv.first);
+        if (i == kv_resolved.end())
+            continue;
+        auto &sold = s.strings[i->second]->string.*field;
         //sold = kv.second.s;
-        str += "id: " + std::to_string(i->second) + "\n\n";
+        str += "id: " + std::to_string(i->second) + "\n";
+        str += "kd: " + std::to_string(d2.first) + "\n";
+        str += "key: " + i->first + "\n\n";
         str += "old:\n";
         str += wstring2string(sold) + "\n";
         str += "\n";
@@ -230,6 +261,22 @@ void process_lang(Storage &s, const path &p, polygon4::String polygon4::Localize
         str += wstring2string(kv.second.s) + "\n";
         str += "\n================================================\n\n";
     }
+    /*for (auto &kv : kvm)
+    {
+        auto i = kv_resolved.find(kv.first);
+        if (i == kv_resolved.end())
+            continue;
+        auto &sold = s.strings[i->second]->string.*field;
+        //sold = kv.second.s;
+        str += "id: " + std::to_string(i->second) + "\n";
+        str += "key: " + i->first + "\n\n";
+        str += "old:\n";
+        str += wstring2string(sold) + "\n";
+        str += "\n";
+        str += "new:\n";
+        str += wstring2string(kv.second.s) + "\n";
+        str += "\n================================================\n\n";
+    }*/
     write_file(p / (p.filename().string() + "_diff.txt"), str);
 }
 
@@ -243,9 +290,12 @@ try
     }
     path d = argv[2];
 
-    auto storage = initStorage(argv[1]);
+    auto storage = polygon4::initStorage(argv[1]);
     storage->load();
     kv_resolved = get_kv_resolved(d, *storage.get());
+
+    // to check correctness
+    process_lang(*storage.get(), d / "ru", &polygon4::LocalizedString::ru);
 
     for (auto &f : boost::make_iterator_range(fs::directory_iterator(d), {}))
     {

@@ -22,15 +22,15 @@
 
 #include <buffer.h>
 
-void create_sql(string path, const db &db)
+void create_sql(std::string path, const db &db)
 {
-    ofstream ofile(path + ".sql");
+    std::ofstream ofile(path + ".sql");
     if (!ofile)
         return;
 
-    string master_table_name = "DB_TABLE_LIST";
-    const string id = "ID";
-    const string row_type = "TEXT_ID";
+    std::string master_table_name = "DB_TABLE_LIST";
+    const std::string id = "ID";
+    const std::string row_type = "TEXT_ID";
 
     // db master table
     ofile << "drop table if exists " << master_table_name << ";\n";
@@ -45,11 +45,11 @@ void create_sql(string path, const db &db)
     for (auto &table : db.t.tables)
     {
         auto &t = table.second;
-        string name = str2utf8(t.name);
+        std::string name = str2utf8(t.name);
         ofile << "drop table if exists " << name << ";\n";
         ofile << "create table \"" << name << "\"\n";
         ofile << "(\n";
-        string s;
+        std::string s;
         s += "  \"" + str2utf8(id) + "\" INTEGER,\n";
         s += "  \"" + str2utf8(row_type) + "\" TEXT,\n";
         for (auto &f : db.t.fields)
@@ -75,14 +75,14 @@ void create_sql(string path, const db &db)
     }
 
     // db tables
-    map<int,int> idx;
+    std::map<int,int> idx;
     for (auto &v : db.values)
     {
         auto tbl = db.t.tables.find(v.table_id);
         if (tbl == db.t.tables.end())
             continue;
         ofile << "insert into \"" << str2utf8(tbl->second.name) << "\" (";
-        string s;
+        std::string s;
         s += "'" + str2utf8(id) + "', ";
         s += "'" + str2utf8(row_type) + "', ";
         for (auto &f : v.fields)
@@ -93,7 +93,7 @@ void create_sql(string path, const db &db)
         s.resize(s.size() - 2);
         ofile << s << ") values (";
         s.clear();
-        s += "'" + to_string(idx[v.table_id]++) + "', ";
+        s += "'" + std::to_string(idx[v.table_id]++) + "', ";
         s += "'" + str2utf8(v.name) + "', ";
         for (auto &f : v.fields)
         {
@@ -105,10 +105,10 @@ void create_sql(string path, const db &db)
                     s += str2utf8(f.s.c_str());
                     break;
                 case FieldType::Integer:
-                    s += to_string(f.i);
+                    s += std::to_string(f.i);
                     break;
                 case FieldType::Float:
-                    s += to_string(f.f);
+                    s += std::to_string(f.f);
                     break;
                 default:
                     assert(false);
@@ -125,7 +125,7 @@ try
 {
     if (argc != 2)
     {
-        cout << "Usage:\n" << argv[0] << " path/to/aim_game/data/db" << "\n" << argv[0] << " path/to/aim_game/data/quest" << "\n";
+        std::cout << "Usage:\n" << argv[0] << " path/to/aim_game/data/db" << "\n" << argv[0] << " path/to/aim_game/data/quest" << "\n";
         return 1;
     }
     path p = argv[1];

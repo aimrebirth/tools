@@ -22,7 +22,7 @@
 
 #include <Windows.h>
 
-string getSqlType(FieldType type)
+std::string getSqlType(FieldType type)
 {
     switch (type)
     {
@@ -171,10 +171,10 @@ std::wstring str2utf16(const std::string &codepage_str, int cp)
     int size;
     std::wstring utf16_str;
 
-    size = MultiByteToWideChar(cp, MB_COMPOSITE, codepage_str.c_str(),
+    size = MultiByteToWideChar(cp, MB_PRECOMPOSED, codepage_str.c_str(),
         codepage_str.length(), nullptr, 0);
     utf16_str = std::wstring(size, '\0');
-    MultiByteToWideChar(cp, MB_COMPOSITE, codepage_str.c_str(),
+    MultiByteToWideChar(cp, MB_PRECOMPOSED, codepage_str.c_str(),
         codepage_str.length(), &utf16_str[0], size);
 
     return utf16_str;
