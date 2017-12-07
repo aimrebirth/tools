@@ -11,6 +11,8 @@
 
 extern bool all_formats;
 
+bool CreateScene(model &m, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene);
+
 void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
 {
     //The first thing to do is to create the FBX Manager which is the object allocator for almost all the classes in the SDK
@@ -55,7 +57,7 @@ bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename,
     // Create an exporter.
     FbxExporter* lExporter = FbxExporter::Create(pManager, "");
 
-    auto pFileFormat = pManager->GetIOPluginRegistry()->GetNativeWriterFormat();
+    auto pFileFormat = pManager->GetIOPluginRegistry()->GetNativeWriterFormat(); // 1 for ascii
     FbxString lDesc = pManager->GetIOPluginRegistry()->GetWriterFormatDescription(pFileFormat);
 
     // Set the export states. By default, the export states are always set to
@@ -200,8 +202,6 @@ bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename)
     return lStatus;
 }
 
-bool CreateScene(model &m, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene);
-
 void model::printFbx(const std::string &fn)
 {
     FbxManager* lSdkManager = NULL;
@@ -216,19 +216,6 @@ void model::printFbx(const std::string &fn)
     SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str());
     if (all_formats)
         SaveScene(lSdkManager, lScene, (fn + "_blender.fbx").c_str(), true);
-
-    // Destroy all objects created by the FBX SDK.
-    DestroySdkObjects(lSdkManager, true);
-
-
-
-    // Prepare the FBX SDK.
-    InitializeSdkObjects(lSdkManager, lScene);
-
-    // Create the scene.
-    LoadScene(lSdkManager, lScene, "h:\\Games\\Steam\\steamapps\\common\\AIM2\\Data\\tex.pak\\DATA\\TM\\m.fbx");
-
-    SaveScene(lSdkManager, lScene, (fn + "_ue42.fbx").c_str());
 
     // Destroy all objects created by the FBX SDK.
     DestroySdkObjects(lSdkManager, true);
@@ -250,32 +237,22 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
         //
         if (b.isEngineFx())
         {
-            /*{
-                FbxNode *sock = FbxNode::Create(parent, std::string("SOCKET_MOD_GL_M1_B_BASE_ue4_00").c_str());
-                auto m = FbxMesh::Create(pSdkManager, std::string("SOCKET_MOD_GL_M1_B_BASE_ue4_00").c_str());
-                sock->SetNodeAttribute(m);
-                sock->SetGeometricTranslation(FbxNode::EPivotSet::eSourcePivot, { 0,0,0,1 });
-                pScene->GetRootNode()->AddChild(sock);
-            }*/
+            FbxNode *socket = FbxNode::Create(pScene, std::string("SOCKET_EngineFx_" + std::to_string(socket_id++)).c_str());
+            auto n = FbxNull::Create(socket, "");
+            socket->SetNodeAttribute(n);
+            pScene->GetRootNode()->AddChild(socket);
 
+            FbxVector4 c;
+            for (auto &v : b.vertices)
             {
-                FbxNode *sock2 = FbxNode::Create(pScene, std::string("SOCKET_MOD_GL_M1_B_BASE_ue4_00").c_str());
-                //sock2->SetGeometricTranslation(FbxNode::EPivotSet::eDestinationPivot, { 0,0,1,1 });
-                pScene->GetRootNode()->AddChild(sock2);
+                FbxVector4 x;
+                x.Set(-v.coordinates.x * scale_mult, v.coordinates.y * scale_mult, -v.coordinates.z * scale_mult, v.coordinates.w);
+                c += x;
             }
+            c /= b.vertices.size();
 
-            {
-                FbxNode *sock2 = FbxNode::Create(pScene, std::string("SOCKET_LOD0_00").c_str());
-                //sock2->SetNodeAttribute(nullptr);
-                sock2->LclTranslation.Set({1,2,3});
-                sock2->EvaluateGlobalTransform();
-                sock2->EvaluateLocalTransform();
-                sock2->AddNodeAttribute(nullptr);
-                //sock2->SetGeometricTranslation(FbxNode::EPivotSet::eDestinationPivot, { 0,0,1,1 });
-                pScene->GetRootNode()->AddChild(sock2);
-            }
+            socket->LclTranslation.Set(c);
 
-            //pScene->GetRootNode()->AddChild(node);
             continue;
         }
 
