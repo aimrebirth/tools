@@ -227,34 +227,61 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
     static const char* gAmbientElementName = "AmbientUV";
     static const char* gSpecularElementName = "SpecularUV";
 
+    auto create_socket_named = [&pScene](const std::string &name)
+    {
+        FbxNode *socket = FbxNode::Create(pScene, ("SOCKET_" + name).c_str());
+        auto n = FbxNull::Create(socket, "");
+        socket->SetNodeAttribute(n);
+        pScene->GetRootNode()->AddChild(socket);
+        return socket;
+    };
+
+    auto create_socket = [&create_socket_named](const auto &b, const std::string &name, bool mirror_x = false)
+    {
+        FbxVector4 c;
+        for (auto &v : b.vertices)
+        {
+            FbxVector4 x;
+            x.Set(-v.coordinates.x * scale_mult, v.coordinates.y * scale_mult, -v.coordinates.z * scale_mult, v.coordinates.w);
+            c += x;
+        }
+        c /= b.vertices.size();
+
+        auto s = create_socket_named(name);
+        if (mirror_x)
+            c.mData[0] = -c.mData[0];
+        s->LclTranslation.Set(c);
+    };
+
     //std::map<std::string,
     int socket_id = 0;
     for (auto &b : model.blocks)
     {
-        if (!b.canPrint())
-            continue;
-
         //
         if (b.isEngineFx())
         {
-            FbxNode *socket = FbxNode::Create(pScene, std::string("SOCKET_EngineFx_" + std::to_string(socket_id++)).c_str());
-            auto n = FbxNull::Create(socket, "");
-            socket->SetNodeAttribute(n);
-            pScene->GetRootNode()->AddChild(socket);
-
-            FbxVector4 c;
-            for (auto &v : b.vertices)
-            {
-                FbxVector4 x;
-                x.Set(-v.coordinates.x * scale_mult, v.coordinates.y * scale_mult, -v.coordinates.z * scale_mult, v.coordinates.w);
-                c += x;
-            }
-            c /= b.vertices.size();
-
-            socket->LclTranslation.Set(c);
-
+            create_socket(b, "EngineFx_" + std::to_string(socket_id++));
             continue;
         }
+        else if (b.h.name == "LIGHTGUN")
+        {
+            create_socket(b, "WeaponLight_0");
+            create_socket(b, "WeaponLight_1", true);
+            continue;
+        }
+        else if (b.h.name == "HEAVYGUN")
+        {
+            create_socket(b, "WeaponHeavy");
+            continue;
+        }
+        else if (b.h.name == "ROCKET")
+        {
+            create_socket(b, "WeaponRocket");
+            continue;
+        }
+
+        if (!b.canPrint())
+            continue;
 
         //auto block_name = name + "/" + b.h.name;
         const auto block_name = b.h.name;

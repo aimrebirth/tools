@@ -472,9 +472,6 @@ bool block::canPrint() const
     if (h.type == BlockType::VisibleObject)
         return true;
 
-    if (isEngineFx())
-        return true;
-
     // particles
     if (h.type == BlockType::ParticleEmitter)
         return false;
