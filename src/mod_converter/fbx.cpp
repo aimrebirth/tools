@@ -242,25 +242,26 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
         for (auto &v : b.vertices)
         {
             FbxVector4 x;
-            x.Set(-v.coordinates.x * scale_mult, v.coordinates.y * scale_mult, -v.coordinates.z * scale_mult, v.coordinates.w);
+            x.Set(v.coordinates.z * scale_mult, v.coordinates.y * scale_mult, v.coordinates.x * scale_mult, v.coordinates.w);
             c += x;
         }
         c /= b.vertices.size();
 
         auto s = create_socket_named(name);
         if (mirror_x)
-            c.mData[0] = -c.mData[0];
+            c.mData[2] = -c.mData[2];
         s->LclTranslation.Set(c);
     };
 
     //std::map<std::string,
-    int socket_id = 0;
+    int engine_id = 0;
+    int fx_id = 0;
     for (auto &b : model.blocks)
     {
         //
         if (b.isEngineFx())
         {
-            create_socket(b, "EngineFx_" + std::to_string(socket_id++));
+            create_socket(b, "EngineFx_" + std::to_string(engine_id++));
             continue;
         }
         else if (b.h.name == "LIGHTGUN")
@@ -277,6 +278,11 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
         else if (b.h.name == "ROCKET")
         {
             create_socket(b, "WeaponRocket");
+            continue;
+        }
+        else if (b.h.name.find("FX") == 0)
+        {
+            create_socket(b, "Fx_" + std::to_string(fx_id++));
             continue;
         }
 
@@ -320,9 +326,9 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
         for (auto &v : b.vertices)
         {
             FbxVector4 x;
-            x.Set(-v.coordinates.x * scale_mult, v.coordinates.z * scale_mult, v.coordinates.y * scale_mult, v.coordinates.w);
+            x.Set(v.coordinates.z * scale_mult, v.coordinates.x * scale_mult, v.coordinates.y * scale_mult, v.coordinates.w);
             m->SetControlPointAt(x, i++);
-            normal->GetDirectArray().Add(FbxVector4(-v.normal.x, -v.normal.z, v.normal.y));
+            normal->GetDirectArray().Add(FbxVector4(v.normal.z, -v.normal.x, v.normal.y));
 
             float f;
             auto uc = modf(fabs(v.texture_coordinates.u), &f);

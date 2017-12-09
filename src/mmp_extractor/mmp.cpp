@@ -116,7 +116,7 @@ void mmp::load(const buffer &b)
 void mmp::load(const std::string &fn)
 {
     filename = fn;
-    buffer b(read_file(filename));
+    buffer b(read_file(filename, true));
     load(b);
 }
 

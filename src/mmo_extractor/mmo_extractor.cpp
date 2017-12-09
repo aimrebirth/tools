@@ -120,6 +120,30 @@ void write_mmo(Storage *storage, const mmo_storage &s)
 
     auto this_map = storage->maps[map_id];
 
+    auto check_val = [](auto &v)
+    {
+        if (v > 1)
+        {
+            v = v - floor(v);
+            std::cerr << /*object->name2 << */": yaw > 1\n";
+        }
+        if (v < -1)
+        {
+            v = v - ceil(v);
+            std::cerr << /*object->name2 << */": yaw < -1\n";
+        }
+    };
+
+    auto calc_yaw = [&check_val](auto &v)
+    {
+        //check_val(v[0].x);
+        //check_val(v[1].x);
+
+        auto yaw = atan2(v[1].x, v[0].x);
+        yaw = RAD2GRAD(yaw);
+        return -(yaw - 90);
+    };
+
     int inserted = 0;
     int exist = 0;
     for (auto &seg : s.objects.segments)
@@ -160,13 +184,28 @@ void write_mmo(Storage *storage, const mmo_storage &s)
                 mb.z = ASSIGN(object->position.z, 0);
                 mb.roll = 0;
                 mb.pitch = 0;
-                auto yaw = ASSIGN(object->m_rotate_z[0].x, 0);
+                /*auto yaw = ASSIGN(object->m_rotate_z[0].x, 0);
                 if (yaw > 1)
+                {
                     yaw = yaw - floor(yaw);
+                    std::cerr << object->name2 << ": yaw > 1\n";
+                }
                 if (yaw < -1)
+                {
                     yaw = yaw - ceil(yaw);
+                    std::cerr << object->name2 << ": yaw < -1\n";
+                }
                 mb.yaw = acos(yaw);
                 RAD2GRAD(mb.yaw);
+                // wrong 1
+                /*if (mb.yaw < 90)
+                    mb.yaw += 90;
+                else
+                {
+                    mb.yaw -= 90;
+                    mb.yaw = -mb.yaw;
+                }*/
+                mb.yaw = calc_yaw(object->m_rotate_z);
                 mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const auto &p)
                 {
@@ -185,6 +224,7 @@ void write_mmo(Storage *storage, const mmo_storage &s)
                 }
             }
         }
+
         if (seg->segment_type == ObjectType::TREE       ||
             seg->segment_type == ObjectType::STONE      ||
             seg->segment_type == ObjectType::LAMP       ||
@@ -221,13 +261,7 @@ void write_mmo(Storage *storage, const mmo_storage &s)
                 mb.z = ASSIGN(object->position.z, 0);
                 mb.roll = 0;
                 mb.pitch = 0;
-                auto yaw = ASSIGN(object->m_rotate_z[0].x, 0);
-                if (yaw > 1)
-                    yaw = yaw - floor(yaw);
-                if (yaw < -1)
-                    yaw = yaw - ceil(yaw);
-                mb.yaw = acos(yaw);
-                RAD2GRAD(mb.yaw);
+                mb.yaw = calc_yaw(object->m_rotate_z) - 90;
                 mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const auto &p)
                 {
