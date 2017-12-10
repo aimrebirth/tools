@@ -20,8 +20,6 @@
 
 #include <buffer.h>
 
-#include <Windows.h>
-
 std::string getSqlType(FieldType type)
 {
     switch (type)
@@ -151,31 +149,4 @@ void db::open(const path &p)
     buffer b(read_file(fn + ".dat"));
     for (auto &v : values)
         v.load_fields(t, b);
-}
-
-std::string str2utf8(const std::string &codepage_str, int cp)
-{
-    auto utf16_str = str2utf16(codepage_str, cp);
-    int utf8_size = WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
-        utf16_str.length(), nullptr, 0,
-        nullptr, nullptr);
-    std::string utf8_str(utf8_size, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
-        utf16_str.length(), &utf8_str[0], utf8_size,
-        nullptr, nullptr);
-    return utf8_str;
-}
-
-std::wstring str2utf16(const std::string &codepage_str, int cp)
-{
-    int size;
-    std::wstring utf16_str;
-
-    size = MultiByteToWideChar(cp, MB_PRECOMPOSED, codepage_str.c_str(),
-        codepage_str.length(), nullptr, 0);
-    utf16_str = std::wstring(size, '\0');
-    MultiByteToWideChar(cp, MB_PRECOMPOSED, codepage_str.c_str(),
-        codepage_str.length(), &utf16_str[0], size);
-
-    return utf16_str;
 }

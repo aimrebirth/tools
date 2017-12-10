@@ -21,6 +21,7 @@
 #include <fstream>
 
 #include <buffer.h>
+#include <common.h>
 
 void create_sql(std::string path, const db &db)
 {

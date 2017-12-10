@@ -41,11 +41,20 @@ file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
 target_link_libraries(mmp_extractor common)
 
+file(GLOB model_src "model/*")
+add_library(model ${model_src})
+target_link_libraries(model
+    common
+    pvt.cppan.demo.unicode.icu.i18n
+)
+target_include_directories(model PUBLIC model)
+
 if (DEFINED FBX_SDK_ROOT)
     file(GLOB mod_converter_src "mod_converter/*")
     add_executable(mod_converter ${mod_converter_src})
     target_link_libraries(mod_converter
         common
+        model
         #pvt.cppan.demo.eigen
         debug "${FBX_SDK_ROOT}/lib/vs2015/x86/debug/libfbxsdk-md.lib"
         optimized "${FBX_SDK_ROOT}/lib/vs2015/x86/release/libfbxsdk-md.lib"
@@ -58,8 +67,8 @@ else()
 endif()
 
 file(GLOB mod_reader_src "mod_reader/*")
-add_executable(mod_reader ${mod_reader_src} mod_converter/model.cpp)
-target_link_libraries(mod_reader common)
+add_executable(mod_reader ${mod_reader_src})
+target_link_libraries(mod_reader model)
 
 file(GLOB mpj_loader_src "mpj_loader/*")
 add_executable(mpj_loader ${mpj_loader_src})

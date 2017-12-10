@@ -98,6 +98,3 @@ struct db
     void load(const buffer &b);
     void open(const path &p);
 };
-
-std::string str2utf8(const std::string &codepage_str, int cp = 0);
-std::wstring str2utf16(const std::string &codepage_str, int cp = 0);

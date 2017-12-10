@@ -298,7 +298,7 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
         // node
         FbxNode *node = FbxNode::Create(pScene, block_name.c_str());
         node->SetNodeAttribute(m);
-        node->SetShadingMode(FbxNode::eTextureShading); // change?! was texture sh
+        //node->SetShadingMode(FbxNode::eTextureShading); // change?! was texture sh
 
         // vertices
         m->InitControlPoints(b.vertices.size());

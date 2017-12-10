@@ -18,7 +18,11 @@
 
 #include "buffer.h"
 
+#include "common.h"
+
 #include <stdio.h>
+
+#include <Windows.h>
 
 const int build_version =
 #include <version.h.in>
@@ -186,4 +190,31 @@ const std::vector<uint8_t> &buffer::buf() const
     if (!buf_)
         throw std::logic_error("buffer: not initialized");
     return *buf_;
+}
+
+std::string str2utf8(const std::string &codepage_str, int cp)
+{
+    auto utf16_str = str2utf16(codepage_str, cp);
+    int utf8_size = WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
+        utf16_str.length(), nullptr, 0,
+        nullptr, nullptr);
+    std::string utf8_str(utf8_size, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
+        utf16_str.length(), &utf8_str[0], utf8_size,
+        nullptr, nullptr);
+    return utf8_str;
+}
+
+std::wstring str2utf16(const std::string &codepage_str, int cp)
+{
+    int size;
+    std::wstring utf16_str;
+
+    size = MultiByteToWideChar(cp, MB_PRECOMPOSED, codepage_str.c_str(),
+        codepage_str.length(), nullptr, 0);
+    utf16_str = std::wstring(size, '\0');
+    MultiByteToWideChar(cp, MB_PRECOMPOSED, codepage_str.c_str(),
+        codepage_str.length(), &utf16_str[0], size);
+
+    return utf16_str;
 }

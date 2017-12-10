@@ -30,7 +30,29 @@
 //#include <Eigen/Core>
 //#include <Eigen/Dense>
 
+#include <unicode/translit.h>
+#include <unicode/errorcode.h>
+
 #include <iostream>
+
+template <typename T>
+inline bool replace_all(T &str, const T &from, const T &to)
+{
+    bool replaced = false;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != T::npos)
+    {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+        replaced = true;
+    }
+    return replaced;
+}
+
+inline bool replace_all(std::string &str, const std::string &from, const std::string &to)
+{
+    return replace_all<std::string>(str, from, to);
+}
 
 using namespace std;
 
@@ -116,16 +138,16 @@ std::string version();
 // UE does not recognize russian strings in .obj
 string translate(const string &s)
 {
-    string o;
-    for (auto c : s)
-    {
-        auto i = transliteration.find(c);
-        if (i == transliteration.end())
-            o += c;
-        else
-            o += i->second;
-    }
-    return o;
+    UErrorCode ec = UErrorCode::U_ZERO_ERROR;
+    auto tr = icu::Transliterator::createInstance("Latin-Cyrillic", UTransDirection::UTRANS_REVERSE, ec);
+    if (!tr || ec)
+        throw std::runtime_error("Cannot create translator, ec = " + std::to_string(ec));
+    icu::UnicodeString s2(s.c_str());
+    tr->transliterate(s2);
+    string s3;
+    s2.toUTF8String<std::string>(s3);
+    replace_all(s3, " ", "");
+    return s3;
 }
 
 template <typename T>
@@ -438,11 +460,11 @@ void block::loadPayload(const buffer &data)
         dm.load(data);
 
     string s = "extraction error: block #" + std::string(h.name);
-    if (!data.eof())
+    /*if (!data.eof())
     {
         cerr << s << "\n";
         return;
-    }
+    }*/
 
     // unknown how to proceed
     if (!data.eof() && triangles_mult_7)

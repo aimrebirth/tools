@@ -20,21 +20,5 @@
 
 #include <primitives/filesystem.h>
 
-template <typename T>
-bool replace_all(T &str, const T &from, const T &to)
-{
-    bool replaced = false;
-    size_t start_pos = 0;
-    while ((start_pos = str.find(from, start_pos)) != T::npos)
-    {
-        str.replace(start_pos, from.length(), to);
-        start_pos += to.length();
-        replaced = true;
-    }
-    return replaced;
-}
-
-inline bool replace_all(std::string &str, const std::string &from, const std::string &to)
-{
-    return replace_all<std::string>(str, from, to);
-}
+std::string str2utf8(const std::string &codepage_str, int cp = 0);
+std::wstring str2utf16(const std::string &codepage_str, int cp = 0);

@@ -25,7 +25,7 @@
 #include <string>
 
 #include <buffer.h>
-#include "../mod_converter/model.h"
+#include <model.h>
 
 #include <primitives/filesystem.h>
 

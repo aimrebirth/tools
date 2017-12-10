@@ -4,3 +4,4 @@ local_settings:
         - pvt.cppan.demo.eigen: 3
         - pvt.egorpugin.primitives.filesystem: master
         - pvt.egorpugin.primitives.executor: master
+        - pvt.cppan.demo.unicode.icu.i18n: "*"

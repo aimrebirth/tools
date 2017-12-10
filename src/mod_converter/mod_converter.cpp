@@ -76,7 +76,14 @@ try
             if (f.has_extension())
                 continue;
             std::cout << "processing: " << f << "\n";
-            convert_model(f);
+            try
+            {
+                convert_model(f);
+            }
+            catch (std::exception &e)
+            {
+                std::cout << "error: " << e.what() << "\n";
+            }
         }
     }
     else

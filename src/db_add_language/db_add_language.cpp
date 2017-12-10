@@ -18,6 +18,8 @@
 
 #include "../db_extractor/db.h"
 
+#include <common.h>
+
 #include <Polygon4/DataManager/Localization.h>
 #include <Polygon4/DataManager/Storage.h>
 #include <Polygon4/DataManager/Types.h>
