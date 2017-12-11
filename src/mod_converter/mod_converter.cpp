@@ -26,13 +26,13 @@
 
 #include <buffer.h>
 #include "model.h"
+#include "fbx.h"
 
 #include <primitives/filesystem.h>
 
 using namespace std;
 
 // options
-bool all_formats = false;
 bool silent = false;
 bool printMaxPolygonBlock = false;
 path p;

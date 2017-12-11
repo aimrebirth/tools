@@ -22,8 +22,8 @@
 #include <string>
 #include <vector>
 
-extern const float scale_mult;
-extern const std::string texture_extension;
+const float scale_mult = 30.f;
+const std::string texture_extension = ".TM.bmp";
 
 class buffer;
 

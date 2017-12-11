@@ -28,7 +28,8 @@ enum class GameType
     Aim1,
     Aim2
 };
-extern GameType gameType;
+
+inline GameType gameType = GameType::Aim2;
 
 struct vector3
 {

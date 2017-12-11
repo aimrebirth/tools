@@ -9,8 +9,6 @@
 #define IOS_REF (*(pManager->GetIOSettings()))
 #endif
 
-extern bool all_formats;
-
 bool CreateScene(model &m, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene);
 
 void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)

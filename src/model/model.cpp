@@ -54,89 +54,10 @@ inline bool replace_all(std::string &str, const std::string &from, const std::st
     return replace_all<std::string>(str, from, to);
 }
 
-using namespace std;
-
-const float scale_mult = 30.0f;
-const std::string texture_extension = ".TM.bmp";
-
-const map<char, string> transliteration =
-{
-    { 'а',"a" },
-    { 'б',"b" },
-    { 'в',"v" },
-    { 'г',"g" },
-    { 'д',"d" },
-    { 'е',"e" },
-    { 'ё',"yo" },
-    { 'ж',"zh" },
-    { 'з',"z" },
-    { 'и',"i" },
-    { 'й',"y" },
-    { 'к',"k" },
-    { 'л',"l" },
-    { 'м',"m" },
-    { 'н',"n" },
-    { 'о',"o" },
-    { 'п',"p" },
-    { 'р',"r" },
-    { 'с',"s" },
-    { 'т',"t" },
-    { 'у',"u" },
-    { 'ф',"f" },
-    { 'х',"kh" },
-    { 'ц',"ts" },
-    { 'ч',"ch" },
-    { 'ш',"sh" },
-    { 'щ',"shch" },
-    { 'ъ',"_" },
-    { 'ы',"y" },
-    { 'ь',"_" },
-    { 'э',"e" },
-    { 'ю',"yu" },
-    { 'я',"ya" },
-
-    { 'А',"A" },
-    { 'Б',"B" },
-    { 'В',"V" },
-    { 'Г',"G" },
-    { 'Д',"D" },
-    { 'Е',"E" },
-    { 'Ё',"Yo" },
-    { 'Ж',"Zh" },
-    { 'З',"Z" },
-    { 'И',"I" },
-    { 'Й',"Y" },
-    { 'К',"K" },
-    { 'Л',"L" },
-    { 'М',"M" },
-    { 'Н',"N" },
-    { 'О',"O" },
-    { 'П',"P" },
-    { 'Р',"R" },
-    { 'С',"S" },
-    { 'Т',"T" },
-    { 'У',"U" },
-    { 'Ф',"F" },
-    { 'Х',"Kh" },
-    { 'Ц',"Ts" },
-    { 'Ч',"Ch" },
-    { 'Ш',"Sh" },
-    { 'Щ',"Shch" },
-    { 'Ъ',"_" },
-    { 'Ы',"Y" },
-    { 'Ь',"_" },
-    { 'Э',"E" },
-    { 'Ю',"Yu" },
-    { 'Я',"Ya" },
-
-    { ' ',"_" },
-}
-;
-
 std::string version();
 
 // UE does not recognize russian strings in .obj
-string translate(const string &s)
+std::string translate(const std::string &s)
 {
     UErrorCode ec = UErrorCode::U_ZERO_ERROR;
     auto tr = icu::Transliterator::createInstance("Latin-Cyrillic", UTransDirection::UTRANS_REVERSE, ec);
@@ -144,7 +65,7 @@ string translate(const string &s)
         throw std::runtime_error("Cannot create translator, ec = " + std::to_string(ec));
     icu::UnicodeString s2(s.c_str());
     tr->transliterate(s2);
-    string s3;
+    std::string s3;
     s2.toUTF8String<std::string>(s3);
     replace_all(s3, " ", "");
     return s3;
@@ -167,8 +88,8 @@ void aim_vector4::load(const buffer &b, uint32_t flags)
 
 std::string aim_vector4::print() const
 {
-    string s;
-    s += to_string(x) + " " + to_string(y) + " " + to_string(z);
+    std::string s;
+    s += std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
     return s;
 }
 
@@ -189,24 +110,24 @@ std::string vertex::printVertex(bool rotate_x_90) const
     Eigen::AngleAxis<float> rx(M_PI_2, Eigen::Vector3f(1, 0, 0));
     auto x2 = rx * x;*/
 
-    string s;
+    std::string s;
     if (rotate_x_90)
     {
         // that rotation is really equivalent to exchanging y and z and z sign
         s = "v " +
-            to_string(-coordinates.x * scale_mult) + " " +
-            to_string(coordinates.z * scale_mult) + " " +
-            to_string(coordinates.y * scale_mult) + " " +
-            to_string(coordinates.w)
+            std::to_string(-coordinates.x * scale_mult) + " " +
+            std::to_string(coordinates.z * scale_mult) + " " +
+            std::to_string(coordinates.y * scale_mult) + " " +
+            std::to_string(coordinates.w)
             ;
     }
     else
     {
         s = "v " +
-            to_string(-coordinates.x * scale_mult) + " " +
-            to_string(coordinates.y * scale_mult) + " " +
-            to_string(-coordinates.z * scale_mult) + " " +
-            to_string(coordinates.w)
+            std::to_string(-coordinates.x * scale_mult) + " " +
+            std::to_string(coordinates.y * scale_mult) + " " +
+            std::to_string(-coordinates.z * scale_mult) + " " +
+            std::to_string(coordinates.w)
             ;
     }
     return s;
@@ -214,21 +135,21 @@ std::string vertex::printVertex(bool rotate_x_90) const
 
 std::string vertex::printNormal(bool rotate_x_90) const
 {
-    string s;
+    std::string s;
     if (rotate_x_90)
-        s = "vn " + to_string(-normal.x) + " " + to_string(-normal.z) + " " + to_string(normal.y);
+        s = "vn " + std::to_string(-normal.x) + " " + std::to_string(-normal.z) + " " + std::to_string(normal.y);
     else
-        s = "vn " + to_string(-normal.x) + " " + to_string(normal.y) + " " + to_string(-normal.z);
+        s = "vn " + std::to_string(-normal.x) + " " + std::to_string(normal.y) + " " + std::to_string(-normal.z);
     return s;
 }
 
 std::string vertex::printTex() const
 {
-    string s;
+    std::string s;
     float i;
     auto u = modf(fabs(texture_coordinates.u), &i);
     auto v = modf(fabs(texture_coordinates.v), &i);
-    s = "vt " + to_string(u) + " " + to_string(1 - v);
+    s = "vt " + std::to_string(u) + " " + std::to_string(1 - v);
     return s;
 }
 
@@ -257,8 +178,8 @@ void damage_model::load(const buffer &b)
 
 std::string mat_color::print() const
 {
-    string s;
-    s += to_string(r) + " " + to_string(g) + " " + to_string(b);
+    std::string s;
+    s += std::to_string(r) + " " + std::to_string(g) + " " + std::to_string(b);
     return s;
 }
 
@@ -321,13 +242,13 @@ void animation::segment::loadData(const buffer &b)
 
 std::string block::printMtl() const
 {
-    string s;
+    std::string s;
     s += "newmtl " + h.name + "\n";
     s += "\n";
     s += "Ka " + mat.ambient.print() + "\n";
     s += "Kd " + mat.diffuse.print() + "\n";
     s += "Ks " + mat.specular.print() + "\n";
-    s += "   Ns " + to_string(mat.power) + "\n";
+    s += "   Ns " + std::to_string(mat.power) + "\n";
     // d 1.0
     // illum
     s += "\n";
@@ -345,7 +266,7 @@ std::string block::printMtl() const
 
 std::string block::printObj(int group_offset, bool rotate_x_90) const
 {
-    string s;
+    std::string s;
     s += "usemtl " + h.name + "\n";
     s += "\n";
     s += "g " + h.name + "\n";
@@ -364,9 +285,9 @@ std::string block::printObj(int group_offset, bool rotate_x_90) const
 
     for (auto &t : faces)
     {
-        auto x = to_string(t.x + 1 + group_offset);
-        auto y = to_string(t.y + 1 + group_offset);
-        auto z = to_string(t.z + 1 + group_offset);
+        auto x = std::to_string(t.x + 1 + group_offset);
+        auto y = std::to_string(t.y + 1 + group_offset);
+        auto z = std::to_string(t.z + 1 + group_offset);
         x += "/" + x + "/" + x;
         y += "/" + y + "/" + y;
         z += "/" + z + "/" + z;
@@ -459,7 +380,7 @@ void block::loadPayload(const buffer &data)
     for (auto &dm : damage_models)
         dm.load(data);
 
-    string s = "extraction error: block #" + std::string(h.name);
+    std::string s = "extraction error: block #" + std::string(h.name);
     /*if (!data.eof())
     {
         cerr << s << "\n";
@@ -527,7 +448,7 @@ void model::print(const std::string &fn)
 
     auto print_obj = [&](const auto &n, bool rotate_x_90 = false)
     {
-        ofstream o(n);
+        std::ofstream o(n);
         title(o);
         o << "mtllib " + fn + ".mtl\n\n";
         o << "o " << fn << "\n\n";
@@ -543,7 +464,7 @@ void model::print(const std::string &fn)
     };
 
     auto mtl_fn = fn + ".mtl";
-    ofstream m(mtl_fn);
+    std::ofstream m(mtl_fn);
     title(m);
     for (auto &b : blocks)
         m << b.printMtl() << "\n";

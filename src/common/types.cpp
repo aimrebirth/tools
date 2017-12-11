@@ -18,8 +18,6 @@
 
 #include "types.h"
 
-GameType gameType = GameType::Aim2;
-
 void weather::load(const buffer &b)
 {
     READ_STRING(b, name);
