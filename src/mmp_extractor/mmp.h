@@ -64,9 +64,9 @@ struct header
     std::wstring name1;
     std::wstring name2;
     uint32_t width;
-    uint32_t height;
+    uint32_t length;
     uint32_t n_header_segs;
-    std::string name;
+    std::string name; // default horizont name?
     std::vector<header_segment*> segments;
 
     void load(const buffer &b);
@@ -75,6 +75,7 @@ private:
     header_segment *create_segment(const buffer &b);
 };
 
+// see https://docs.unrealengine.com/latest/INT/Engine/Landscape/TechnicalGuide/index.html
 struct segment
 {
     static const int len = 65;
@@ -83,12 +84,8 @@ struct segment
     struct description
     {
         uint32_t offset;
-        float Xmin;
-        float Ymin;
-        float Zmin;
-        float Xmax;
-        float Ymax;
-        float Zmax;
+        vector3 min;
+        vector3 max;
         float unk0[5];
         uint32_t unk1[7];
     };
@@ -156,8 +153,8 @@ struct mmp
     std::map<int, mat<uint32_t>> alpha_maps;
     std::map<int, color> textures_map_colored;
     std::map<int, std::string> textures_names;
-    Height h_min;
-    Height h_max;
+    Height h_min = 0;
+    Height h_max = 0;
     double scale16 = 0;
     double scale = 0;
     mat<uint16_t> heightmap;

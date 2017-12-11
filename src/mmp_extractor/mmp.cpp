@@ -69,7 +69,7 @@ void header::load(const buffer &b)
     READ_WSTRING(b, name1);
     READ_WSTRING(b, name2);
     READ(b, width);
-    READ(b, height);
+    READ(b, length);
     READ(b, n_header_segs);
     segments.resize(n_header_segs);
     READ_STRING_N(b, name, 0xA0);
@@ -96,8 +96,8 @@ void mmp::load(const buffer &b)
     xsegs = (h.width - 1) / 64;
     if ((h.width - 1) % 64 != 0)
         xsegs++;
-    ysegs = (h.height - 1) / 64;
-    if ((h.height - 1) % 64 != 0)
+    ysegs = (h.length - 1) / 64;
+    if ((h.length - 1) % 64 != 0)
         ysegs++;
     int n_segs = xsegs * ysegs;
     segments.resize(n_segs);
@@ -159,38 +159,38 @@ void mmp::process()
         c2.g = 255 - i * color_step;
         textures_map[iter->first] = c2;
     }
-    alpha_maps[0] = mat<uint32_t>(h.width, h.height);
+    alpha_maps[0] = mat<uint32_t>(h.width, h.length);
     for (auto &t : textures_map)
     {
-        alpha_maps[t.second.g] = mat<uint32_t>(h.width, h.height);
+        alpha_maps[t.second.g] = mat<uint32_t>(h.width, h.length);
     }
 
     // merge
-    heightmap = decltype(heightmap)(h.width, h.height);
-    texmap = decltype(texmap)(h.width, h.height);
-    texmap_colored = decltype(texmap_colored)(h.width, h.height);
-    colormap = decltype(colormap)(h.width, h.height);
+    heightmap = decltype(heightmap)(h.width, h.length);
+    texmap = decltype(texmap)(h.width, h.length);
+    texmap_colored = decltype(texmap_colored)(h.width, h.length);
+    colormap = decltype(colormap)(h.width, h.length);
 
     h_min = std::numeric_limits<Height>::max();
     h_max = std::numeric_limits<Height>::min();
     for (auto &s : segments)
     {
         const auto &data = s.d;
-        int y1 = s.desc.Ymin / 10;
-        int y2 = s.desc.Ymax / 10;
-        if (y2 > h.height)
-            y2 = h.height;
+        int y1 = s.desc.min.y / 10;
+        int y2 = s.desc.max.y / 10;
+        if (y2 > h.length)
+            y2 = h.length;
         for (int y = 0; y1 < y2; y1++, y++)
         {
-            int x1 = s.desc.Xmin / 10;
-            int x2 = s.desc.Xmax / 10;
+            int x1 = s.desc.min.x / 10;
+            int x2 = s.desc.max.x / 10;
             auto dx = x2 - x1;
             if (x2 > h.width)
                 x2 = h.width;
             for (int x = 0; x1 < x2; x1++, x++)
             {
                 auto p = y * dx + x;
-                auto y_rev = h.height - y1 - 1; // for bmp reversion
+                auto y_rev = h.length - y1 - 1; // for bmp reversion
                 //auto y_rev = y1;
 
                 auto t = data.Infomap[p].getTexture();
@@ -204,9 +204,9 @@ void mmp::process()
                 texmap_colored(y_rev, x1) = textures_map_colored[t];
                 colormap(y_rev, x1) = data.Colormap[p];
 
-                auto height = data.Heightmap[p];
-                h_min = std::min(h_min, height);
-                h_max = std::max(h_max, height);
+                auto length = data.Heightmap[p];
+                h_min = std::min(h_min, length);
+                h_max = std::max(h_max, length);
             }
         }
     }
@@ -220,14 +220,14 @@ void mmp::process()
 
     for (auto &s : segments)
     {
-        int y1 = s.desc.Ymin / 10;
-        int y2 = s.desc.Ymax / 10;
-        if (y2 > h.height)
-            y2 = h.height;
+        int y1 = s.desc.min.y / 10;
+        int y2 = s.desc.max.y / 10;
+        if (y2 > h.length)
+            y2 = h.length;
         for (int y = 0; y1 < y2; y1++, y++)
         {
-            int x1 = s.desc.Xmin / 10;
-            int x2 = s.desc.Xmax / 10;
+            int x1 = s.desc.min.x / 10;
+            int x2 = s.desc.max.x / 10;
             auto dx = x2 - x1;
             if (x2 > h.width)
                 x2 = h.width;
@@ -248,7 +248,7 @@ void mmp::writeFileInfo()
     if (!ofile)
         return;
     ofile << "width: " << h.width << "\n";
-    ofile << "height: " << h.height << "\n";
+    ofile << "length: " << h.length << "\n";
     ofile << "x segments: " << xsegs << "\n";
     ofile << "y segments: " << ysegs << "\n";
     ofile << "h_min: " << h_min << "\n";

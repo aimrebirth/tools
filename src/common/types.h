@@ -107,7 +107,7 @@ struct weather
 struct weather_group
 {
     uint32_t n_segs;
-    char name[0xA0];
+    std::string name;
     std::vector<weather> segments;
 
     void load(const buffer &b);
