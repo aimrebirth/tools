@@ -59,7 +59,7 @@ enum class ObjectType : uint32_t
     BOUNDARY        =   23,
     SOUND_ZONE      =   24,
 
-    unk1            =   27,
+    TANK            =   27,
 };
 
 struct Segment
@@ -160,12 +160,12 @@ KNOWN_OBJECT(Image);
 KNOWN_OBJECT(Anomaly);
 KNOWN_OBJECT(Tower);
 KNOWN_OBJECT(SoundZone);
+KNOWN_OBJECT(Tank);
 
 #define UNKNOWN_OBJECT(name) \
     struct name : public MapObject { void load(const buffer &b){ int pos = b.index(); assert(false); } }
 
 UNKNOWN_OBJECT(unk0);
-UNKNOWN_OBJECT(unk1);
 
 struct Objects
 {

@@ -256,6 +256,8 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
     int fx_id = 0;
     for (auto &b : model.blocks)
     {
+        // b.h.name == "SHAPE" - collision object
+
         //
         if (b.isEngineFx())
         {

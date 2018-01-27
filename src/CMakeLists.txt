@@ -35,6 +35,7 @@ add_executable(mmo_extractor ${mmo_extractor_src})
 target_link_libraries(mmo_extractor
     common
     pvt.lzwdgc.polygon4.data_manager.data_manager
+    pvt.cppan.demo.taywee.args
 )
 
 file(GLOB mmp_extractor_src "mmp_extractor/*")

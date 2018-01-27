@@ -45,12 +45,13 @@ try
         m.load(p.string());
         m.process();
         m.writeFileInfo();
-        m.writeTexturesList();
+        //m.writeTexturesList();
         m.writeHeightMap();
-        m.writeTextureMap();
+        //m.writeHeightMapSegmented();
+        /*m.writeTextureMap();
         m.writeTextureAlphaMaps();
         m.writeTextureMapColored();
-        m.writeColorMap();
+        m.writeColorMap();*/
     };
 
     path p = argv[1];

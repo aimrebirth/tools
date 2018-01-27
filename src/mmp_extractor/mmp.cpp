@@ -84,10 +84,14 @@ void header::load(const buffer &b)
 
 void segment::load(const buffer &b)
 {
+    uint32_t offset;
+    READ(b, offset);
     READ(b, desc);
     buffer b2(b);
-    b2.seek(desc.offset);
+    b2.seek(offset);
     READ(b2, d);
+    b2.seek(offset);
+    READ(b2, d2);
 }
 
 void mmp::load(const buffer &b)
@@ -107,7 +111,7 @@ void mmp::load(const buffer &b)
     // check whether all segments were read
     if (segments.size())
     {
-        auto len = segments[0].desc.offset + segments.size() * sizeof(segment::data);
+        auto len = b.index() + segments.size() * sizeof(segment::data);
         if (len != b.size())
             throw std::logic_error("Some segments were not read");
     }
@@ -167,6 +171,7 @@ void mmp::process()
 
     // merge
     heightmap = decltype(heightmap)(h.width, h.length);
+    //heightmap_segmented = decltype(heightmap)(segment::len, h.length);
     texmap = decltype(texmap)(h.width, h.length);
     texmap_colored = decltype(texmap_colored)(h.width, h.length);
     colormap = decltype(colormap)(h.width, h.length);
@@ -213,11 +218,12 @@ void mmp::process()
 
     alpha_maps.erase(0);
     scale16 = 0xffff / (h_max - h_min);
-    const int unreal_koef = 51200;
+    const int unreal_koef = 51300;
     const int aim_koef = 10;
     const double diff = h_max - h_min;
-    scale = aim_koef / (unreal_koef / diff);
+    scale = aim_koef * diff / unreal_koef;
 
+    // make heightmap
     for (auto &s : segments)
     {
         int y1 = s.desc.min.y / 10;
@@ -281,12 +287,22 @@ void mmp::writeTexturesList()
 
 void mmp::writeHeightMap()
 {
-    auto fn = filename + ".heightmap16.raw";
+    auto fn = filename + ".heightmap16.r16";
     FILE *f = fopen(fn.c_str(), "wb");
     if (f == nullptr)
         return;
     fwrite(&heightmap(0, 0), heightmap.size() * sizeof(decltype(heightmap)::type), 1, f);
     fclose(f);
+}
+
+void mmp::writeHeightMapSegmented()
+{
+    /*auto fn = filename + ".heightmap.r16s";
+    FILE *f = fopen(fn.c_str(), "wb");
+    if (f == nullptr)
+        return;
+    fwrite(&heightmap_segmented(0, 0), heightmap_segmented.size() * sizeof(decltype(heightmap_segmented)::type), 1, f);
+    fclose(f);*/
 }
 
 void mmp::writeTextureMap()

@@ -81,49 +81,52 @@ struct segment
     static const int len = 65;
     static const int size = len * len;
 
+    static const int mini_len = 33;
+    static const int mini_size = mini_len * mini_len;
+
     struct description
     {
-        uint32_t offset;
         vector3 min;
         vector3 max;
         float unk0[5];
         uint32_t unk1[7];
     };
+
+    struct info
+    {
+        uint16_t render_flags;
+        uint16_t texture_index;
+
+        uint16_t getTexture() const { return texture_index & 0x0fff; } // first 4 bits are unk (flags?)
+    };
+
+    struct shadow
+    {
+        uint8_t unk[4];
+    };
+
+    struct normal
+    {
+        int16_t x;
+        int16_t y;
+    };
+
+    struct flagged_heightmap
+    {
+        uint16_t height;
+        uint16_t flag;
+    };
+
+    struct mini_lod
+    {
+        flagged_heightmap Heightmap[mini_size];
+        color Colormap[mini_size];
+        uint32_t unk0[mini_size]; // shadowmap?
+        normal unk1[mini_size]; // normals?
+    };
+
     struct data
     {
-        struct info
-        {
-            uint16_t render_flags;
-            uint16_t texture_index;
-
-            uint16_t getTexture() const { return texture_index & 0x0fff; } // first 4 bits are unk (flags?)
-        };
-        struct shadow
-        {
-            uint8_t unk[4];
-        };
-        struct normal
-        {
-            int16_t x;
-            int16_t y;
-        };
-        struct mini_lod
-        {
-            static const int len = 33;
-            static const int size = len * len;
-
-            struct flagged_heightmap
-            {
-                uint16_t height;
-                uint16_t flag;
-            };
-
-            flagged_heightmap Heightmap[size];
-            color Colormap[size];
-            uint32_t unk0[size]; // shadowmap?
-            normal unk1[size]; // normals?
-        };
-
         uint32_t MagicNumber;
         mini_lod mlod;
         Height Heightmap[size];
@@ -133,8 +136,28 @@ struct segment
         normal Normalmap[size];
     };
 
+    struct mini_lod2
+    {
+        flagged_heightmap Heightmap[mini_len][mini_len];
+        color Colormap[mini_len][mini_len];
+        uint32_t unk0[mini_len][mini_len]; // shadowmap?
+        normal unk1[mini_len][mini_len]; // normals?
+    };
+
+    struct data2
+    {
+        uint32_t MagicNumber;
+        mini_lod2 mlod;
+        Height Heightmap[len][len];
+        info Infomap[len][len];
+        color Colormap[len][len];
+        shadow Shadowmap[len][len];
+        normal Normalmap[len][len];
+    };
+
     description desc;
     data d;
+    data2 d2;
 
     void load(const buffer &b);
 };
@@ -158,6 +181,7 @@ struct mmp
     double scale16 = 0;
     double scale = 0;
     mat<uint16_t> heightmap;
+    //mat<uint16_t> heightmap_segmented;
     mat<uint32_t> texmap;
     mat<uint32_t> texmap_colored;
     mat<uint32_t> colormap;
@@ -171,6 +195,7 @@ struct mmp
     void writeFileInfo();
     void writeTexturesList();
     void writeHeightMap();
+    void writeHeightMapSegmented();
     void writeTextureMap();
     void writeTextureAlphaMaps();
     void writeTextureMapColored();

@@ -5,3 +5,4 @@ local_settings:
         - pvt.egorpugin.primitives.filesystem: master
         - pvt.egorpugin.primitives.executor: master
         - pvt.cppan.demo.unicode.icu.i18n: "*"
+        - pvt.cppan.demo.taywee.args: "*"

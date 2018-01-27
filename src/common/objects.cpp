@@ -65,8 +65,8 @@ Segment *Segment::create_segment(const buffer &b)
     case ObjectType::unk0:
         segment = new SegmentObjects<unk0>;
         break;
-    case ObjectType::unk1:
-        segment = new SegmentObjects<unk1>;
+    case ObjectType::TANK:
+        segment = new SegmentObjects<Tank>;
         break;
     default:
         assert(false);

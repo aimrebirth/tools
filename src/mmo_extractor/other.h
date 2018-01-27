@@ -27,63 +27,86 @@
 #include <buffer.h>
 #include <types.h>
 
+#include <variant>
+
 struct MechGroup
 {
     std::string name;
     std::string org;
-    uint32_t type1 = 0;
-    uint32_t len1 = 0;
-    char name1[0x70];
-    //{3,4
-        uint32_t unk30 = 0;
-    //}
-    //{2
-        uint32_t len = 0;
-        std::vector<uint32_t> unk11;
-    //}
-    //{1,0
-        uint32_t unk20 = 0;
-        uint32_t unk21 = 0;
-    //}
-    std::vector<std::string> configs;
-    char unk100;
+    std::vector<std::string> mechanoids;
+
+    // used only in m1.loc1 and for sinigr
+    // probably an old field
+    std::string org_ru;
+
+    struct unk_type01
+    {
+        uint32_t unk0 = 0;
+        float unk1 = 0;
+    };
+
+    std::variant<unk_type01, std::vector<uint32_t>, uint32_t> type_data;
+
+    bool hidden;
 
     void load(const buffer &b)
     {
         READ_STRING(b, name);
         READ_STRING(b, org);
-        READ(b, type1);
-        READ(b, len1);
-        READ(b, name1);
-        if (type1 == 3 || type1 == 4)
+        uint32_t type = 0;
+        READ(b, type);
+        uint32_t number_of_mechanoids = 0;
+        READ(b, number_of_mechanoids);
+        READ_STRING_N(b, org_ru, 0x70);
+
+        switch (type)
         {
-            READ(b, unk30);
+        case 0:
+        case 1:
+        {
+            unk_type01 t;
+            READ(b, t.unk0);
+            READ(b, t.unk1);
+            type_data = t;
         }
-        else if (type1 == 2)
+            break;
+        case 2:
         {
+            std::vector<uint32_t> t;
+            uint32_t len = 0;
             READ(b, len);
-            unk11.resize(len);
+            t.resize(len);
             for (int i = 0; i < len; i++)
-                READ(b, unk11[i]);
+                READ(b, t[i]);
+            type_data = t;
         }
-        else if (type1 == 1 || type1 == 0)
+            break;
+        case 3: // 3 = free mechanoids only?
+        case 4:
         {
-            READ(b, unk20);
-            READ(b, unk21);
+            uint32_t t;
+            READ(b, t);
+            type_data = t;
         }
-        else
+            break;
+        default:
             assert(false);
-        configs.resize(len1, std::string(0x20, 0));
-        for (int i = 0; i < len1; i++)
-            READ_N(b, configs[i][0], 0x20);
-        READ(b, unk100);
+        }
+
+        for (int i = 0; i < number_of_mechanoids; i++)
+        {
+            std::string t;
+            READ_STRING_N(b, t, 0x20);
+            mechanoids.push_back(t);
+        }
+        READ(b, hidden);
     }
 };
 
 struct MechGroups
 {
-    char prefix[0x30];
     std::vector<MechGroup> mechGroups;
+    char unk0[0x30]; // prefix?
 
     void load(const buffer &b)
     {
@@ -94,7 +117,7 @@ struct MechGroups
         }
         uint32_t n = 0;
         READ(b, n);
-        READ(b, prefix);
+        READ(b, unk0);
 
         for (int s = 0; s < n; s++)
         {

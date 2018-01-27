@@ -33,6 +33,7 @@
 #include <Polygon4/DataManager/Storage.h>
 #include <Polygon4/DataManager/Types.h>
 #include <primitives/filesystem.h>
+#include <args.hxx>
 
 #include <buffer.h>
 #include <types.h>
@@ -52,13 +53,14 @@ struct mmo_storage
     Objects objects;
     MechGroups mechGroups;
     MapGoods mapGoods;
-    uint32_t unk0 = 0;
     MapMusic mapMusic;
     MapSounds mapSounds;
     // aim2
     Organizations orgs;
     OrganizationBases orgsBases;
     Prices prices;
+
+    uint32_t unk0 = 0;
 
     void load(const buffer &b)
     {
@@ -268,39 +270,62 @@ void write_mmo(Storage *storage, const mmo_storage &s)
 int main(int argc, char *argv[])
 try
 {
-    if (argc != 4)
-    {
-        std::cout << "Usage:\n" << argv[0] << " db.sqlite {file.mmo,mmo_dir} prefix" << "\n";
-        return 1;
-    }
-    prefix = argv[3];
-    if (prefix == "m1")
-        gameType = GameType::Aim1;
-    else if (prefix == "m2")
-        gameType = GameType::Aim2;
-    else
-        throw std::runtime_error("unknown prefix (game type)");
+    args::ArgumentParser parser("mmo extractor");
+    args::HelpFlag help(parser, "help", "Display this help menu", { 'h', "help" });
+    args::Flag m2(parser, "m2", "m2 .mmo file", { "m2" });
+    args::Flag print_mechanoids(parser, "print_mechanoids", "Print mechanoids", { "print_mechanoids" });
+    args::ValueFlag<std::string> db_path(parser, "db_path", "Database file", {'d', "db"});
+    args::Positional<std::string> file_path(parser, "file or directory", ".mmo file or directory with .mmo files");
+    parser.Prog(argv[0]);
 
-    auto storage = initStorage(argv[1]);
-    storage->load();
+    parser.ParseCLI(argc, argv);
 
-    path p = argv[2];
-    if (fs::is_regular_file(p))
-        write_mmo(storage.get(), read_mmo(p));
-    else if (fs::is_directory(p))
+    const path p = file_path.Get();
+    gameType = m2 ? GameType::Aim2 : GameType::Aim1;
+
+    /*{
+            std::cerr << parser;
+    }*/
+
+    auto action = [&p](auto f)
     {
-        auto files = enumerate_files_like(p, ".*\\.mmo", false);
-        for (auto &f : files)
+        if (fs::is_regular_file(p))
+            f(p, read_mmo(p));
+        else if (fs::is_directory(p))
         {
-            std::cout << "processing: " << f << "\n";
-            write_mmo(storage.get(), read_mmo(f));
+            auto files = enumerate_files_like(p, ".*\\.[Mm][Mm][Oo]", false);
+            for (auto &file : files)
+            {
+                std::cerr << "processing: " << file << "\n";
+                f(file, read_mmo(file));
+            }
         }
+        else
+            throw std::runtime_error("Bad fs object");
+    };
+
+    if (print_mechanoids)
+    {
+        action([](const path &file, const mmo_storage &m)
+        {
+            for (auto &mg : m.mechGroups.mechGroups)
+            {
+                std::cout << mg.name;
+                std::cout << " " << mg.org;
+                std::cout << " " << mg.mechanoids.size();
+                std::cout << " " << file.filename().stem().string();
+                std::cout << "\n";
+            }
+        });
     }
     else
-        throw std::runtime_error("Bad fs object");
-
-    if (inserted_all)
-        storage->save();
+    {
+        auto storage = initStorage(db_path.Get());
+        storage->load();
+        action([&storage](const path &, const auto &m) {write_mmo(storage.get(), m); });
+        if (inserted_all)
+            storage->save();
+    }
 
     return 0;
 }
