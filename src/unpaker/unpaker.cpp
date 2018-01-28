@@ -27,14 +27,19 @@ void unpak(string fn)
         return;
     pak p;
     p.load(f);
-    for (auto &f : p.files)
+
+    auto unpack = [&](auto &file)
     {
-        record &file = f.second;
         cout << "Unpacking " << file.name << "\n";
         vector<char> buf(file.len);
         file.read(&p, &buf[0], file.len);
         file.write(fn + ".dir", buf);
     };
+
+    unpack(p.files["arena.mmp"]);
+
+    //for (auto &[n,f] : p.files)
+        //unpack(f);
     fclose(f);
 }
 

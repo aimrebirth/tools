@@ -27,8 +27,6 @@
 
 #define FREAD(var) fread(&var, 1, sizeof(var), f)
 
-const int header_size = 0xC;
-
 void header::load(FILE *f)
 {
     FREAD(unk1);
@@ -42,7 +40,9 @@ void header::load(FILE *f)
 
 void record::load(FILE *f)
 {
-    FREAD(name);
+    char n[0x50];
+    FREAD(n);
+    name = n;
     FREAD(pos);
     FREAD(len);
 }
@@ -96,7 +96,7 @@ int record::read(pak *pak, void *output, int size)
 void segment::load_header(FILE *f)
 {
     FREAD(unk1);
-    FREAD(flags);
+    FREAD(algorithm);
     FREAD(offset);
 }
 
@@ -105,7 +105,7 @@ void segment::load_segment()
     auto f = file;
 
     fseek(f, offset, SEEK_SET);
-    if (flags == 0)
+    if (algorithm == 0)
     {
         std::cerr << "Something is wrong. Maybe you trying to open aim2 files?\n";
         std::cerr << "They can be opened with SDK extractor.\n";
@@ -114,7 +114,7 @@ void segment::load_segment()
 
     FREAD(size1);
     size2 = size1;
-    if ((flags & 0x3) && (flags & 0xC))
+    if ((algorithm & 0x3) && (algorithm & 0xC))
     {
         FREAD(size2);
         fread(&decoded[0], 1, size2, f);
@@ -129,19 +129,30 @@ void segment::decompress(int segment_id)
 {
     load_segment();
 
-    if (flags & 0xC)
+    if ((algorithm & DA_1) || (algorithm & DA_2))
     {
-        if (flags & 0x4)
+        if (algorithm & DA_1)
             decode_f1((char*)decoded, size2, (char*)encoded);
         else
             decode_f2((char*)decoded, size2, (char*)encoded);
     }
-    if (flags & 0x3)
+    if ((algorithm & RLE_1_byte) || (algorithm & RLE_2_bytes))
     {
-        if (flags & 0x1)
-            decode_f3((char*)encoded, size1, (char*)decoded);
+        if (algorithm & RLE_2_bytes)
+        {
+            //static std::vector<uint8_t> buf(4194432);
+            decode_f3((char*)encoded, size1, (char*)decoded/*buf.data()*/);
+            //decode_rle((short*)encoded, size1, (short*)decoded);
+            //assert(memcmp(decoded, buf.data(), size1) == 0);
+        }
         else
-            decode_f4((char*)encoded, size1, (char*)decoded, segment_id * header_size);
+        {
+            //static std::vector<uint8_t> buf(4194432);
+            //const int header_size = 0xC;
+            //decode_f4((char*)encoded, size1, (char*)buf.data(), segment_id * header_size);
+            decode_rle((char*)encoded, size1, (char*)decoded);
+            //assert(memcmp(decoded, buf.data(), size1) == 0);
+        }
     }
 }
 

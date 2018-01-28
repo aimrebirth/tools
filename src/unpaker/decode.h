@@ -222,7 +222,7 @@ int decode_f3(char *input, int size, char *output)
                         v10 = v21;
                         memset32(v16, v18, v15 >> 1);
                         v19 = (int)((char *)v16 + 4 * (v15 >> 1));
-                        for (i = (v13 + 3) & 1; i; --i)
+                        for (i = v15 & 1; i; --i)
                         {
                             *(_WORD *)v19 = v18;
                             v19 += 2;
@@ -231,7 +231,10 @@ int decode_f3(char *input, int size, char *output)
                     }
                     goto LABEL_13;
                 }
-                *(_WORD *)v11 = *(_WORD *)&v4[2 * idx];
+                else
+                {
+                    *(_WORD *)v11 = *(_WORD *)&v4[2 * idx];
+                }
             }
             else
             {
@@ -306,4 +309,70 @@ int decode_f4(char *input, int size, char *output, int segment_offset)
         goto LABEL_9;
     }
     return result;
+}
+
+void decode_rle(const short *input, const int size, short *output)
+{
+    if (size < 2)
+        return;
+
+    // input ptr, also rle_indicator
+    const auto rle_indicator = input++;
+    while (1)
+    {
+        auto c = *input++;
+        if ((c & 0xFF00) != (*rle_indicator << 8))
+            *output++ = c;
+        else
+        {
+            uint32_t count = (uint8_t)c;
+            if (count == (*rle_indicator << 8) + 255)
+                *output++ = c; // insert indicator byte itself
+            else
+            {
+                count += 3;
+                for (int i = 0; i < count / 2; i++)
+                {
+                    *output++ = *input;
+                    *output++ = *input;
+                }
+                for (int i = 0; i < ((count / 2) & 1); i++)
+                {
+                    *output++ = *input;
+                }
+            }
+        }
+
+        if (input >= rle_indicator + size)
+            return;
+    }
+}
+
+void decode_rle(const char *input, const int size, char *output)
+{
+    if (size < 2)
+        return;
+
+    // input ptr, also rle_indicator
+    const auto rle_indicator = input++;
+    while (1)
+    {
+        auto c = *input++;
+        if (c != *rle_indicator)
+            *output++ = c;
+        else
+        {
+            uint32_t count = (uint8_t)*input++;
+            if (count == 255)
+                *output++ = *rle_indicator; // insert indicator byte itself
+            else
+            {
+                memset(output, *input++, count += 3);
+                output += count;
+            }
+        }
+
+        if (input >= rle_indicator + size)
+            return;
+    }
 }

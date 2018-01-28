@@ -40,7 +40,7 @@ struct header
 
 struct record
 {
-    char name[0x50];
+    std::string name;
     uint32_t pos;
     uint32_t len;
 
@@ -55,8 +55,16 @@ struct record
 
 struct segment
 {
+    enum decode_algorithm
+    {
+        RLE_2_bytes = 0x1,
+        RLE_1_byte  = 0x2,
+        DA_1 = 0x4,
+        DA_2 = 0x8,
+    };
+
     uint32_t unk1;
-    uint32_t flags;
+    decode_algorithm algorithm;
     uint32_t offset;
 
     uint32_t size1;
