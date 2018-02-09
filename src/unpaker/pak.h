@@ -55,7 +55,7 @@ struct record
 
 struct segment
 {
-    enum decode_algorithm
+    enum decode_algorithm : uint32_t
     {
         RLE_2_bytes = 0x1,
         RLE_1_byte  = 0x2,
@@ -63,7 +63,7 @@ struct segment
         DA_2 = 0x8,
     };
 
-    uint32_t unk1;
+    uint32_t unk1; // some file offset? trash?
     decode_algorithm algorithm;
     uint32_t offset;
 

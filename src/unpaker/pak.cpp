@@ -140,18 +140,27 @@ void segment::decompress(int segment_id)
     {
         if (algorithm & RLE_2_bytes)
         {
-            //static std::vector<uint8_t> buf(4194432);
-            decode_f3((char*)encoded, size1, (char*)decoded/*buf.data()*/);
-            //decode_rle((short*)encoded, size1, (short*)decoded);
-            //assert(memcmp(decoded, buf.data(), size1) == 0);
+            decode_f3((char*)encoded, size1, (char*)decoded);
+
+            /*static std::vector<uint8_t> buf(4194432);
+            decode_f3((char*)encoded, size1, (char*)buf.data());
+            decode_rle((short*)encoded, size1, (short*)decoded);
+            auto sz = 0;
+            while (sz++ < size1 - 1 && decoded[sz] == buf[sz]);
+            std::cout << "len = " << sz << "\n";
+            assert(memcmp(decoded, buf.data(), size1) == 0);*/
         }
         else
         {
-            //static std::vector<uint8_t> buf(4194432);
-            //const int header_size = 0xC;
-            //decode_f4((char*)encoded, size1, (char*)buf.data(), segment_id * header_size);
+            //decode_f4((char*)encoded, size1, (char*)decoded);
+
+            /*static std::vector<uint8_t> buf(4194432);
+            const int header_size = 0xC;
+            decode_f4((char*)encoded, size1, (char*)buf.data(), segment_id * header_size);
             decode_rle((char*)encoded, size1, (char*)decoded);
-            //assert(memcmp(decoded, buf.data(), size1) == 0);
+            assert(memcmp(decoded, buf.data(), size1) == 0);*/
+
+            decode_rle((char*)encoded, size1, (char*)decoded);
         }
     }
 }
