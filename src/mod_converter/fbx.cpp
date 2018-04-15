@@ -2,6 +2,8 @@
 
 #include "model.h"
 
+#include <boost/algorithm/string.hpp>
+#include <primitives/string.h>
 #include <fbxsdk.h>
 
 #ifdef IOS_REF
@@ -264,23 +266,23 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
             create_socket(b, "EngineFx_" + std::to_string(engine_id++));
             continue;
         }
-        else if (b.h.name == "LIGHTGUN")
+        else if (b.h.name == boost::to_lower_copy("LIGHTGUN"s))
         {
             create_socket(b, "WeaponLight_0");
             create_socket(b, "WeaponLight_1", true);
             continue;
         }
-        else if (b.h.name == "HEAVYGUN")
+        else if (b.h.name == boost::to_lower_copy("HEAVYGUN"s))
         {
             create_socket(b, "WeaponHeavy");
             continue;
         }
-        else if (b.h.name == "ROCKET")
+        else if (b.h.name == boost::to_lower_copy("ROCKET"s))
         {
             create_socket(b, "WeaponRocket");
             continue;
         }
-        else if (b.h.name.find("FX") == 0)
+        else if (b.h.name.find(boost::to_lower_copy("FX"s)) == 0)
         {
             create_socket(b, "Fx_" + std::to_string(fx_id++));
             continue;
