@@ -117,6 +117,7 @@ public:
 
     void seek(uint32_t size) const; // setpos
     void skip(int n) const;
+    uint32_t end() const { return end_; }
     bool eof() const;
     bool check(int index) const;
     void reset() const;

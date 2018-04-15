@@ -60,17 +60,19 @@ enum class MaterialType : uint32_t
     Texture                                                 = 0x0,
     TextureWithGlareMap                                     = 0x1,
     AlphaTextureNoGlare                                     = 0x2, // TextureWithoutGlareMap
+    AlphaTextureWithOverlap                                 = 0x3,
     TextureWithGlareMap2                                    = 0x4, // ??? also <- 4
     AlphaTextureDoubleSided                                 = 0x6,
     DetalizationObjectGrass                                 = 0x8,
-    //DetalizationObjectStone = 0x8,
     Fire                                                    = 0x9,
-    //Fire2 = 0x9,
     MaterialOnly                                            = 0x14,
     TextureWithDetalizationMap                              = 0x1A, // from Viewer: (AdditionalParameter 1)
+    DetalizationObjectStone                                 = 0x1F,
     TextureWithDetalizationMapWithoutModulation             = 0x20, // from Viewer: (AdditionalParameter 1)
     TiledTexture                                            = 0x22,
     TextureWithGlareMapAndMask                              = 0x32,
+    TextureWithMask                                         = 0x35,
+    Fire2                                                   = 0x3D,
 };
 
 template <typename T>
@@ -243,7 +245,7 @@ struct block
     rotation rot;
     uint32_t flags;
     std::vector<vertex> vertices;
-    std::vector<face> faces;
+    std::vector<face> faces; // triangles
 
     // animations
     std::vector<animation> animations;

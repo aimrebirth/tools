@@ -90,7 +90,7 @@ try
         throw std::runtime_error("Bad fs object");
     return 0;
 }
-catch (std::runtime_error &e)
+/*catch (std::runtime_error &e)
 {
     if (silent)
         return 1;
@@ -103,7 +103,7 @@ catch (std::runtime_error &e)
     ofstream ofile(p.string() + ".error.txt");
     ofile << error;
     return 1;
-}
+}*/
 catch (std::exception &e)
 {
     if (silent)

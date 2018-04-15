@@ -57,10 +57,12 @@ inline bool replace_all(std::string &str, const std::string &from, const std::st
 std::string version();
 
 // UE does not recognize russian strings in .obj
+// what about fbx?
+// TODO: what to do with signs: soft sign -> ' ?
 std::string translate(const std::string &s)
 {
     UErrorCode ec = UErrorCode::U_ZERO_ERROR;
-    auto tr = icu::Transliterator::createInstance("Any-Latin; Latin-ASCII;", UTransDirection::UTRANS_FORWARD, ec);
+    auto tr = icu::Transliterator::createInstance("Lower; Any-Latin; NFC; Latin-ASCII;", UTransDirection::UTRANS_FORWARD, ec);
     if (!tr || ec)
         throw std::runtime_error("Cannot create translator, ec = " + std::to_string(ec));
     icu::UnicodeString s2(s.c_str());
@@ -68,6 +70,8 @@ std::string translate(const std::string &s)
     std::string s3;
     s2.toUTF8String<std::string>(s3);
     replace_all(s3, " ", "");
+    // remove soft signs
+    replace_all(s3, "'", "");
     return s3;
 }
 
@@ -209,11 +213,12 @@ void material::load(const buffer &b)
 
 void animation::load(const buffer &b)
 {
-    READ(b, type);
+    READ(b, type); // seen: 1, 3
     READ_STRING_N(b, name, 0xC);
     for (auto &s : segments)
         s.loadHeader(b);
-    //if (segments[0].n)
+    if (segments[0].n == 0)
+        return;
     for (auto &s : segments)
         s.loadData(b);
 }
@@ -353,16 +358,20 @@ void block::loadPayload(const buffer &data)
     {
     case MaterialType::Texture:
     case MaterialType::TextureWithGlareMap:
+    case MaterialType::AlphaTextureNoGlare:
+    case MaterialType::AlphaTextureWithOverlap:
     case MaterialType::TextureWithGlareMap2:
-    case MaterialType::TextureWithGlareMapAndMask:
+    case MaterialType::AlphaTextureDoubleSided:
+    case MaterialType::DetalizationObjectGrass:
+    case MaterialType::Fire:
+    case MaterialType::MaterialOnly:
     case MaterialType::TextureWithDetalizationMap:
+    case MaterialType::DetalizationObjectStone:
     case MaterialType::TextureWithDetalizationMapWithoutModulation:
     case MaterialType::TiledTexture:
-    case MaterialType::AlphaTextureDoubleSided:
-    case MaterialType::AlphaTextureNoGlare:
-    case MaterialType::Fire:
-    case MaterialType::DetalizationObjectGrass:
-    case MaterialType::MaterialOnly:
+    case MaterialType::TextureWithGlareMapAndMask:
+    case MaterialType::TextureWithMask:
+    case MaterialType::Fire2:
         break;
     default:
         std::cout << h.name << ": " << "warning: unknown material type " << (int)mat_type << " \n";
@@ -370,15 +379,22 @@ void block::loadPayload(const buffer &data)
     }
 
     // unk
+    // seen: 2,3,4,8,9,516
     READ(data, unk7);
-    READ(data, unk9); // scale?
+    // seen: 0.0222222, 0.0444444, 0.0555556, 0.03125, 0.0375, 0.0625, 0.1, 0.125, 100, inf
+    READ(data, unk9); // scale? probably no
     READ(data, unk10);
     READ(data, auto_animation);
     READ(data, animation_cycle);
     READ(data, unk8);
     READ(data, unk11);
     READ(data, unk12);
-    READ(data, triangles_mult_7); // additional params?!
+    READ(data, triangles_mult_7); // particle system?
+
+    /*if (unk7 != 0)
+        std::cout << "nonzero unk7 = " << unk7 << " in block " << h.name << "\n";
+    if (unk9 != 0)
+        std::cout << "nonzero unk9 = " << unk9 << " in block " << h.name << "\n";*/
     //
 
     READ(data, additional_params);
@@ -388,18 +404,14 @@ void block::loadPayload(const buffer &data)
     READ(data, rot);
     READ(data, flags);
     uint32_t n_vertex;
-    uint32_t n_faces;
+    uint32_t n_faces; // ??? edges? polygons?
     READ(data, n_vertex);
     vertices.resize(n_vertex);
     READ(data, n_faces);
-    if (triangles_mult_7 && (
-        (flags & F_USE_W_COORDINATE) ||
-        flags == 0x112
-        ) && !unk11)
-        n_faces *= 7;
+    auto n_triangles = n_faces / 3;
     for (auto &v : vertices)
         v.load(data, flags);
-    faces.resize(n_faces / 3);
+    faces.resize(n_triangles);
     for (auto &t : faces)
         READ(data, t);
 
@@ -409,26 +421,51 @@ void block::loadPayload(const buffer &data)
     for (auto &dm : damage_models)
         dm.load(data);
 
-    std::string s = "extraction error: block: " + std::string(h.name);
-    /*if (!data.eof())
+    auto read_more_faces = [&]()
     {
-        cerr << s << "\n";
+        n_faces *= 6; // 7
+
+        auto faces2 = faces;
+        faces2.resize(n_faces / 3);
+        for (auto &t : faces2)
+            READ(data, t);
+    };
+
+    // maybe two winds anims?
+    // small wind and big wind?
+    if (triangles_mult_7 && !unk11 &&
+        ((flags & F_USE_W_COORDINATE) || flags == 0x112)
+        )
+    {
+        read_more_faces();
+    }
+
+    if (unk7 != 0)
         return;
-    }*/
+
+    std::string s = "extraction error: block: " + std::string(h.name);
 
     // unknown how to proceed
     if (!data.eof() && triangles_mult_7)
     {
-        // unknown end of block
-        auto triangles2 = faces;
-        triangles2.resize((data.size() - data.index()) / sizeof(face));
-        for (auto &t : triangles2)
-            READ(data, t);
-        uint16_t t;
-        while (!data.eof())
-            READ(data, t);
+        if (unk11)
+        {
+            read_more_faces();
+        }
+        else
+        {
+            // unknown end of block
+            auto triangles2 = faces;
+            auto d = data.end() - data.index();
+            triangles2.resize(d / sizeof(face));
+            for (auto &t : triangles2)
+                READ(data, t);
+            uint16_t t;
+            while (!data.eof())
+                READ(data, t);
+        }
     }
-    if (!data.eof())
+    if (!data.eof() && h.size)
         throw std::logic_error(s);
 }
 
