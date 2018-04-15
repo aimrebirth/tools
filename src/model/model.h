@@ -29,7 +29,7 @@ class buffer;
 
 enum
 {
-    F_USE_W_COORDINATE  =   0x4, // F_USE_QUANTERNION?
+    F_USE_W_COORDINATE  =   0x4, // F_USE_QUANTERNION/F_QUANTERNION?
 };
 
 enum class AdditionalParameter : uint32_t
@@ -57,11 +57,20 @@ enum class BlockType : uint32_t
 
 enum class MaterialType : uint32_t
 {
-    Texture = 0x0,
-    TextureWithGlareMap = 0x1,
-    TextureWithGlareMapAndMask = 0x32,
-    AlphaTextureDoubleSided = 0x6,
-    MaterialOnly = 0x14,
+    Texture                                                 = 0x0,
+    TextureWithGlareMap                                     = 0x1,
+    AlphaTextureNoGlare                                     = 0x2, // TextureWithoutGlareMap
+    TextureWithGlareMap2                                    = 0x4, // ??? also <- 4
+    AlphaTextureDoubleSided                                 = 0x6,
+    DetalizationObjectGrass                                 = 0x8,
+    //DetalizationObjectStone = 0x8,
+    Fire                                                    = 0x9,
+    //Fire2 = 0x9,
+    MaterialOnly                                            = 0x14,
+    TextureWithDetalizationMap                              = 0x1A, // from Viewer: (AdditionalParameter 1)
+    TextureWithDetalizationMapWithoutModulation             = 0x20, // from Viewer: (AdditionalParameter 1)
+    TiledTexture                                            = 0x22,
+    TextureWithGlareMapAndMask                              = 0x32,
 };
 
 template <typename T>

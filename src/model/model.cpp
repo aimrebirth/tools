@@ -60,7 +60,7 @@ std::string version();
 std::string translate(const std::string &s)
 {
     UErrorCode ec = UErrorCode::U_ZERO_ERROR;
-    auto tr = icu::Transliterator::createInstance("Latin-Cyrillic", UTransDirection::UTRANS_REVERSE, ec);
+    auto tr = icu::Transliterator::createInstance("Any-Latin; Latin-ASCII;", UTransDirection::UTRANS_FORWARD, ec);
     if (!tr || ec)
         throw std::runtime_error("Cannot create translator, ec = " + std::to_string(ec));
     icu::UnicodeString s2(s.c_str());
@@ -319,8 +319,8 @@ void block::load(const buffer &b)
 {
     h.load(b);
 
-    if (h.size == 0) // critical error!!! cannot survive
-        throw std::runtime_error("model file has bad block size field (size == 0)");
+    //if (h.size == 0) // critical error!!! cannot survive
+    //    throw std::runtime_error("model file has bad block size field (size == 0)");
 
     // data
     buffer data = buffer(b, h.size);
@@ -328,8 +328,13 @@ void block::load(const buffer &b)
     // we cannot process this type at the moment
     if (h.type == BlockType::ParticleEmitter)
         return;
+    if (h.type == BlockType::BitmapAlpha)
+        return;
 
-    loadPayload(data);
+    // if we have size - create new buffer
+    // else - pass current
+    // no copy when buffer is created before
+    loadPayload(h.size == 0 ? b : data);
 }
 
 void block::loadPayload(const buffer &data)
@@ -343,16 +348,37 @@ void block::loadPayload(const buffer &data)
     mat.load(data);
     READ(data, mat_type);
 
+    // check mat type - warn if unknown
+    switch (mat_type)
+    {
+    case MaterialType::Texture:
+    case MaterialType::TextureWithGlareMap:
+    case MaterialType::TextureWithGlareMap2:
+    case MaterialType::TextureWithGlareMapAndMask:
+    case MaterialType::TextureWithDetalizationMap:
+    case MaterialType::TextureWithDetalizationMapWithoutModulation:
+    case MaterialType::TiledTexture:
+    case MaterialType::AlphaTextureDoubleSided:
+    case MaterialType::AlphaTextureNoGlare:
+    case MaterialType::Fire:
+    case MaterialType::DetalizationObjectGrass:
+    case MaterialType::MaterialOnly:
+        break;
+    default:
+        std::cout << h.name << ": " << "warning: unknown material type " << (int)mat_type << " \n";
+        break;
+    }
+
     // unk
     READ(data, unk7);
-    READ(data, unk9);
+    READ(data, unk9); // scale?
     READ(data, unk10);
     READ(data, auto_animation);
     READ(data, animation_cycle);
     READ(data, unk8);
     READ(data, unk11);
     READ(data, unk12);
-    READ(data, triangles_mult_7);
+    READ(data, triangles_mult_7); // additional params?!
     //
 
     READ(data, additional_params);
@@ -366,7 +392,10 @@ void block::loadPayload(const buffer &data)
     READ(data, n_vertex);
     vertices.resize(n_vertex);
     READ(data, n_faces);
-    if (triangles_mult_7 && (flags & F_USE_W_COORDINATE) && !unk11)
+    if (triangles_mult_7 && (
+        (flags & F_USE_W_COORDINATE) ||
+        flags == 0x112
+        ) && !unk11)
         n_faces *= 7;
     for (auto &v : vertices)
         v.load(data, flags);
@@ -380,7 +409,7 @@ void block::loadPayload(const buffer &data)
     for (auto &dm : damage_models)
         dm.load(data);
 
-    std::string s = "extraction error: block #" + std::string(h.name);
+    std::string s = "extraction error: block: " + std::string(h.name);
     /*if (!data.eof())
     {
         cerr << s << "\n";
@@ -394,6 +423,9 @@ void block::loadPayload(const buffer &data)
         auto triangles2 = faces;
         triangles2.resize((data.size() - data.index()) / sizeof(face));
         for (auto &t : triangles2)
+            READ(data, t);
+        uint16_t t;
+        while (!data.eof())
             READ(data, t);
     }
     if (!data.eof())
