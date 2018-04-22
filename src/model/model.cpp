@@ -30,6 +30,8 @@
 //#include <Eigen/Core>
 //#include <Eigen/Dense>
 
+#include <boost/algorithm/string.hpp>
+
 #include <unicode/translit.h>
 #include <unicode/errorcode.h>
 
@@ -471,7 +473,7 @@ void block::loadPayload(const buffer &data)
 
 bool block::isEngineFx() const
 {
-    return h.type == BlockType::HelperObject && h.name.find("FIRE") == 0;
+    return h.type == BlockType::HelperObject && h.name.find(boost::to_lower_copy(std::string("FIRE"))) == 0;
 }
 
 bool block::canPrint() const
