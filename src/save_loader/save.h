@@ -124,7 +124,7 @@ struct header_segment : public segment
 {
     uint32_t unk1[3];
     std::string save_name;
-    vector3 position;
+    vector3f position;
     std::string mmp_file;
     std::string location_name;
     Common camera;
@@ -710,7 +710,7 @@ struct groups_segment : public segment
 
     struct group
     {
-        vector3 pos;
+        vector3f pos;
         std::string org;
         std::string base;
         float unk0[4];

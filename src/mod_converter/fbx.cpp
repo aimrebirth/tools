@@ -407,7 +407,7 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
 
             // Set texture properties.
             lTexture = FbxFileTexture::Create(pScene, "Diffuse Texture");
-            lTexture->SetFileName((b.h.tex_mask + texture_extension).c_str()); // Resource file is in current directory.
+            lTexture->SetFileName((b.h.mask.name + texture_extension).c_str()); // Resource file is in current directory.
             lTexture->SetTextureUse(FbxTexture::eStandard);
             lTexture->SetMappingType(FbxTexture::eUV);
             lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
@@ -417,7 +417,7 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
 
             // Set texture properties.
             lTexture = FbxFileTexture::Create(pScene, "Ambient Texture");
-            lTexture->SetFileName((b.h.tex_mask + texture_extension).c_str()); // Resource file is in current directory.
+            lTexture->SetFileName((b.h.mask.name + texture_extension).c_str()); // Resource file is in current directory.
             lTexture->SetTextureUse(FbxTexture::eStandard);
             lTexture->SetMappingType(FbxTexture::eUV);
             lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
@@ -427,7 +427,7 @@ bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager,
 
             // Set texture properties.
             lTexture = FbxFileTexture::Create(pScene, "Specular Texture");
-            lTexture->SetFileName((b.h.tex_spec + texture_extension).c_str()); // Resource file is in current directory.
+            lTexture->SetFileName((b.h.spec.name + texture_extension).c_str()); // Resource file is in current directory.
             lTexture->SetTextureUse(FbxTexture::eStandard);
             lTexture->SetMappingType(FbxTexture::eUV);
             lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);

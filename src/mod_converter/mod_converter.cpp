@@ -16,6 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <buffer.h>
+#include "fbx.h"
+#include "model.h"
+
+#include <primitives/filesystem.h>
+#include <args.hxx>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -23,12 +30,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string>
-
-#include <buffer.h>
-#include "model.h"
-#include "fbx.h"
-
-#include <primitives/filesystem.h>
 
 using namespace std;
 
@@ -61,11 +62,18 @@ void convert_model(const path &fn)
 int main(int argc, char *argv[])
 try
 {
-    if (argc < 2 || !parse_cmd(argc, argv))
-    {
-        printf("Usage: %s [OPTIONS] {model_file,model_dir}\n", argv[0]);
-        return 1;
-    }
+    args::ArgumentParser parser("mmo extractor");
+    args::HelpFlag help(parser, "help", "Display this help menu", { 'h', "help" });
+    args::Flag mr(parser, "mr", "AIM Racing MOD file", { "mr" });
+    args::Positional<std::string> file_path(parser, "file or directory", "MOD_ file or directory with MOD_ files");
+    parser.Prog(argv[0]);
+
+    parser.ParseCLI(argc, argv);
+
+    if (mr)
+        gameType = GameType::AimR;
+
+    p = file_path.Get();
     if (fs::is_regular_file(p))
         convert_model(p);
     else if (fs::is_directory(p))

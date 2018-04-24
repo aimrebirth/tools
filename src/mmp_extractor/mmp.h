@@ -86,8 +86,8 @@ struct segment
 
     struct description
     {
-        vector3 min;
-        vector3 max;
+        vector3f min;
+        vector3f max;
         float unk0[5];
         uint32_t unk1[7];
     };

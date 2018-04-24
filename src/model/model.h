@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "types.h"
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -73,14 +75,6 @@ enum class MaterialType : uint32_t
     TextureWithGlareMapAndMask                              = 0x32,
     TextureWithMask                                         = 0x35,
     Fire2                                                   = 0x3D,
-};
-
-template <typename T>
-struct vector3
-{
-    T x;
-    T y;
-    T z;
 };
 
 template <typename T>
@@ -199,12 +193,20 @@ struct block
 {
     struct header
     {
+        struct texture
+        {
+            std::string name;
+            uint32_t number; // AimR
+
+            void load(const buffer &b);
+        };
+
         BlockType type;
         std::string name;
-        std::string tex_mask;
-        std::string tex_spec;
-        std::string tex3;
-        std::string tex4;
+        texture mask;
+        texture spec;
+        texture tex3;
+        texture tex4;
         union // LODs
         {
             struct
@@ -224,7 +226,7 @@ struct block
         // unk
         uint32_t unk2[3];
         uint32_t unk3;
-        uint32_t unk4[10];
+        float unk4[10];
 
         void load(const buffer &b);
     };

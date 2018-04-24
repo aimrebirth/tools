@@ -57,6 +57,7 @@ if (DEFINED FBX_SDK_ROOT)
         common
         model
         #pvt.cppan.demo.eigen
+        pvt.cppan.demo.taywee.args
         debug "${FBX_SDK_ROOT}/lib/vs2015/x86/debug/libfbxsdk-md.lib"
         optimized "${FBX_SDK_ROOT}/lib/vs2015/x86/release/libfbxsdk-md.lib"
     )

@@ -259,14 +259,14 @@ std::string block::printMtl() const
     // d 1.0
     // illum
     s += "\n";
-    if (h.tex_mask != "_DEFAULT_")
-        s += "map_Ka " + h.tex_mask + texture_extension + "\n";
-    if (h.tex_mask != "_DEFAULT_")
-        s += "map_Kd " + h.tex_mask + texture_extension + "\n";
-    if (h.tex_spec != "_DEFAULT_")
-        s += "map_Ks " + h.tex_spec + texture_extension + "\n";
-    if (h.tex_spec != "_DEFAULT_")
-        s += "map_Ns " + h.tex_spec + texture_extension + "\n";
+    if (h.mask.name != "_DEFAULT_")
+        s += "map_Ka " + h.mask.name + texture_extension + "\n";
+    if (h.mask.name != "_DEFAULT_")
+        s += "map_Kd " + h.mask.name + texture_extension + "\n";
+    if (h.spec.name != "_DEFAULT_")
+        s += "map_Ks " + h.spec.name + texture_extension + "\n";
+    if (h.spec.name != "_DEFAULT_")
+        s += "map_Ns " + h.spec.name + texture_extension + "\n";
     s += "\n";
     return s;
 }
@@ -306,19 +306,36 @@ std::string block::printObj(int group_offset, bool rotate_x_90) const
     return s;
 }
 
+void block::header::texture::load(const buffer &b)
+{
+    READ_STRING(b, name);
+    if (gameType == GameType::AimR)
+        READ(b, number);
+}
+
 void block::header::load(const buffer &b)
 {
     READ(b, type);
     READ_STRING(b, name);
     name = translate(name);
-    READ_STRING(b, tex_mask);
-    READ_STRING(b, tex_spec);
-    READ_STRING(b, tex3);
-    READ_STRING(b, tex4);
+    mask.load(b);
+    spec.load(b);
+    tex3.load(b);
+    tex4.load(b);
     READ(b, all_lods);
-    READ(b, unk2);
+    if (gameType == GameType::AimR)
+    {
+        READ(b, unk2[0]);
+        READ(b, unk2[1]);
+        READ(b, size);
+    }
+    else
+        READ(b, unk2);
     READ(b, unk3);
-    READ(b, size);
+    if (gameType != GameType::AimR)
+        READ(b, size);
+    else
+        READ(b, unk2[2]); // unk4_0 - related to unk4 - some vector3f
     READ(b, unk4);
 }
 

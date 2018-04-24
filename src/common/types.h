@@ -26,17 +26,21 @@
 enum class GameType
 {
     Aim1,
-    Aim2
+    Aim2,
+    AimR,
 };
 
 inline GameType gameType = GameType::Aim2;
 
+template <typename T>
 struct vector3
 {
-    float x = 0;
-    float y = 0;
-    float z = 0;
+    T x;
+    T y;
+    T z;
 };
+
+using vector3f = vector3<float>;
 
 struct vector4
 {
@@ -65,7 +69,7 @@ struct weather
 {
     struct atmospheric_effects
     {
-        vector3 wind;
+        vector3f wind;
         WeatherType weatherType;
         float strength;
         float duration;
@@ -83,8 +87,8 @@ struct weather
     std::string cloud_layer2;
     float cloud_layer1_speed;
     float cloud_layer2_speed;
-    vector3 cloud_layer1_direction;
-    vector3 cloud_layer2_direction;
+    vector3f cloud_layer1_direction;
+    vector3f cloud_layer2_direction;
     std::string sun;
     color general_color;
     color sun_color;
