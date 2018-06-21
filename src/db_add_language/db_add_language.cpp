@@ -27,6 +27,7 @@
 #include <primitives/executor.h>
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <math.h>
@@ -299,7 +300,7 @@ try
     // to check correctness
     process_lang(*storage.get(), d / "ru", &polygon4::LocalizedString::ru);
 
-    for (auto &f : boost::make_iterator_range(fs::directory_iterator(d), {}))
+    for (auto &f : fs::directory_iterator(d))
     {
         if (!fs::is_directory(f))
             continue;

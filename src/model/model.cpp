@@ -80,14 +80,14 @@ std::string translate(const std::string &s)
 template <typename T>
 void aim_vector3<T>::load(const buffer &b)
 {
-    READ(b, x);
-    READ(b, z);
-    READ(b, y);
+    READ(b, base::x);
+    READ(b, base::z);
+    READ(b, base::y);
 }
 
 void aim_vector4::load(const buffer &b, uint32_t flags)
 {
-    aim_vector3::load(b);
+    base::load(b);
     if (flags & F_USE_W_COORDINATE)
         READ(b, w);
 }

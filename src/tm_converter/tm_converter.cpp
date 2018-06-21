@@ -55,7 +55,7 @@ void convert(const path &fn)
     READ(src, width);
     READ(src, height);
     src.seek(0x10);
-    src.read(&dxt5_flag, 1);
+    src._read(&dxt5_flag, 1);
     src.seek(0x4C);
 
     auto s = fn.string() + ".bmp";

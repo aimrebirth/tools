@@ -23,8 +23,8 @@
 #include <string>
 #include <vector>
 
-#define READ(b, var) b.read(&var)
-#define READ_N(b, var, sz) b.read(&var, sz)
+#define READ(b, var) b.read(var)
+#define READ_N(b, var, sz) b.read(var, sz)
 
 #define READ_STRING(b, var) var = b.read_string()
 #define READ_STRING_N(b, var, sz) var = b.read_string(sz)
@@ -50,9 +50,9 @@ public:
     buffer(const buffer &rhs, uint32_t size, uint32_t offset);
 
     template <typename T>
-    uint32_t read(T *dst, uint32_t size = 1) const
+    uint32_t read(T &dst, uint32_t size = 1) const
     {
-        return _read((void *)dst, size * sizeof(T), 0);
+        return _read((void *)&dst, size * sizeof(T), 0);
     }
     std::string read_string(uint32_t blocksize = 0x20) const;
     std::wstring read_wstring(uint32_t blocksize = 0x20) const;
@@ -102,16 +102,16 @@ public:
     void read_vector(std::vector<T> &v) const
     {
         SizeType n = 0;
-        read(&n);
+        read(n);
         read_vector<T, SizeType>(v, n);
     }
 
     std::string read_pascal_string() const
     {
         uint32_t n = 0;
-        read(&n);
+        read(n);
         std::string s(n, 0);
-        read(s.data(), n);
+        _read(s.data(), n);
         return s;
     }
 
@@ -128,6 +128,9 @@ public:
 
     const uint8_t *getPtr() const { return ptr; }
 
+    uint32_t _read(void *dst, uint32_t size, uint32_t offset = 0) const;
+    uint32_t _write(const void *src, uint32_t size);
+
 private:
     std::shared_ptr<std::vector<uint8_t>> buf_;
     mutable uint32_t index_ = 0;
@@ -135,7 +138,4 @@ private:
     mutable uint32_t data_offset = 0;
     mutable uint32_t size_ = 0;
     uint32_t end_;
-
-    uint32_t _read(void *dst, uint32_t size, uint32_t offset = 0) const;
-    uint32_t _write(const void *src, uint32_t size);
 };

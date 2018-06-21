@@ -158,7 +158,7 @@ struct screen_segment : public segment
 
     void load(const buffer &b)
     {
-        b.read((uint8_t*)screenshot.getData().data(), screenshot.getBytesLength());
+        b._read((uint8_t*)screenshot.getData().data(), screenshot.getBytesLength());
         // rows should be swapped now: bottom is the first row etc.
     }
 };

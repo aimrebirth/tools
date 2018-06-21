@@ -80,11 +80,15 @@ enum class MaterialType : uint32_t
 template <typename T>
 struct aim_vector3 : vector3<T>
 {
+    using base = vector3<T>;
+
     void load(const buffer &b);
 };
 
 struct aim_vector4 : aim_vector3<float>
 {
+    using base = aim_vector3<float>;
+
     float w = 1.0f;
 
     std::string print() const;
