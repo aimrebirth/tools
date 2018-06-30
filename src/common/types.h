@@ -65,6 +65,21 @@ enum class SmokeType : uint32_t
     linear,
 };
 
+/*
+somewhere from old demos
+    [MAP_DEMO]
+    filename=Data\Map\map1.bmp
+    path=Data\Map\map1.pnt
+    color=Data\Map\map1_color.bmp
+    ;skyUp=00FFFF
+    ;skyMiddle=404040
+    ;skyDown=0
+    ;cloud=FF8F8F
+    skyUp=FF0080FF
+    skyMiddle=FF808080
+    skyDown=FF808080
+    cloud=FF8F8F
+*/
 struct weather
 {
     struct atmospheric_effects

@@ -193,6 +193,7 @@ struct additional_parameters
     float detalization_koef;
 };
 
+// mechlab .asc format?
 struct block
 {
     struct header
@@ -244,7 +245,7 @@ struct block
     //unk (anim + transform settings?)
     uint32_t auto_animation;
     float animation_cycle;
-    uint32_t triangles_mult_7;
+    uint32_t triangles_mult_7; // Tri-mesh. flags?
     //
 
     additional_parameters additional_params;
