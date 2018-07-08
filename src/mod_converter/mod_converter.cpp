@@ -64,6 +64,7 @@ try
 {
     args::ArgumentParser parser("mmo extractor");
     args::HelpFlag help(parser, "help", "Display this help menu", { 'h', "help" });
+    args::Flag af(parser, "a", "All formats", { 'a' });
     args::Flag mr(parser, "mr", "AIM Racing MOD file", { "mr" });
     args::Positional<std::string> file_path(parser, "file or directory", "MOD_ file or directory with MOD_ files");
     parser.Prog(argv[0]);
@@ -72,6 +73,8 @@ try
 
     if (mr)
         gameType = GameType::AimR;
+    if (af)
+        all_formats = true;
 
     p = file_path.Get();
     if (fs::is_regular_file(p))
