@@ -40,7 +40,9 @@ target_link_libraries(mmo_extractor
 
 file(GLOB mmp_extractor_src "mmp_extractor/*")
 add_executable(mmp_extractor ${mmp_extractor_src})
-target_link_libraries(mmp_extractor common)
+target_link_libraries(mmp_extractor
+    common
+)
 
 file(GLOB model_src "model/*")
 add_library(model ${model_src})

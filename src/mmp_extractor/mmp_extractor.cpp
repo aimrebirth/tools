@@ -16,15 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "mmp.h"
+
+#include <primitives/filesystem.h>
+
 #include <iostream>
 #include <set>
 #include <stdint.h>
 #include <string>
 #include <sstream>
-
-#include "mmp.h"
-
-#include <primitives/filesystem.h>
 
 using namespace std;
 

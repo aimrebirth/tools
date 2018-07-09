@@ -100,10 +100,7 @@ struct segment
         uint16_t getTexture() const { return texture_index & 0x0fff; } // first 4 bits are unk (flags?)
     };
 
-    struct shadow
-    {
-        uint8_t unk[4];
-    };
+    using shadow = color;
 
     struct normal
     {
