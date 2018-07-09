@@ -48,10 +48,12 @@ try
         //m.writeTexturesList();
         m.writeHeightMap();
         //m.writeHeightMapSegmented();
-        /*m.writeTextureMap();
+        m.writeTextureMap();
         m.writeTextureAlphaMaps();
         m.writeTextureMapColored();
-        m.writeColorMap();*/
+        m.writeColorMap();
+        m.writeShadowMap();
+        m.writeNormalMap();
     };
 
     path p = argv[1];

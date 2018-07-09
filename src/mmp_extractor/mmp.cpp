@@ -120,7 +120,7 @@ void mmp::load(const buffer &b)
 void mmp::load(const std::string &fn)
 {
     filename = fn;
-    buffer b(read_file(filename, true));
+    buffer b(read_file(filename));
     load(b);
 }
 
@@ -175,6 +175,8 @@ void mmp::process()
     texmap = decltype(texmap)(h.width, h.length);
     texmap_colored = decltype(texmap_colored)(h.width, h.length);
     colormap = decltype(colormap)(h.width, h.length);
+    shadowmap = decltype(shadowmap)(h.width, h.length);
+    normalmap = decltype(normalmap)(h.width, h.length);
 
     h_min = std::numeric_limits<Height>::max();
     h_max = std::numeric_limits<Height>::min();
@@ -208,6 +210,8 @@ void mmp::process()
 
                 texmap_colored(y_rev, x1) = textures_map_colored[t];
                 colormap(y_rev, x1) = data.Colormap[p];
+                shadowmap(y_rev, x1) = *(uint32_t*)&data.Shadowmap[p];
+                normalmap(y_rev, x1) = *(uint32_t*)&data.Normalmap[p];
 
                 auto length = data.Heightmap[p];
                 h_min = std::min(h_min, length);
@@ -330,4 +334,16 @@ void mmp::writeColorMap()
 {
     auto fn = filename + ".colormap.bmp";
     write_mat_bmp(fn, colormap);
+}
+
+void mmp::writeShadowMap()
+{
+    auto fn = filename + ".shadowmap.bmp";
+    write_mat_bmp(fn, shadowmap);
+}
+
+void mmp::writeNormalMap()
+{
+    auto fn = filename + ".normalmap.bmp";
+    write_mat_bmp(fn, normalmap);
 }

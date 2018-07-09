@@ -131,7 +131,7 @@ struct segment
         mini_lod mlod;
         Height Heightmap[size];
         info Infomap[size];
-        color Colormap[size];
+        color Colormap[size]; // diffuse color of material
         shadow Shadowmap[size];
         normal Normalmap[size];
     };
@@ -185,6 +185,8 @@ struct mmp
     mat<uint32_t> texmap;
     mat<uint32_t> texmap_colored;
     mat<uint32_t> colormap;
+    mat<uint32_t> shadowmap;
+    mat<uint32_t> normalmap;
 
     void load(const buffer &b);
     void load(const std::string &filename);
@@ -200,4 +202,6 @@ struct mmp
     void writeTextureAlphaMaps();
     void writeTextureMapColored();
     void writeColorMap();
+    void writeShadowMap();
+    void writeNormalMap();
 };

@@ -107,7 +107,7 @@ std::string buffer::read_string(uint32_t blocksize) const
 std::wstring buffer::read_wstring(uint32_t blocksize) const
 {
     std::vector<uint16_t> data(blocksize);
-    _read(data.data(), data.size());
+    _read(data.data(), data.size() * sizeof(wchar_t));
     return (const wchar_t *)data.data();
 }
 
