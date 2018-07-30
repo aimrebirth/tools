@@ -1,3 +1,9 @@
 win*
 build
+bin
 .cppan
+
+*.dll
+*.lnk
+*.exe
+*.bat

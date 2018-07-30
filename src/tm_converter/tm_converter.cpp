@@ -16,6 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <bmp.h>
+#include <buffer.h>
+#include <dxt5.h>
+
+#include <primitives/filesystem.h>
+#include <primitives/sw/main.h>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -23,12 +30,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string>
-
-#include <bmp.h>
-#include <buffer.h>
-#include <dxt5.h>
-
-#include <primitives/filesystem.h>
 
 using namespace std;
 
@@ -80,7 +81,6 @@ void convert(const path &fn)
 }
 
 int main(int argc, char *argv[])
-try
 {
     if (argc != 2)
     {
@@ -102,16 +102,4 @@ try
     else
         throw std::runtime_error("Bad fs object");
     return 0;
-}
-catch (std::exception &e)
-{
-    printf("%s\n", argv[1]);
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("%s\n", argv[1]);
-    printf("error: unknown exception\n");
-    return 1;
 }

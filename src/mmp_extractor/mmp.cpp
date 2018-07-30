@@ -146,7 +146,7 @@ void mmp::process()
     textures.erase(0);
     auto textures_per_color = std::max(1U, textures.size() / 3);
     auto color_step = 200 / std::max(1U, textures.size());
-    for (int i = 0; i < textures.size(); i++)
+    for (size_t i = 0; i < textures.size(); i++)
     {
         int color_id = i / textures_per_color;
         color c = { 0 };
@@ -185,14 +185,14 @@ void mmp::process()
         const auto &data = s.d;
         int y1 = s.desc.min.y / 10;
         int y2 = s.desc.max.y / 10;
-        if (y2 > h.length)
+        if (y2 > (int)h.length)
             y2 = h.length;
         for (int y = 0; y1 < y2; y1++, y++)
         {
             int x1 = s.desc.min.x / 10;
             int x2 = s.desc.max.x / 10;
             auto dx = x2 - x1;
-            if (x2 > h.width)
+            if (x2 >(int)h.width)
                 x2 = h.width;
             for (int x = 0; x1 < x2; x1++, x++)
             {
@@ -232,14 +232,14 @@ void mmp::process()
     {
         int y1 = s.desc.min.y / 10;
         int y2 = s.desc.max.y / 10;
-        if (y2 > h.length)
+        if (y2 > (int)h.length)
             y2 = h.length;
         for (int y = 0; y1 < y2; y1++, y++)
         {
             int x1 = s.desc.min.x / 10;
             int x2 = s.desc.max.x / 10;
             auto dx = x2 - x1;
-            if (x2 > h.width)
+            if (x2 > (int)h.width)
                 x2 = h.width;
             for (int x = 0; x1 < x2; x1++, x++)
             {
@@ -319,7 +319,16 @@ void mmp::writeTextureAlphaMaps()
 {
     for (auto &t : alpha_maps)
     {
-        auto fn = filename + ".texmap." + std::to_string(t.first) + ".bmp";
+        int tex_id = 0;
+        for (auto &[tid, tex] : textures_map)
+        {
+            if (tex.g == t.first)
+            {
+                tex_id = tid;
+                break;
+            }
+        }
+        auto fn = filename + ".texmap." + std::to_string(t.first) + "." + std::to_string(tex_id) + ".bmp";
         write_mat_bmp(fn, t.second);
     }
 }

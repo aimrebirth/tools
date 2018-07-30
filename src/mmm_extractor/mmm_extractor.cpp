@@ -25,6 +25,7 @@
 #include <dxt5.h>
 
 #include <primitives/filesystem.h>
+#include <primitives/sw/main.h>
 
 using namespace std;
 
@@ -64,7 +65,6 @@ void process_mmm(const path &fn)
 }
 
 int main(int argc, char *argv[])
-try
 {
     if (argc != 2)
     {
@@ -86,14 +86,4 @@ try
     else
         throw std::runtime_error("Bad fs object");
     return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
 }

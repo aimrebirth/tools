@@ -33,7 +33,8 @@
 #include <Polygon4/DataManager/Storage.h>
 #include <Polygon4/DataManager/Types.h>
 #include <primitives/filesystem.h>
-#include <args.hxx>
+#include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <buffer.h>
 #include <types.h>
@@ -229,7 +230,7 @@ void write_mmo(Storage *storage, const mmo_storage &s)
                 // protect against nans
                 object->m_rotate_z[2].z = ASSIGN(object->m_rotate_z[2].z, 1);
 
-                detail::MapObject mb;
+                polygon4::detail::MapObject mb;
                 mb.text_id = object->name2;
                 mb.map = this_map;
                 mb.object = storage->objects[bld_ids[object->name1]];
@@ -268,19 +269,15 @@ void write_mmo(Storage *storage, const mmo_storage &s)
 }
 
 int main(int argc, char *argv[])
-try
 {
-    args::ArgumentParser parser("mmo extractor");
-    args::HelpFlag help(parser, "help", "Display this help menu", { 'h', "help" });
-    args::Flag m2(parser, "m2", "m2 .mmo file", { "m2" });
-    args::Flag print_mechanoids(parser, "print_mechanoids", "Print mechanoids", { "print_mechanoids" });
-    args::ValueFlag<std::string> db_path(parser, "db_path", "Database file", {'d', "db"});
-    args::Positional<std::string> file_path(parser, "file or directory", ".mmo file or directory with .mmo files");
-    parser.Prog(argv[0]);
+    cl::opt<bool> m2("m2", cl::desc("m2 .mmo file"));
+    cl::opt<bool> print_mechanoids("print_mechanoids", cl::desc("print mechanoids"));
+    cl::opt<path> db_path("db", cl::desc("database file"));
+    cl::alias db_pathA("d", cl::aliasopt(db_path));
+    cl::opt<path> p(cl::Positional, cl::desc(".mmo file or directory with .mmo files"), cl::value_desc("file or directory"), cl::Required);
 
-    parser.ParseCLI(argc, argv);
+    cl::ParseCommandLineOptions(argc, argv);
 
-    const path p = file_path.Get();
     gameType = m2 ? GameType::Aim2 : GameType::Aim1;
 
     /*{
@@ -320,7 +317,7 @@ try
     }
     else
     {
-        auto storage = initStorage(db_path.Get());
+        auto storage = initStorage(db_path.u8string());
         storage->load();
         action([&storage](const path &, const auto &m) {write_mmo(storage.get(), m); });
         if (inserted_all)
@@ -328,14 +325,4 @@ try
     }
 
     return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
 }

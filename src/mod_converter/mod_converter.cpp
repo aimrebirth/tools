@@ -21,7 +21,8 @@
 #include "model.h"
 
 #include <primitives/filesystem.h>
-#include <args.hxx>
+#include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <algorithm>
 #include <fstream>
@@ -36,9 +37,7 @@ using namespace std;
 // options
 bool silent = false;
 bool printMaxPolygonBlock = false;
-path p;
-
-bool parse_cmd(int argc, char *argv[]);
+cl::opt<path> p(cl::Positional, cl::desc("MOD_ file or directory with MOD_ files"), cl::value_desc("file or directory"), cl::Required);
 
 void convert_model(const path &fn)
 {
@@ -60,23 +59,17 @@ void convert_model(const path &fn)
 }
 
 int main(int argc, char *argv[])
-try
 {
-    args::ArgumentParser parser("mmo extractor");
-    args::HelpFlag help(parser, "help", "Display this help menu", { 'h', "help" });
-    args::Flag af(parser, "a", "All formats", { 'a' });
-    args::Flag mr(parser, "mr", "AIM Racing MOD file", { "mr" });
-    args::Positional<std::string> file_path(parser, "file or directory", "MOD_ file or directory with MOD_ files");
-    parser.Prog(argv[0]);
+    cl::opt<bool> af("a", cl::desc("All formats"));
+    cl::opt<bool> mr("mr", cl::desc("AIM Racing MOD file"));
 
-    parser.ParseCLI(argc, argv);
+    cl::ParseCommandLineOptions(argc, argv);
 
     if (mr)
         gameType = GameType::AimR;
     if (af)
         all_formats = true;
 
-    p = file_path.Get();
     if (fs::is_regular_file(p))
         convert_model(p);
     else if (fs::is_directory(p))
@@ -100,62 +93,4 @@ try
     else
         throw std::runtime_error("Bad fs object");
     return 0;
-}
-/*catch (std::runtime_error &e)
-{
-    if (silent)
-        return 1;
-    string error;
-    error += p.string();
-    error += "\n";
-    error += "fatal error: ";
-    error += e.what();
-    error += "\n";
-    ofstream ofile(p.string() + ".error.txt");
-    ofile << error;
-    return 1;
-}*/
-catch (std::exception &e)
-{
-    if (silent)
-        return 1;
-    printf("%s\n", p.string().c_str());
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    if (silent)
-        return 1;
-    printf("%s\n", p.string().c_str());
-    printf("error: unknown exception\n");
-    return 1;
-}
-
-bool parse_cmd(int argc, char *argv[])
-{
-    for (int i = 1; i < argc; i++)
-    {
-        auto arg = argv[i];
-        if (*arg != '-')
-        {
-            if (i != argc - 1)
-                return false;
-            p = arg;
-            continue;
-        }
-        switch (arg[1])
-        {
-        case 'a':
-            all_formats = true;
-            break;
-        case 's':
-            silent = true;
-            break;
-        case 'm':
-            printMaxPolygonBlock = true;
-            break;
-        }
-    }
-    return true;
 }

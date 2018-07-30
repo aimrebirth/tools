@@ -51,7 +51,7 @@ void DestroySdkObjects(FbxManager* pManager, bool pExitStatus)
 
 bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename, bool blender = false)
 {
-    int lMajor, lMinor, lRevision;
+    //int lMajor, lMinor, lRevision;
     bool lStatus = true;
 
     // Create an exporter.

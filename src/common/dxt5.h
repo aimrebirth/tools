@@ -60,19 +60,19 @@ struct dxt5_block
         a[1] = this->a[1];
         if (a[0] > a[1])
         {
-            a[2] = double(6 * a[0] + 1 * a[1]) / 7.0;
-            a[3] = double(5 * a[0] + 2 * a[1]) / 7.0;
-            a[4] = double(4 * a[0] + 3 * a[1]) / 7.0;
-            a[5] = double(3 * a[0] + 4 * a[1]) / 7.0;
-            a[6] = double(2 * a[0] + 5 * a[1]) / 7.0;
-            a[7] = double(1 * a[0] + 6 * a[1]) / 7.0;
+            a[2] = (uint8_t)(double(6 * a[0] + 1 * a[1]) / 7.0);
+            a[3] = (uint8_t)(double(5 * a[0] + 2 * a[1]) / 7.0);
+            a[4] = (uint8_t)(double(4 * a[0] + 3 * a[1]) / 7.0);
+            a[5] = (uint8_t)(double(3 * a[0] + 4 * a[1]) / 7.0);
+            a[6] = (uint8_t)(double(2 * a[0] + 5 * a[1]) / 7.0);
+            a[7] = (uint8_t)(double(1 * a[0] + 6 * a[1]) / 7.0);
         }
         else
         {
-            a[2] = double(4 * a[0] + 1 * a[1]) / 5.0;
-            a[3] = double(3 * a[0] + 2 * a[1]) / 5.0;
-            a[4] = double(2 * a[0] + 3 * a[1]) / 5.0;
-            a[5] = double(1 * a[0] + 4 * a[1]) / 5.0;
+            a[2] = (uint8_t)(double(4 * a[0] + 1 * a[1]) / 5.0);
+            a[3] = (uint8_t)(double(3 * a[0] + 2 * a[1]) / 5.0);
+            a[4] = (uint8_t)(double(2 * a[0] + 3 * a[1]) / 5.0);
+            a[5] = (uint8_t)(double(1 * a[0] + 4 * a[1]) / 5.0);
             a[6] = 0;
             a[7] = 255;
         }
@@ -103,7 +103,7 @@ struct dxt5_block
     {
         color r;
         for (int i = 0; i < 4; i++)
-            r.byte[i] = c0.byte[i] * m + c1.byte[i] * (1 - m);
+            r.byte[i] = uint8_t(c0.byte[i] * m + c1.byte[i] * (1 - m));
         return r;
     }
 };
@@ -134,7 +134,7 @@ struct dxt5
         mat<uint32_t> m(width, height);
         auto big_xsegs = width / 64;
         auto big_ysegs = height / 64;
-        for (int seg = 0; seg < blocks.size(); seg++)
+        for (size_t seg = 0; seg < blocks.size(); seg++)
         {
             auto &d = blocks[seg];
             int big_seg = seg / 256;
@@ -151,7 +151,7 @@ struct dxt5
     {
         mat<uint32_t> m(width, height);
         auto xsegs = width / 4;
-        for (int seg = 0; seg < blocks.size(); seg++)
+        for (size_t seg = 0; seg < blocks.size(); seg++)
         {
             auto &d = blocks[seg];
             auto xseg = seg % xsegs;

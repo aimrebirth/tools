@@ -23,6 +23,8 @@
 #include <objects.h>
 #include <types.h>
 
+#include <iostream>
+
 // possible save operations
 
 struct changes

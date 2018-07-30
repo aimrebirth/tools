@@ -80,7 +80,7 @@ struct SegmentObjects : public Segment
 
     virtual void load(const buffer &b)
     {
-        for (int i = 0; i < n_objects; i++)
+        for (uint32_t i = 0; i < n_objects; i++)
         {
             T* o = new T;
             o->load(b);
@@ -126,7 +126,7 @@ struct MapObjectWithArray : public MapObject
 
         READ(b, len);
         unk0.resize(len);
-        for (int i = 0; i < len; i++)
+        for (uint32_t i = 0; i < len; i++)
             READ(b, unk0[i]);
     }
 };

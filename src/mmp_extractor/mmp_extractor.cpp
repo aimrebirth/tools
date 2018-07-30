@@ -19,6 +19,7 @@
 #include "mmp.h"
 
 #include <primitives/filesystem.h>
+#include <primitives/sw/main.h>
 
 #include <iostream>
 #include <set>
@@ -29,7 +30,6 @@
 using namespace std;
 
 int main(int argc, char *argv[])
-try
 {
     if (argc < 2 || argc > 3)
     {
@@ -45,7 +45,7 @@ try
         m.load(p.string());
         m.process();
         m.writeFileInfo();
-        //m.writeTexturesList();
+        m.writeTexturesList();
         m.writeHeightMap();
         //m.writeHeightMapSegmented();
         m.writeTextureMap();
@@ -72,14 +72,4 @@ try
         throw std::runtime_error("Bad fs object");
 
     return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
 }

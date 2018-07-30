@@ -17,20 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma warning(disable: 4005)
-#include <string>
-
-#include "grammar.hpp"
-
-#define YY_USER_ACTION loc.columns(yyleng);
-
-#define PUSH_STATE(x) BEGIN(x)
-#define POP_STATE() BEGIN(0)
-
-#define YY_DECL yy::parser::symbol_type yylex(yyscan_t yyscanner, yy::location &loc)
-
-#define MAKE(x) yy::parser::make_ ## x(loc)
-#define MAKE_VALUE(x, v) yy::parser::make_ ## x((v), loc)
+#include <script2txt_parser.h>
 %}
 
 %option nounistd
@@ -41,16 +28,13 @@
 %option reentrant
 %option noyywrap
 
-
 DIGIT       [0-9]
 DIGITS      {DIGIT}{DIGIT}*
 INTEGER     {DIGITS}[Ff]?
 
 STRING      [[:alpha:]_-][[:alnum:]_-]*
 
-
 %x user_string
-
 
 %%
 

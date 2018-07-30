@@ -16,15 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../db_extractor/db.h"
-
 #include <common.h>
+#include <db.h>
 
 #include <Polygon4/DataManager/Localization.h>
 #include <Polygon4/DataManager/Storage.h>
 #include <Polygon4/DataManager/Types.h>
 #include <primitives/filesystem.h>
 #include <primitives/executor.h>
+#include <primitives/sw/main.h>
 
 #include <algorithm>
 #include <fstream>
@@ -284,7 +284,6 @@ void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4
 }
 
 int main(int argc, char *argv[])
-try
 {
     if (argc != 3)
     {
@@ -320,14 +319,4 @@ try
     }
 
     return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
 }

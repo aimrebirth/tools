@@ -16,6 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <buffer.h>
+#include <model.h>
+
+#include <primitives/filesystem.h>
+#include <primitives/sw/main.h>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -23,11 +29,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string>
-
-#include <buffer.h>
-#include <model.h>
-
-#include <primitives/filesystem.h>
 
 using namespace std;
 
@@ -54,7 +55,6 @@ void convert_model(const path &fn)
 }
 
 int main(int argc, char *argv[])
-try
 {
     if (argc < 2 || !parse_cmd(argc, argv))
     {
@@ -77,36 +77,6 @@ try
     else
         throw std::runtime_error("Bad fs object");
     return 0;
-}
-catch (std::runtime_error &e)
-{
-    if (silent)
-        return 1;
-    string error;
-    error += p.string();
-    error += "\n";
-    error += "fatal error: ";
-    error += e.what();
-    error += "\n";
-    ofstream ofile(p.string() + ".error.txt");
-    ofile << error;
-    return 1;
-}
-catch (std::exception &e)
-{
-    if (silent)
-        return 1;
-    printf("%s\n", p.string().c_str());
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    if (silent)
-        return 1;
-    printf("%s\n", p.string().c_str());
-    printf("error: unknown exception\n");
-    return 1;
 }
 
 bool parse_cmd(int argc, char *argv[])

@@ -86,7 +86,7 @@ void Objects::load(const buffer &b)
     uint32_t n_segments = 0;
     READ(b, n_segments);
 
-    for (int s = 0; s < n_segments; s++)
+    for (uint32_t s = 0; s < n_segments; s++)
     {
         auto seg = Segment::create_segment(b);
         if (!seg)

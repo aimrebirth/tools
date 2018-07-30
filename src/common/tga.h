@@ -24,7 +24,7 @@ struct tga
 
     tga()
     {
-        idlength = strlen(label());
+        idlength = (uint8_t)strlen(label());
     }
     constexpr const char *label() const
     {

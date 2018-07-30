@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include <sstream>
-
 #include <buffer.h>
 #include <common.h>
+
+#include <sstream>
 
 template <typename T>
 inline bool replace_all(T &str, const T &from, const T &to)

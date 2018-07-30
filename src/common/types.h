@@ -193,7 +193,7 @@ struct BuildingGoods
         READ_STRING(b, name);
         READ(b, n);
 
-        for (int i = 0; i < n; i++)
+        for (uint32_t i = 0; i < n; i++)
         {
             Good g;
             g.load(b);
@@ -217,7 +217,7 @@ struct MapMusic
 
         auto read_values = [&b](auto &v, auto &n)
         {
-            for (int i = 0; i < n; i++)
+            for (uint32_t i = 0; i < n; i++)
                 v.push_back(b.read_string());
         };
 
@@ -240,7 +240,7 @@ struct OrganizationConfig
     {
         READ(b, n_configs);
         configs.resize(n_configs, std::string(0x20, 0));
-        for (int i = 0; i < n_configs; i++)
+        for (uint32_t i = 0; i < n_configs; i++)
             READ_N(b, configs[i][0], 0x20);
     }
 };
@@ -272,7 +272,7 @@ struct Organizations
         READ(b, len);
         uint32_t n = 0;
         READ(b, n);
-        for (int i = 0; i < n; i++)
+        for (uint32_t i = 0; i < n; i++)
         {
             Organization s;
             s.load(b);
@@ -303,7 +303,7 @@ struct OrganizationBases
     {
         uint32_t n = 0;
         READ(b, n);
-        for (int i = 0; i < n; i++)
+        for (uint32_t i = 0; i < n; i++)
         {
             OrganizationBase s;
             s.load(b);

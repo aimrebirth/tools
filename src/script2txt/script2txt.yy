@@ -17,45 +17,48 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <assert.h>
-#include <iostream>
-#include <string>
-
-#include "ParserDriver.h"
-
-#define yylex(p) p.lex()
+#include <script2txt_parser.h>
 %}
 
 ////////////////////////////////////////
 
 // general settings
 %require "3.0"
-%debug
+//%debug
 %start file
 %locations
 %verbose
-%no-lines
+//%no-lines
 %error-verbose
 
 ////////////////////////////////////////
 
 // c++ skeleton and options
 %skeleton "lalr1.cc"
-
 %define api.value.type variant
 %define api.token.constructor // C++ style of handling variants
 %define parse.assert // check C++ variant types
+%code provides { #include <primitives/helper/bison_yy.h> }
+%parse-param { MY_PARSER_DRIVER &driver } // param to yy::parser() constructor (the parsing context)
 
 %code requires // forward decl of C++ driver (our parser) in HPP
 {
 #include <Polygon4/DataManager/Schema/Context.h>
 
-class ParserDriver;
+#include <set>
 }
 
-// param to yy::parser() constructor
-// the parsing context
-%param { ParserDriver &driver }
+%code provides
+{
+struct MY_PARSER_DRIVER : MY_PARSER
+{
+    void setContext(Context &&ctx) { context = std::move(ctx); }
+    const Context &getContext() const { return context; }
+
+    Context context;
+    std::set<std::string> functions;
+};
+}
 
 ////////////////////////////////////////
 
@@ -327,8 +330,3 @@ integer: INTEGER
     ;
 
 %%
-
-void yy::parser::error(const location_type& l, const std::string& m)
-{
-    driver.error(l, m);
-}

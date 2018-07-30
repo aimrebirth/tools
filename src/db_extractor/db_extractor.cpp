@@ -18,10 +18,12 @@
 
 #include "db.h"
 
-#include <fstream>
-
 #include <buffer.h>
 #include <common.h>
+
+#include <primitives/sw/main.h>
+
+#include <fstream>
 
 void create_sql(std::string path, const db &db)
 {
@@ -122,7 +124,6 @@ void create_sql(std::string path, const db &db)
 }
 
 int main(int argc, char *argv[])
-try
 {
     if (argc != 2)
     {
@@ -134,14 +135,4 @@ try
     db.open(p);
     create_sql(p.string(), db);
     return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
 }

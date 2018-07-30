@@ -76,7 +76,7 @@ struct MechGroup
             uint32_t len = 0;
             READ(b, len);
             t.resize(len);
-            for (int i = 0; i < len; i++)
+            for (uint32_t i = 0; i < len; i++)
                 READ(b, t[i]);
             type_data = t;
         }
@@ -93,7 +93,7 @@ struct MechGroup
             assert(false);
         }
 
-        for (int i = 0; i < number_of_mechanoids; i++)
+        for (uint32_t i = 0; i < number_of_mechanoids; i++)
         {
             std::string t;
             READ_STRING_N(b, t, 0x20);
@@ -119,7 +119,7 @@ struct MechGroups
         READ(b, n);
         READ(b, unk0);
 
-        for (int s = 0; s < n; s++)
+        for (uint32_t s = 0; s < n; s++)
         {
             MechGroup mg;
             mg.load(b);
@@ -145,7 +145,7 @@ struct MapGoods
 
         uint32_t n = 0;
         READ(b, n);
-        for (int i = 0; i < n; i++)
+        for (uint32_t i = 0; i < n; i++)
         {
             BuildingGoods bg;
             bg.load(b);

@@ -16,18 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "mpj.h"
+
+#include <primitives/sw/main.h>
+
 #include <iostream>
 #include <set>
 #include <stdint.h>
 #include <string>
 #include <sstream>
 
-#include "mpj.h"
-
 using namespace std;
 
 int main(int argc, char *argv[])
-try
 {
     if (argc != 2)
     {
@@ -37,14 +38,4 @@ try
     mpj m;
     m.load(argv[1]);
     return 0;
-}
-catch (std::exception &e)
-{
-    printf("error: %s\n", e.what());
-    return 1;
-}
-catch (...)
-{
-    printf("error: unknown exception\n");
-    return 1;
 }

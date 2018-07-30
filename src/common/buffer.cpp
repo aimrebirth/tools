@@ -24,10 +24,11 @@
 
 #include <Windows.h>
 
-const int build_version =
-#include <version.h.in>
+const int build_version = 0
+//#include <version.h.in>
 ;
 
+// use as getVersionString() from settings?
 std::string version()
 {
     using namespace std;
