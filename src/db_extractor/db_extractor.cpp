@@ -22,12 +22,13 @@
 #include <common.h>
 
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <fstream>
 
-void create_sql(std::string path, const db &db)
+void create_sql(path p, const db &db)
 {
-    std::ofstream ofile(path + ".sql");
+    std::ofstream ofile(p += ".sql");
     if (!ofile)
         return;
 
@@ -125,14 +126,12 @@ void create_sql(std::string path, const db &db)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        std::cout << "Usage:\n" << argv[0] << " path/to/aim_game/data/db" << "\n" << argv[0] << " path/to/aim_game/data/quest" << "\n";
-        return 1;
-    }
-    path p = argv[1];
+    cl::opt<path> db_fn(cl::Positional, cl::desc("<db file>"), cl::Required);
+
+    cl::ParseCommandLineOptions(argc, argv);
+
     db db;
-    db.open(p);
-    create_sql(p.string(), db);
+    db.open(db_fn);
+    create_sql(db_fn, db);
     return 0;
 }

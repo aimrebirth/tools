@@ -26,6 +26,7 @@
 
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 using namespace std;
 
@@ -66,12 +67,10 @@ void process_mmm(const path &fn)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        cout << "Usage:\n" << argv[0] << " {file.mmm,dir}" << "\n";
-        return 1;
-    }
-    path p = argv[1];
+    cl::opt<path> p(cl::Positional, cl::desc("<file.mmm or directory>"), cl::Required);
+
+    cl::ParseCommandLineOptions(argc, argv);
+
     if (fs::is_regular_file(p))
         process_mmm(p);
     else if (fs::is_directory(p))

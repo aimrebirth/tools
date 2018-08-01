@@ -21,6 +21,7 @@
 
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <algorithm>
 #include <fstream>
@@ -33,12 +34,9 @@
 using namespace std;
 
 // options
-bool all_formats = false;
-bool silent = false;
-bool printMaxPolygonBlock = false;
-path p;
-
-bool parse_cmd(int argc, char *argv[]);
+cl::opt<bool> all_formats("a", cl::desc("all formats"));
+cl::opt<bool> silent("s", cl::desc("silent"));
+cl::opt<bool> printMaxPolygonBlock("m", cl::desc("print max polygon block"));
 
 void convert_model(const path &fn)
 {
@@ -56,11 +54,10 @@ void convert_model(const path &fn)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2 || !parse_cmd(argc, argv))
-    {
-        printf("Usage: %s [OPTIONS] {model_file,model_dir}\n", argv[0]);
-        return 1;
-    }
+    cl::opt<path> p(cl::Positional, cl::desc("<model file or dir>"), cl::Required);
+
+    cl::ParseCommandLineOptions(argc, argv);
+
     if (fs::is_regular_file(p))
         convert_model(p);
     else if (fs::is_directory(p))
@@ -77,32 +74,4 @@ int main(int argc, char *argv[])
     else
         throw std::runtime_error("Bad fs object");
     return 0;
-}
-
-bool parse_cmd(int argc, char *argv[])
-{
-    for (int i = 1; i < argc; i++)
-    {
-        auto arg = argv[i];
-        if (*arg != '-')
-        {
-            if (i != argc - 1)
-                return false;
-            p = arg;
-            continue;
-        }
-        switch (arg[1])
-        {
-        case 'a':
-            all_formats = true;
-            break;
-        case 's':
-            silent = true;
-            break;
-        case 'm':
-            printMaxPolygonBlock = true;
-            break;
-        }
-    }
-    return true;
 }

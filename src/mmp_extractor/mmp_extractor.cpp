@@ -20,6 +20,7 @@
 
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <iostream>
 #include <set>
@@ -31,18 +32,17 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2 || argc > 3)
-    {
-        cout << "Usage:\n" << argv[0] << " {file.mmp,mmp_dir} [texture_ids.txt]" << "\n";
-        return 1;
-    }
+    cl::opt<path> p(cl::Positional, cl::desc("<file.mmp or directory>"), cl::Required);
+    cl::opt<path> texture_ids(cl::Positional, cl::desc("<path to texture_ids.txt>"));
 
-    auto func = [&argc, &argv](auto &p)
+    cl::ParseCommandLineOptions(argc, argv);
+
+    auto func = [&texture_ids](auto &p)
     {
         mmp m;
-        if (argc > 2)
-            m.loadTextureNames(argv[2]);
-        m.load(p.string());
+        if (!texture_ids.empty())
+            m.loadTextureNames(texture_ids);
+        m.load(p);
         m.process();
         m.writeFileInfo();
         m.writeTexturesList();
@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
         m.writeNormalMap();
     };
 
-    path p = argv[1];
     if (fs::is_regular_file(p))
         func(p);
     else if (fs::is_directory(p))

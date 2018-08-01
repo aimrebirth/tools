@@ -25,6 +25,7 @@
 #include <primitives/filesystem.h>
 #include <primitives/executor.h>
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <algorithm>
 #include <fstream>
@@ -285,21 +286,19 @@ void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
-    {
-        std::cout << "Usage: prog db.sqlite dir_to_lang_dbs" << "\n";
-        return 1;
-    }
-    path d = argv[2];
+    cl::opt<path> db_fn(cl::Positional, cl::desc("<db file>"), cl::Required);
+    cl::opt<path> dir_to_lang_dbs(cl::Positional, cl::desc("<dir to lang dbs>"), cl::Required);
 
-    auto storage = polygon4::initStorage(argv[1]);
+    cl::ParseCommandLineOptions(argc, argv);
+
+    auto storage = polygon4::initStorage(db_fn);
     storage->load();
-    kv_resolved = get_kv_resolved(d, *storage.get());
+    kv_resolved = get_kv_resolved(dir_to_lang_dbs, *storage.get());
 
     // to check correctness
-    process_lang(*storage.get(), d / "ru", &polygon4::LocalizedString::ru);
+    process_lang(*storage.get(), dir_to_lang_dbs / "ru", &polygon4::LocalizedString::ru);
 
-    for (auto &f : fs::directory_iterator(d))
+    for (auto &f : fs::directory_iterator(dir_to_lang_dbs))
     {
         if (!fs::is_directory(f))
             continue;

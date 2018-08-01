@@ -16,16 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <buffer.h>
+#include <color.h>
+#include <mat.h>
+#include <types.h>
+
+#include <primitives/filesystem.h>
+
 #include <map>
 #include <set>
 #include <stdint.h>
 #include <string>
 #include <vector>
-
-#include <buffer.h>
-#include <color.h>
-#include <mat.h>
-#include <types.h>
 
 using Height = float;
 
@@ -165,7 +167,7 @@ struct mmp
     std::vector<segment> segments;
 
     //
-    std::string filename;
+    path filename;
     int xsegs;
     int ysegs;
     std::map<int, int /* count */> textures;
@@ -186,8 +188,8 @@ struct mmp
     mat<uint32_t> normalmap;
 
     void load(const buffer &b);
-    void load(const std::string &filename);
-    void loadTextureNames(const std::string &filename);
+    void load(const path &filename);
+    void loadTextureNames(const path &filename);
 
     void process();
 

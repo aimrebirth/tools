@@ -117,14 +117,14 @@ void mmp::load(const buffer &b)
     }
 }
 
-void mmp::load(const std::string &fn)
+void mmp::load(const path &fn)
 {
     filename = fn;
     buffer b(read_file(filename));
     load(b);
 }
 
-void mmp::loadTextureNames(const std::string &fn)
+void mmp::loadTextureNames(const path &fn)
 {
     std::ifstream ifile(fn);
     while (ifile)
@@ -254,7 +254,8 @@ void mmp::process()
 
 void mmp::writeFileInfo()
 {
-    std::ofstream ofile(filename + ".info.txt");
+    auto fn = filename;
+    std::ofstream ofile(fn += ".info.txt");
     if (!ofile)
         return;
     ofile << "width: " << h.width << "\n";
@@ -270,7 +271,8 @@ void mmp::writeFileInfo()
 
 void mmp::writeTexturesList()
 {
-    std::ofstream ofile(filename + ".textures.txt");
+    auto fn = filename;
+    std::ofstream ofile(fn += ".textures.txt");
     if (!ofile)
         return;
     for (auto &t : textures)
@@ -291,8 +293,9 @@ void mmp::writeTexturesList()
 
 void mmp::writeHeightMap()
 {
-    auto fn = filename + ".heightmap16.r16";
-    FILE *f = fopen(fn.c_str(), "wb");
+    auto fn = filename;
+    fn += ".heightmap16.r16";
+    auto f = primitives::filesystem::fopen(fn, "wb");
     if (f == nullptr)
         return;
     fwrite(&heightmap(0, 0), heightmap.size() * sizeof(decltype(heightmap)::type), 1, f);
@@ -311,7 +314,8 @@ void mmp::writeHeightMapSegmented()
 
 void mmp::writeTextureMap()
 {
-    auto fn = filename + ".texmap.bmp";
+    auto fn = filename;
+    fn += ".texmap.bmp";
     write_mat_bmp(fn, texmap);
 }
 
@@ -328,31 +332,36 @@ void mmp::writeTextureAlphaMaps()
                 break;
             }
         }
-        auto fn = filename + ".texmap." + std::to_string(t.first) + "." + std::to_string(tex_id) + ".bmp";
+        auto fn = filename;
+        fn += ".texmap." + std::to_string(t.first) + "." + std::to_string(tex_id) + ".bmp";
         write_mat_bmp(fn, t.second);
     }
 }
 
 void mmp::writeTextureMapColored()
 {
-    auto fn = filename + ".texmap.colored.bmp";
+    auto fn = filename;
+    fn += ".texmap.colored.bmp";
     write_mat_bmp(fn, texmap_colored);
 }
 
 void mmp::writeColorMap()
 {
-    auto fn = filename + ".colormap.bmp";
+    auto fn = filename;
+    fn += ".colormap.bmp";
     write_mat_bmp(fn, colormap);
 }
 
 void mmp::writeShadowMap()
 {
-    auto fn = filename + ".shadowmap.bmp";
+    auto fn = filename;
+    fn += ".shadowmap.bmp";
     write_mat_bmp(fn, shadowmap);
 }
 
 void mmp::writeNormalMap()
 {
-    auto fn = filename + ".normalmap.bmp";
+    auto fn = filename;
+    fn += ".normalmap.bmp";
     write_mat_bmp(fn, normalmap);
 }

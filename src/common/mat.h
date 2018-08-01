@@ -18,12 +18,14 @@
 
 #pragma once
 
+#include <bmp.h>
+#include <tga.h>
+
+#include <primitives/filesystem.h>
+
 #include <assert.h>
 #include <deque>
 #include <vector>
-
-#include <bmp.h>
-#include <tga.h>
 
 template <class T>
 class mat
@@ -113,9 +115,9 @@ private:
     int height;
 };
 
-inline void write_mat_bmp(const std::string &filename, int width, int height, int bits, const uint8_t *b, size_t s)
+inline void write_mat_bmp(const path &filename, int width, int height, int bits, const uint8_t *b, size_t s)
 {
-    FILE *f = fopen(filename.c_str(), "wb");
+    auto f = primitives::filesystem::fopen(filename, "wb");
     if (f == nullptr)
         return;
     bmp_header h = { 0 };
@@ -141,15 +143,15 @@ inline void write_mat_bmp(const std::string &filename, int width, int height, in
 }
 
 template<class T>
-inline void write_mat_bmp(const std::string &filename, const mat<T> &m)
+void write_mat_bmp(const path &filename, const mat<T> &m)
 {
     write_mat_bmp(filename, m.getWidth(), m.getHeight(), sizeof(T) * CHAR_BIT, (const uint8_t *)&m(0, 0), m.size() * sizeof(T));
 }
 
 template<class T>
-inline void write_mat_tga(const std::string &filename, const mat<T> &m)
+void write_mat_tga(const path &filename, const mat<T> &m)
 {
-    FILE *f = fopen(filename.c_str(), "wb");
+    auto f = primitives::filesystem::fopen(filename, "wb");
     if (f == nullptr)
         return;
 

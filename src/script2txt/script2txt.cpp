@@ -22,6 +22,7 @@
 
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <fstream>
 #include <iostream>
@@ -32,11 +33,9 @@ using std::string;
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        cout << "Usage:\n" << argv[0] << " {script.scr,scr_dir}";
-        return 1;
-    }
+    cl::opt<path> p(cl::Positional, cl::desc("<script.scr or scripts dir>"), cl::Required);
+
+    cl::ParseCommandLineOptions(argc, argv);
 
     auto func = [](auto filename)
     {
@@ -76,7 +75,6 @@ int main(int argc, char *argv[])
         }
     };
 
-    path p = argv[1];
     if (fs::is_regular_file(p))
         func(p.string());
     else if (fs::is_directory(p))

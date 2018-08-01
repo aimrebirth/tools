@@ -19,6 +19,7 @@
 #include "mpj.h"
 
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <iostream>
 #include <set>
@@ -30,12 +31,11 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        cout << "Usage:\n" << argv[0] << " file.mpj" << "\n";
-        return 1;
-    }
+    cl::opt<path> p(cl::Positional, cl::desc("<file.mpj>"), cl::Required);
+
+    cl::ParseCommandLineOptions(argc, argv);
+
     mpj m;
-    m.load(argv[1]);
+    m.load(p);
     return 0;
 }

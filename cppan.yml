@@ -71,9 +71,6 @@ projects:
         dependencies:
             - common
 
-    unpaker:
-        root_dir: src/unpaker
-
     mmm_extractor:
         root_dir: src/mmm_extractor
         dependencies:
@@ -160,6 +157,9 @@ projects:
                   - WIN32
         post_target: |
             cppan_flex_bison_pair(LALR1_CPP_VARIANT_PARSER script2txt)
+
+    unpaker:
+        root_dir: src/unpaker
 
 
 

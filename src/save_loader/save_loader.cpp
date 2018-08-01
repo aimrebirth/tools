@@ -20,17 +20,16 @@
 
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <iostream>
 #include <string>
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        printf("Usage: %s {file.sav,saves_dir}\n", argv[0]);
-        return 1;
-    }
+    cl::opt<path> p(cl::Positional, cl::desc("<file.sav or saves dir>"), cl::Required);
+
+    cl::ParseCommandLineOptions(argc, argv);
 
     //save_changes.mech_org = "ORG_PLAYER";
     save_changes.money = 999999999.0f;
@@ -47,7 +46,6 @@ int main(int argc, char *argv[])
         writeFile(p.string(), save_changes.out.buf());
     };
 
-    path p = argv[1];
     if (fs::is_regular_file(p))
         func(p);
     else if (fs::is_directory(p))

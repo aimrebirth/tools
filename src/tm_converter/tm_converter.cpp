@@ -22,6 +22,7 @@
 
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
+#include <primitives/sw/settings.h>
 
 #include <algorithm>
 #include <fstream>
@@ -82,12 +83,10 @@ void convert(const path &fn)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
-        printf("Usage: %s file.tm\n", argv[0]);
-        return 1;
-    }
-    path p = argv[1];
+    cl::opt<path> p(cl::Positional, cl::desc("<file.tm>"), cl::Required);
+
+    cl::ParseCommandLineOptions(argc, argv);
+
     if (fs::is_regular_file(p))
         convert(p);
     else if (fs::is_directory(p))

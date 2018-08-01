@@ -219,7 +219,7 @@ void mpj::load(const buffer &b)
     h.load(b);
 }
 
-void mpj::load(const std::string &fn)
+void mpj::load(const path &fn)
 {
     filename = fn;
     buffer b(read_file(filename));
