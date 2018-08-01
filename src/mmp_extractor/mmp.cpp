@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 
 #include <primitives/filesystem.h>
 
@@ -350,6 +351,27 @@ void mmp::writeColorMap()
     auto fn = filename;
     fn += ".colormap.bmp";
     write_mat_bmp(fn, colormap);
+}
+
+void mmp::writeSplitColormap() const
+{
+    std::unordered_set<uint32_t> colors;
+    for (auto &pixel : colormap)
+        colors.insert(pixel);
+    for (auto &color : colors)
+    {
+        auto m = colormap;
+        for (auto &pixel : m)
+            pixel = pixel == color ? 0x0000FF00 : 0;
+        auto fn = filename;
+        std::ostringstream ss;
+        ss << "0x";
+        ss.fill('0');
+        ss.width(8);
+        ss << std::hex << std::uppercase << color;
+        fn += ".colormap." + ss.str() + ".bmp";
+        write_mat_bmp(fn, m);
+    }
 }
 
 void mmp::writeShadowMap()

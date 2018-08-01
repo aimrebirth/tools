@@ -203,4 +203,5 @@ struct mmp
     void writeColorMap();
     void writeShadowMap();
     void writeNormalMap();
+    void writeSplitColormap() const;
 };

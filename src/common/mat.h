@@ -73,6 +73,11 @@ public:
     const std::vector<T> &getData() const { return data; }
     std::vector<T> &getData() { return data; }
 
+    auto begin() { return data.begin(); }
+    auto end() { return data.end(); }
+    auto begin() const { return data.begin(); }
+    auto end() const { return data.end(); }
+
     // left/right
     mat mirror()
     {

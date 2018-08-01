@@ -34,10 +34,11 @@ int main(int argc, char *argv[])
 {
     cl::opt<path> p(cl::Positional, cl::desc("<file.mmp or directory>"), cl::Required);
     cl::opt<path> texture_ids(cl::Positional, cl::desc("<path to texture_ids.txt>"));
+    cl::opt<bool> split_colormap("split_colormap", cl::desc("split colormap into separate images"));
 
     cl::ParseCommandLineOptions(argc, argv);
 
-    auto func = [&texture_ids](auto &p)
+    auto func = [&texture_ids, &split_colormap](auto &p)
     {
         mmp m;
         if (!texture_ids.empty())
@@ -54,6 +55,8 @@ int main(int argc, char *argv[])
         m.writeColorMap();
         m.writeShadowMap();
         m.writeNormalMap();
+        if (split_colormap)
+            m.writeSplitColormap();
     };
 
     if (fs::is_regular_file(p))
