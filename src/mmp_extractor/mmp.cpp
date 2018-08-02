@@ -18,14 +18,16 @@
 
 #define NOMINMAX
 
+#include <opencv2/highgui.hpp>
 #include "mmp.h"
+
+#include <primitives/filesystem.h>
 
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
-
-#include <primitives/filesystem.h>
 
 void water_segment::load(const buffer &b)
 {
@@ -355,9 +357,10 @@ void mmp::writeColorMap()
 
 void mmp::writeSplitColormap() const
 {
-    std::unordered_set<uint32_t> colors;
+    std::set<uint32_t> colors;
     for (auto &pixel : colormap)
         colors.insert(pixel);
+    int i = 0;
     for (auto &color : colors)
     {
         auto m = colormap;
@@ -369,8 +372,9 @@ void mmp::writeSplitColormap() const
         ss.fill('0');
         ss.width(8);
         ss << std::hex << std::uppercase << color;
-        fn += ".colormap." + ss.str() + ".bmp";
-        write_mat_bmp(fn, m);
+        fn += ".colormap." + ss.str() + ".png";
+        std::cout << "\r[" << ++i << "/" << colors.size() << "] Processing color " << ss.str();
+        cv::imwrite(fn.u8string(), cv::Mat(m));
     }
 }
 

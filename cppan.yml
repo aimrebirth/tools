@@ -91,6 +91,7 @@ projects:
         root_dir: src/mmp_extractor
         dependencies:
             - common
+            - pvt.cppan.demo.intel.opencv.highgui: "*"
 
     model:
         type: lib
