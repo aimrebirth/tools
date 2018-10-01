@@ -37,7 +37,7 @@ using namespace std;
 // options
 bool silent = false;
 bool printMaxPolygonBlock = false;
-cl::opt<path> p(cl::Positional, cl::desc("MOD_ file or directory with MOD_ files"), cl::value_desc("file or directory"), cl::Required);
+cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files>"), cl::value_desc("file or directory"), cl::Required);
 
 void convert_model(const path &fn)
 {

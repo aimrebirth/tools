@@ -363,9 +363,7 @@ void mmp::writeSplitColormap() const
     int i = 0;
     for (auto &color : colors)
     {
-        auto m = colormap;
-        for (auto &pixel : m)
-            pixel = pixel == color ? 0x0000FF00 : 0;
+        ++i;
         auto fn = filename;
         std::ostringstream ss;
         ss << "0x";
@@ -373,7 +371,12 @@ void mmp::writeSplitColormap() const
         ss.width(8);
         ss << std::hex << std::uppercase << color;
         fn += ".colormap." + ss.str() + ".png";
-        std::cout << "\r[" << ++i << "/" << colors.size() << "] Processing color " << ss.str();
+        if (fs::exists(fn))
+            continue;
+        auto m = colormap;
+        for (auto &pixel : m)
+            pixel = pixel == color ? 0x0000FF00 : 0;
+        std::cout << "\r[" << i << "/" << colors.size() << "] Processing color " << ss.str();
         cv::imwrite(fn.u8string(), cv::Mat(m));
     }
 }

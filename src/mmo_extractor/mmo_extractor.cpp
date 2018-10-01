@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
     cl::opt<bool> print_mechanoids("print_mechanoids", cl::desc("print mechanoids"));
     cl::opt<path> db_path("db", cl::desc("database file"));
     cl::alias db_pathA("d", cl::aliasopt(db_path));
-    cl::opt<path> p(cl::Positional, cl::desc(".mmo file or directory with .mmo files"), cl::value_desc("file or directory"), cl::Required);
+    cl::opt<path> p(cl::Positional, cl::desc("<.mmo file or directory with .mmo files>"), cl::value_desc("file or directory"), cl::Required);
 
     cl::ParseCommandLineOptions(argc, argv);
 

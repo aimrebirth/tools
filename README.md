@@ -10,11 +10,14 @@ This repository contains different tools for A.I.M. games.
 6. Models converter: AIM1/2 format -> .OBJ + .MTL. Textures are included.
 7. Script to TXT convertor.
 8. Texture converter: TM -> TGA.
+9. MPJ loader (dummy implementation).
+10. Save loader (dummy implementation).
 
 # Build instructions
 1. Download and install latest CMake http://www.cmake.org/download/
+1. Download and add to PATH latest CPPAN https://cppan.org/client/
 2. Clone this repository
 3. Open the source directory
-4. Execute in console `cmake -H. -Bwin`
-5. Run win/aim_tools.sln file (Visual Studio solution file)
+4. Execute in console `cppan --generate .`
+5. Open generated solution file (Visual Studio solution file)
 6. Build the project
