@@ -147,8 +147,8 @@ void mmp::process()
             textures[i.getTexture()]++;
     }
     textures.erase(0);
-    auto textures_per_color = std::max(1U, textures.size() / 3);
-    auto color_step = 200 / std::max(1U, textures.size());
+    auto textures_per_color = std::max<size_t>(1U, textures.size() / 3);
+    auto color_step = 200 / std::max<size_t>(1U, textures.size());
     for (size_t i = 0; i < textures.size(); i++)
     {
         int color_id = i / textures_per_color;

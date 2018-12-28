@@ -105,12 +105,12 @@ void segment::load_segment()
     auto f = file;
 
     fseek(f, offset, SEEK_SET);
-    if (algorithm == 0)
+    /*if (algorithm == 0)
     {
         std::cerr << "Something is wrong. Maybe you trying to open aim2 files?\n";
         std::cerr << "They can be opened with SDK extractor.\n";
         throw std::runtime_error("error");
-    }
+    }*/
 
     FREAD(size1);
     size2 = size1;
@@ -163,6 +163,8 @@ void segment::decompress(int segment_id)
             decode_rle((char*)encoded, size1, (char*)decoded);
         }
     }
+    if (algorithm == None)
+        decoded = encoded;
 }
 
 void pak::load(FILE *f)

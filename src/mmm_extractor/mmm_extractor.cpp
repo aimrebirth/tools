@@ -46,7 +46,7 @@ struct mmm
 
 mmm read_mmm(const path &fn)
 {
-    buffer b(read_file(fn, true));
+    buffer b(read_file(fn));
     mmm m;
     m.load(b);
 

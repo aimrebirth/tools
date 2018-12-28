@@ -57,6 +57,7 @@ struct segment
 {
     enum decode_algorithm : uint32_t
     {
+        None = 0x0,
         RLE_2_bytes = 0x1,
         RLE_1_byte  = 0x2,
         DA_1 = 0x4,

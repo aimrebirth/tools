@@ -7,3 +7,5 @@ bin
 *.lnk
 *.exe
 *.bat
+
+.sw

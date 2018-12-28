@@ -157,6 +157,7 @@ void buffer::reset() const
 {
     index_ = 0;
     data_offset = 0;
+    if (buf_)
     ptr = (uint8_t *)buf_->data();
 }
 
