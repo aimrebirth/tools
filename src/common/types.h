@@ -155,13 +155,25 @@ struct water_group
 
 struct Good
 {
+    enum class TovType : uint32_t
+    {
+        RawMaterial,
+        Consumables,
+        SemiFinished,
+    };
+
     std::string name;
     char unk1[0x40];
     float unk1_2 = 0;
-    float price = 0;
+    float price = 0; // unk, quantity?
     float unk2[10];
-    float unk2_1[2];
-    uint32_t unk2_2[2];
+    float buy_price; // initial
+    float sell_price; // initial
+    TovType type;
+    bool use_in_production;
+    bool unk3;
+    bool unk4;
+    bool unk5;
 
     void load(const buffer &b)
     {
@@ -175,8 +187,13 @@ struct Good
             READ(b, unk2);
         else
         {
-            READ(b, unk2_1);
-            READ(b, unk2_2);
+            READ(b, buy_price);
+            READ(b, sell_price);
+            READ(b, type);
+            READ(b, use_in_production);
+            READ(b, unk3);
+            READ(b, unk4);
+            READ(b, unk5);
         }
     }
 };
@@ -184,35 +201,27 @@ struct Good
 struct BuildingGoods
 {
     std::string name;
-    uint32_t n = 0;
 
     std::vector<Good> goods;
 
     void load(const buffer &b)
     {
         READ_STRING(b, name);
-        READ(b, n);
-
-        for (uint32_t i = 0; i < n; i++)
-        {
-            Good g;
-            g.load(b);
-            goods.push_back(g);
-        }
+        READ_N_OBJECTS_WITH_LOAD(b, goods);
     }
 };
 
 struct MapMusic
 {
-    std::string name1;
+    std::string mainTheme;
     std::string name2;
 
-    std::vector<std::string> names1;
-    std::vector<std::string> names2;
+    std::vector<std::string> fightThemes;
+    std::vector<std::string> insertionThemes;
 
     void load(const buffer &b)
     {
-        READ_STRING(b, name1);
+        READ_STRING(b, mainTheme);
         READ_STRING(b, name2);
 
         auto read_values = [&b](auto &v, auto &n)
@@ -223,21 +232,22 @@ struct MapMusic
 
         uint32_t n1 = 0;
         READ(b, n1);
-        read_values(names1, n1);
+        read_values(fightThemes, n1);
 
         uint32_t n2 = 0;
         READ(b, n2);
-        read_values(names2, n2);
+        read_values(insertionThemes, n2);
     }
 };
 
 struct OrganizationConfig
 {
-    uint32_t n_configs = 0;
+    int count_in_group;
     std::vector<std::string> configs;
 
     void load(const buffer &b)
     {
+        uint32_t n_configs = 0;
         READ(b, n_configs);
         configs.resize(n_configs, std::string(0x20, 0));
         for (uint32_t i = 0; i < n_configs; i++)
@@ -247,38 +257,19 @@ struct OrganizationConfig
 
 struct Organization
 {
-    uint32_t unk0 = 0;
     std::string name;
-    char unk1[0xE0];
+    int count; // on map?
+    float trade_war;
+    float defence_attack;
+    float average_rating;
+    bool is_free;
+    bool is_foreign;
     OrganizationConfig configs[3];
 
-    void load(const buffer &b)
-    {
-        READ(b, unk0);
-        READ_STRING(b, name);
-        READ(b, unk1);
-        for (auto &c : configs)
-            c.load(b);
-    }
-};
+    uint32_t unk0 = 0;
+    char unk1[0xE0 - 4-4-4-4*3-4-1-1];
 
-struct Organizations
-{
-    std::vector<Organization> organizations;
-
-    void load(const buffer &b)
-    {
-        uint32_t len = 0;
-        READ(b, len);
-        uint32_t n = 0;
-        READ(b, n);
-        for (uint32_t i = 0; i < n; i++)
-        {
-            Organization s;
-            s.load(b);
-            organizations.push_back(s);
-        }
-    }
+    void load(const buffer &b);
 };
 
 struct OrganizationBase
@@ -292,23 +283,6 @@ struct OrganizationBase
         READ_STRING(b, base_name);
         READ_STRING(b, org_name);
         READ(b, unk0);
-    }
-};
-
-struct OrganizationBases
-{
-    std::vector<OrganizationBase> organizationBases;
-
-    void load(const buffer &b)
-    {
-        uint32_t n = 0;
-        READ(b, n);
-        for (uint32_t i = 0; i < n; i++)
-        {
-            OrganizationBase s;
-            s.load(b);
-            organizationBases.push_back(s);
-        }
     }
 };
 

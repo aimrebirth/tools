@@ -53,12 +53,12 @@ struct mmo_storage
     path name;
     Objects objects;
     MechGroups mechGroups;
-    MapGoods mapGoods;
+    MapGoods mapGoods; // trading & production system
     MapMusic mapMusic;
     MapSounds mapSounds;
     // aim2
-    Organizations orgs;
-    OrganizationBases orgsBases;
+    std::vector<Organization> organizations;
+    std::vector<OrganizationBase> organizationBases;
     Prices prices;
 
     uint32_t unk0 = 0;
@@ -75,8 +75,12 @@ struct mmo_storage
         mapSounds.load(b);
         if (gameType == GameType::Aim2)
         {
-            orgs.load(b);
-            orgsBases.load(b);
+            uint32_t len = 0;
+            READ(b, len);
+
+            READ_N_OBJECTS_WITH_LOAD(b, organizations);
+            READ_N_OBJECTS_WITH_LOAD(b, organizationBases);
+
             prices.load(b);
         }
 
@@ -142,7 +146,7 @@ void write_mmo(Storage *storage, const mmo_storage &s)
             std::set<std::string> objs;
             std::map<std::string, int> bld_ids;
             for (auto &object : segment->objects)
-                objs.insert(object->name1);
+                objs.insert(object.name1);
             for (auto &o : objs)
             {
                 auto iter = std::find_if(storage->buildings.begin(), storage->buildings.end(), [&](const auto &p)
@@ -163,24 +167,19 @@ void write_mmo(Storage *storage, const mmo_storage &s)
             for (auto &object : segment->objects)
             {
                 // protect against nans
-                object->m_rotate_z[2].z = ASSIGN(object->m_rotate_z[2].z, 1);
+                object.m_rotate_z[2].z = ASSIGN(object.m_rotate_z[2].z, 1);
 
                 MapBuilding mb;
-                mb.text_id = object->name2;
-                mb.building = storage->buildings[bld_ids[object->name1]];
+                mb.text_id = object.name2;
+                mb.building = storage->buildings[bld_ids[object.name1]];
                 mb.map = this_map;
-                mb.x = ASSIGN(object->position.x, 0);
-                mb.y = ASSIGN(object->position.y, 0);
-                mb.z = ASSIGN(object->position.z, 0);
+                mb.x = ASSIGN(object.position.x, 0);
+                mb.y = ASSIGN(object.position.y, 0);
+                mb.z = ASSIGN(object.position.z, 0);
                 mb.roll = 0;
                 mb.pitch = 0;
-                mb.yaw = calc_yaw(object->m_rotate_z);
-                mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
-                if (mb.scale != 1)
-                {
-                    int a = 5;
-                    a++;
-                }
+                mb.yaw = calc_yaw(object.m_rotate_z);
+                mb.scale = ASSIGN(object.m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const auto &p)
                 {
                     return *p.second == mb;
@@ -209,7 +208,7 @@ void write_mmo(Storage *storage, const mmo_storage &s)
             std::set<std::string> objs;
             std::map<std::string, int> bld_ids;
             for (auto &object : segment->objects)
-                objs.insert(object->name1);
+                objs.insert(object.name1);
             for (auto &o : objs)
             {
                 auto iter = find_if(storage->objects.begin(), storage->objects.end(), [&](const auto &p)
@@ -228,24 +227,19 @@ void write_mmo(Storage *storage, const mmo_storage &s)
             for (auto &object : segment->objects)
             {
                 // protect against nans
-                object->m_rotate_z[2].z = ASSIGN(object->m_rotate_z[2].z, 1);
+                object.m_rotate_z[2].z = ASSIGN(object.m_rotate_z[2].z, 1);
 
                 polygon4::detail::MapObject mb;
-                mb.text_id = object->name2;
+                mb.text_id = object.name2;
                 mb.map = this_map;
-                mb.object = storage->objects[bld_ids[object->name1]];
-                mb.x = ASSIGN(object->position.x, 0);
-                mb.y = ASSIGN(object->position.y, 0);
-                mb.z = ASSIGN(object->position.z, 0);
+                mb.object = storage->objects[bld_ids[object.name1]];
+                mb.x = ASSIGN(object.position.x, 0);
+                mb.y = ASSIGN(object.position.y, 0);
+                mb.z = ASSIGN(object.position.z, 0);
                 mb.roll = 0;
                 mb.pitch = 0;
-                mb.yaw = calc_yaw(object->m_rotate_z);
-                mb.scale = ASSIGN(object->m_rotate_z[2].z, 1);
-                if (mb.scale != 1)
-                {
-                    int a = 5;
-                    a++;
-                }
+                mb.yaw = calc_yaw(object.m_rotate_z);
+                mb.scale = ASSIGN(object.m_rotate_z[2].z, 1);
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const auto &p)
                 {
                     return *p.second == mb;
@@ -280,10 +274,6 @@ int main(int argc, char *argv[])
 
     gameType = m2 ? GameType::Aim2 : GameType::Aim1;
 
-    /*{
-            std::cerr << parser;
-    }*/
-
     auto action = [&p](auto f)
     {
         if (fs::is_regular_file(p))
@@ -314,6 +304,10 @@ int main(int argc, char *argv[])
                 std::cout << "\n";
             }
         });
+    }
+    else if (db_path.empty())
+    {
+        action([](const path &, const auto &m) {});
     }
     else
     {

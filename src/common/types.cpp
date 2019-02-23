@@ -80,3 +80,24 @@ void water_group::load(const buffer &b)
         segments.push_back(w);
     }
 }
+
+void Organization::load(const buffer &b)
+{
+    READ(b, unk0);
+    READ_STRING(b, name);
+    READ(b, count);
+    READ(b, trade_war);
+    READ(b, defence_attack);
+
+    // incorrect?
+    READ(b, configs[1].count_in_group);
+    READ(b, configs[2].count_in_group);
+    READ(b, configs[0].count_in_group);
+
+    READ(b, average_rating);
+    READ(b, is_free);
+    READ(b, is_foreign);
+    READ(b, unk1);
+    for (auto &c : configs)
+        c.load(b);
+}

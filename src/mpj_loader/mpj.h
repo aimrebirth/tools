@@ -142,9 +142,8 @@ struct map_music : public segment
 
 struct organizations : public segment
 {
-    uint32_t n;
     std::vector<Organization> orgs;
-    OrganizationBases bases;
+    std::vector<OrganizationBase> organizationBases;
 
     virtual void load(const buffer &b) override;
 };

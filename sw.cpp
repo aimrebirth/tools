@@ -48,7 +48,7 @@ void build(Solution &s)
     script2txt.CPPVersion = CPPLanguageStandard::CPP17;
     script2txt.setRootDirectory("src/script2txt");
     script2txt += "pub.lzwdgc.Polygon4.DataManager.schema-master"_dep;
-    gen_flex_bison_pair(script2txt, "LALR1_CPP_VARIANT_PARSER", "script2txt");
+    gen_flex_bison_pair("org.sw.demo.lexxmark.winflexbison-master"_dep, script2txt, "LALR1_CPP_VARIANT_PARSER", "script2txt");
 
     auto &model = tools.addStaticLibrary("model");
     model.CPPVersion = CPPLanguageStandard::CPP17;

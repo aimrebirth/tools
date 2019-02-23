@@ -76,14 +76,14 @@ struct Segment
 template <class T>
 struct SegmentObjects : public Segment
 {
-    std::vector<T*> objects;
+    std::vector<T> objects;
 
     virtual void load(const buffer &b)
     {
         for (uint32_t i = 0; i < n_objects; i++)
         {
-            T* o = new T;
-            o->load(b);
+            T o;
+            o.load(b);
             objects.push_back(o);
         }
     }
@@ -91,6 +91,7 @@ struct SegmentObjects : public Segment
 
 struct Common
 {
+    // m_rotate_z[2].z - model scale on the map
     vector4 m_rotate_z[3];
     vector4 position;
 
