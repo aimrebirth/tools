@@ -3,6 +3,7 @@
 void build(Solution &s)
 {
     auto &tools = s.addProject("Polygon4.Tools", "master");
+    DataManager += Git("https://github.com/aimrebirth/tools", "", "{v}");
 
     auto &common = tools.addStaticLibrary("common");
     common.CPPVersion = CPPLanguageStandard::CPP17;
