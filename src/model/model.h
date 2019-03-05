@@ -20,6 +20,8 @@
 
 #include "types.h"
 
+#include <primitives/yaml.h>
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -236,6 +238,13 @@ struct block
         void load(const buffer &b);
     };
 
+    // for save
+    struct block_info
+    {
+        aim_vector4 min;
+        aim_vector4 max;
+    };
+
     header h;
 
     // data
@@ -268,8 +277,10 @@ struct block
 
     void load(const buffer &b);
     void loadPayload(const buffer &b);
+
     std::string printMtl() const;
     std::string printObj(int group_offset, bool rotate_x_90 = false) const;
+    block_info save(yaml &root) const;
 
     bool canPrint() const;
     bool isEngineFx() const;
@@ -280,6 +291,8 @@ struct model
     std::vector<block> blocks;
 
     void load(const buffer &b);
-    void print(const std::string &fn);
-    void printFbx(const std::string &fn);
+
+    void print(const std::string &fn) const;
+    void printFbx(const std::string &fn) const;
+    void save(yaml &root) const;
 };

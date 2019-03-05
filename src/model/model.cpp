@@ -511,6 +511,44 @@ bool block::canPrint() const
     return false;
 }
 
+block::block_info block::save(yaml &root) const
+{
+    aim_vector4 min{ 1e6, 1e6, 1e6, 1e6 }, max{ -1e6, -1e6, -1e6, -1e6 };
+    for (auto &v : vertices)
+    {
+        auto mm = [&v](auto &m, auto f)
+        {
+            m.x = f(m.x, v.coordinates.x);
+            m.y = f(m.y, v.coordinates.y);
+            m.z = f(m.z, v.coordinates.z);
+        };
+
+        mm(min, [](auto x, auto y) {return std::min(x,y); });
+        mm(max, [](auto x, auto y) {return std::max(x,y); });
+    }
+
+    root["xlen"] = max.x - min.x;
+    root["ylen"] = max.y - min.y;
+    root["zlen"] = max.z - min.z;
+
+    // convex hull length
+    /*float len = 0;
+    for (auto &v1 : vertices)
+    {
+        for (auto &v2 : vertices)
+        {
+            len = std::max(len, sqrt(
+                pow(v2.coordinates.x - v1.coordinates.x, 2) +
+                pow(v2.coordinates.y - v1.coordinates.y, 2) +
+                pow(v2.coordinates.z - v1.coordinates.z, 2)
+            ));
+        }
+    }
+    root["len"] = len;*/
+
+    return {min,max};
+}
+
 void model::load(const buffer &b)
 {
     int n_blocks;
@@ -524,7 +562,7 @@ void model::load(const buffer &b)
         f.load(b);
 }
 
-void model::print(const std::string &fn)
+void model::print(const std::string &fn) const
 {
     auto title = [](auto &o)
     {
@@ -559,4 +597,32 @@ void model::print(const std::string &fn)
 
     print_obj(fn + "_fbx.obj");
     print_obj(fn + "_ue4.obj", true);
+}
+
+void model::save(yaml &root) const
+{
+    aim_vector4 min{ 1e6, 1e6, 1e6, 1e6 }, max{ -1e6, -1e6, -1e6, -1e6 };
+
+    for (auto &b : blocks)
+    {
+        if (!b.canPrint())
+            continue;
+
+        auto [bmin, bmax] = b.save(root["lods"][b.h.name]);
+
+        auto mm = [](auto &v, auto &m, auto f)
+        {
+            m.x = f(m.x, v.x);
+            m.y = f(m.y, v.y);
+            m.z = f(m.z, v.z);
+        };
+
+        mm(bmin, min, [](auto x, auto y) {return std::min(x,y); });
+        mm(bmax, max, [](auto x, auto y) {return std::max(x,y); });
+    }
+
+    root["full"]["xlen"] = max.x - min.x;
+    root["full"]["ylen"] = max.y - min.y;
+    root["full"]["zlen"] = max.z - min.z;
+    //root["full"]["len"] = sqrt(pow(max.x - min.x, 2) + pow(max.y - min.y, 2) + pow(max.z - min.z, 2));
 }

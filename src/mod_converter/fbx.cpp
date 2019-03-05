@@ -11,7 +11,7 @@
 #define IOS_REF (*(pManager->GetIOSettings()))
 #endif
 
-bool CreateScene(model &m, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene);
+bool CreateScene(const model &m, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene);
 
 void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
 {
@@ -202,7 +202,7 @@ bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename)
     return lStatus;
 }
 
-void model::printFbx(const std::string &fn)
+void model::printFbx(const std::string &fn) const
 {
     FbxManager* lSdkManager = NULL;
     FbxScene* lScene = NULL;
@@ -221,7 +221,7 @@ void model::printFbx(const std::string &fn)
     DestroySdkObjects(lSdkManager, true);
 }
 
-bool CreateScene(model &model, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene)
+bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene)
 {
     static const char* gDiffuseElementName = "DiffuseUV";
     static const char* gAmbientElementName = "AmbientUV";

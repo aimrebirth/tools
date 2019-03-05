@@ -23,6 +23,8 @@
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>
+#include <primitives/sw/cl.h>
+#include <primitives/yaml.h>
 
 #include <algorithm>
 #include <fstream>
@@ -37,9 +39,13 @@ using namespace std;
 // options
 bool silent = false;
 bool printMaxPolygonBlock = false;
+
 cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files>"), cl::value_desc("file or directory"), cl::Required);
 
-void convert_model(const path &fn)
+yaml root;
+cl::opt<bool> stats("i", cl::desc("Gather information from (models)"));
+
+auto read_model(const path &fn)
 {
     buffer b(read_file(fn));
     model m;
@@ -52,10 +58,28 @@ void convert_model(const path &fn)
         throw std::logic_error(ss.str());
     }
 
+    return m;
+}
+
+void convert_model(const model &m, const path &fn)
+{
     // write all
     if (all_formats)
         m.print(fn.string());
     m.printFbx(fn.string());
+}
+
+void convert_model(const path &fn)
+{
+    auto m = read_model(fn);
+
+    if (stats)
+    {
+        m.save(root[fn.filename().string()]);
+        return;
+    }
+
+    convert_model(m, fn);
 }
 
 int main(int argc, char *argv[])
@@ -75,7 +99,7 @@ int main(int argc, char *argv[])
     else if (fs::is_directory(p))
     {
         auto files = enumerate_files(p, false);
-        for (auto &f : files)
+        for (auto &f : FilesSorted(files.begin(), files.end()))
         {
             if (f.has_extension())
                 continue;
@@ -92,5 +116,11 @@ int main(int argc, char *argv[])
     }
     else
         throw std::runtime_error("Bad fs object");
+
+    if (stats)
+    {
+        write_file((fs::is_regular_file(p) ? path(p) += ".txt" : (p / "model_information.yml")) , YAML::Dump(root));
+    }
+
     return 0;
 }

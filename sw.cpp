@@ -3,7 +3,7 @@
 void build(Solution &s)
 {
     auto &tools = s.addProject("Polygon4.Tools", "master");
-    DataManager += Git("https://github.com/aimrebirth/tools", "", "{v}");
+    tools += Git("https://github.com/aimrebirth/tools", "", "{v}");
 
     auto &common = tools.addStaticLibrary("common");
     common.CPPVersion = CPPLanguageStandard::CPP17;
@@ -68,5 +68,5 @@ void build(Solution &s)
     String arch = "x64";
     if (s.Settings.TargetOS.Arch == ArchType::x86)
         arch = "x86";
-    mod_converter += LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-md.lib"));
+    mod_converter += sw::LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-md.lib"));
 }

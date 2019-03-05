@@ -26,6 +26,7 @@
 #include <primitives/executor.h>
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>
+#include <primitives/sw/cl.h>
 
 #include <algorithm>
 #include <fstream>

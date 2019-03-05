@@ -21,6 +21,7 @@
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>
+#include <primitives/sw/cl.h>
 
 #include <iostream>
 #include <string>
