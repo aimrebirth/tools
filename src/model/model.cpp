@@ -81,8 +81,16 @@ template <typename T>
 void aim_vector3<T>::load(const buffer &b)
 {
     READ(b, base::x);
+    x = -x; // fix ue4 left hand coordinate system
     READ(b, base::z);
     READ(b, base::y);
+
+    /*
+    // direction will match to m viewer
+    READ(b, base::y);
+    READ(b, base::x);
+    READ(b, base::z);
+    */
 }
 
 void aim_vector4::load(const buffer &b, uint32_t flags)

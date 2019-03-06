@@ -174,6 +174,7 @@ void mmp::process()
 
     // merge
     heightmap = decltype(heightmap)(h.width, h.length);
+    heightmap32 = decltype(heightmap32)(h.width, h.length);
     //heightmap_segmented = decltype(heightmap)(segment::len, h.length);
     texmap = decltype(texmap)(h.width, h.length);
     texmap_colored = decltype(texmap_colored)(h.width, h.length);
@@ -225,7 +226,7 @@ void mmp::process()
 
     alpha_maps.erase(0);
     scale16 = 0xffff / (h_max - h_min);
-    const int unreal_koef = 51300;
+    const int unreal_koef = 51200; // 51300?
     const int aim_koef = 10;
     const double diff = h_max - h_min;
     scale = aim_koef * diff / unreal_koef;
@@ -247,6 +248,8 @@ void mmp::process()
             for (int x = 0; x1 < x2; x1++, x++)
             {
                 auto height = s.d.Heightmap[y * dx + x];
+                heightmap32(y1, x1) = height; // dunno what is right
+                heightmap32(y1, x1) = height - h_min; // dunno what is right
                 auto val = (height - h_min) * scale16 * scale;
                 auto &old_height = heightmap(y1, x1);
                 old_height = val;
@@ -296,13 +299,19 @@ void mmp::writeTexturesList()
 
 void mmp::writeHeightMap()
 {
-    auto fn = filename;
-    fn += ".heightmap16.r16";
-    auto f = primitives::filesystem::fopen(fn, "wb");
-    if (f == nullptr)
-        return;
-    fwrite(&heightmap(0, 0), heightmap.size() * sizeof(decltype(heightmap)::type), 1, f);
-    fclose(f);
+    auto write_hm = [this](const String &name, const auto &v, auto sz)
+    {
+        auto fn = filename;
+        fn += name;
+        auto f = primitives::filesystem::fopen(fn, "wb");
+        if (f == nullptr)
+            return;
+        fwrite(&v(0, 0), v.size() * sz, 1, f);
+        fclose(f);
+    };
+
+    write_hm(".heightmap16.r16", heightmap, sizeof(decltype(heightmap)::type));
+    write_hm(".heightmap32.r32", heightmap32, sizeof(decltype(heightmap32)::type));
 }
 
 void mmp::writeHeightMapSegmented()

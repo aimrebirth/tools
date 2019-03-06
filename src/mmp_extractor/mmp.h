@@ -180,6 +180,7 @@ struct mmp
     double scale16 = 0;
     double scale = 0;
     mat<uint16_t> heightmap;
+    mat<float> heightmap32;
     //mat<uint16_t> heightmap_segmented;
     mat<uint32_t> texmap;
     mat<uint32_t> texmap_colored;

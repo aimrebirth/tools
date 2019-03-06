@@ -68,5 +68,5 @@ void build(Solution &s)
     String arch = "x64";
     if (s.Settings.TargetOS.Arch == ArchType::x86)
         arch = "x86";
-    mod_converter += sw::LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-md.lib"));
+    mod_converter += LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-md.lib"));
 }
