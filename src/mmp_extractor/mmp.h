@@ -21,6 +21,7 @@
 #include <mat.h>
 #include <types.h>
 
+#include <opencv2/highgui.hpp>
 #include <primitives/filesystem.h>
 
 #include <map>

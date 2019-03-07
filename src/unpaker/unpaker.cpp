@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        cout << "Usage: " << argv[0] << " archive.pak" << "\n";
+        cerr << "Usage: " << argv[0] << " archive.pak" << "\n";
         return 1;
     }
     unpak(argv[1]);

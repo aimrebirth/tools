@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef _WIN64
+#error "not available in 64-bit mode"
+#endif
+
 #define _BYTE uint8_t
 #define _WORD uint16_t
 #define _DWORD uint32_t

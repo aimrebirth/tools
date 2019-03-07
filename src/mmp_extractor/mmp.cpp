@@ -18,16 +18,19 @@
 
 #define NOMINMAX
 
-#include <opencv2/highgui.hpp>
 #include "mmp.h"
 
 #include <primitives/filesystem.h>
+#include <primitives/exceptions.h>
+#include <primitives/sw/cl.h>
 
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+
+cl::list<int> extend("e", cl::desc("try to extend map for ue4"), cl::value_desc("<quads per section> <sections per component>"), cl::multi_val(2));
 
 void water_segment::load(const buffer &b)
 {
@@ -139,6 +142,11 @@ void mmp::loadTextureNames(const path &fn)
     }
 }
 
+static bool is_power_of_two(int x)
+{
+    return x != 0 && (x & (x - 1)) == 0;
+}
+
 void mmp::process()
 {
     for (auto &s : segments)
@@ -172,8 +180,47 @@ void mmp::process()
         alpha_maps[t.second.g] = mat<uint32_t>(h.width, h.length);
     }
 
+    auto wnew = h.width;
+    auto lnew = h.length;
+
+    if (extend.empty())
+    {
+        // defaults
+        //extend.push_back(63);
+        //extend.push_back(4);
+        extend.push_back(127);
+        extend.push_back(1);
+    }
+
+    if (!extend.empty())
+    {
+        int quads_per_sect = extend[0] + 1;
+        int sections_per_comp = extend[1];
+
+        if (!is_power_of_two(quads_per_sect))
+            throw SW_RUNTIME_ERROR("quads per section must be 2^n-1");
+        if (sections_per_comp != 1 && sections_per_comp != 4)
+            throw SW_RUNTIME_ERROR("sections per component must be 1 or 4");
+
+        if (sections_per_comp > 1)
+            sections_per_comp = sqrt(sections_per_comp);
+
+        double mult = quads_per_sect * sections_per_comp - sections_per_comp;
+        int wcomps = ceil(h.width / mult);
+        int lcomps = ceil(h.length / mult);
+
+        if (wcomps * lcomps > 1024)
+        {
+            throw SW_RUNTIME_ERROR("ue4 allows maximum 1024 components while you have: " +
+                std::to_string(wcomps) + "x" + std::to_string(lcomps) + " = " + std::to_string(wcomps * lcomps) + " components");
+        }
+
+        wnew = wcomps * mult + 1;
+        lnew = lcomps * mult + 1;
+    }
+
     // merge
-    heightmap = decltype(heightmap)(h.width, h.length);
+    heightmap = decltype(heightmap)(wnew, lnew);
     heightmap32 = decltype(heightmap32)(h.width, h.length);
     //heightmap_segmented = decltype(heightmap)(segment::len, h.length);
     texmap = decltype(texmap)(h.width, h.length);
@@ -226,7 +273,9 @@ void mmp::process()
 
     alpha_maps.erase(0);
     scale16 = 0xffff / (h_max - h_min);
-    const int unreal_koef = 51200; // 51300?
+    // 51300 = -25600..25600? or 51200 = -25500..25600
+    // seems like 51300
+    const int unreal_koef = 51300;
     const int aim_koef = 10;
     const double diff = h_max - h_min;
     scale = aim_koef * diff / unreal_koef;
@@ -297,6 +346,40 @@ void mmp::writeTexturesList()
     }
 }
 
+static cv::Mat toCvMat(const mat<uint16_t> &in)
+{
+    int cols = in.getWidth();
+    int rows = in.getHeight();
+    cv::Mat m(in.getHeight(), in.getWidth(), CV_16UC1);
+    for (int row = 0; row < rows; row++)
+    {
+        for (int col = 0; col < cols; col++)
+        {
+            auto &o = in(row * cols + col);
+            m.ptr<uint16_t>(row)[col] = o;
+        }
+    }
+    return m;
+}
+
+static cv::Mat toCvMat(const mat<uint32_t> &in)
+{
+    int cols = in.getWidth();
+    int rows = in.getHeight();
+    cv::Mat m(in.getHeight(), in.getWidth(), CV_8UC3);
+    for (int row = 0; row < rows; row++)
+    {
+        for (int col = 0; col < cols; col++)
+        {
+            auto &o = in(row * cols + col);
+            m.ptr<uint8_t>(row)[3 * col + 2] = (o >> 16) & 0xFF;
+            m.ptr<uint8_t>(row)[3 * col + 1] = (o >> 8) & 0xFF;
+            m.ptr<uint8_t>(row)[3 * col + 0] = (o >> 0) & 0xFF;
+        }
+    }
+    return m;
+}
+
 void mmp::writeHeightMap()
 {
     auto write_hm = [this](const String &name, const auto &v, auto sz)
@@ -310,7 +393,9 @@ void mmp::writeHeightMap()
         fclose(f);
     };
 
-    write_hm(".heightmap16.r16", heightmap, sizeof(decltype(heightmap)::type));
+    cv::imwrite((path(filename) += ".heightmap16.png").string(), toCvMat(heightmap));
+
+    //write_hm(".heightmap16.r16", heightmap, sizeof(decltype(heightmap)::type));
     write_hm(".heightmap32.r32", heightmap32, sizeof(decltype(heightmap32)::type));
 }
 
@@ -386,7 +471,7 @@ void mmp::writeSplitColormap() const
         for (auto &pixel : m)
             pixel = pixel == color ? 0x0000FF00 : 0;
         std::cout << "\r[" << i << "/" << colors.size() << "] Processing color " << ss.str();
-        cv::imwrite(fn.u8string(), cv::Mat(m));
+        cv::imwrite(fn.u8string(), toCvMat(m));
     }
 }
 

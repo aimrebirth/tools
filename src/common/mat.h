@@ -114,40 +114,10 @@ public:
         return m;
     }
 
-#ifdef HAVE_OPENCV_IMGCODECS
-    operator cv::Mat() const
-    {
-        return flip().toCvMat();
-    }
-#endif
-
 private:
     std::vector<T> data;
     int width;
     int height;
-
-#ifdef HAVE_OPENCV_IMGCODECS
-    cv::Mat toCvMat() const
-    {
-        if constexpr (std::is_same_v<T, uint32_t>)
-        {
-            int cols = width;
-            int rows = height;
-            cv::Mat m(height, width, CV_8UC3);
-            for (int row = 0; row < rows; row++)
-            {
-                for (int col = 0; col < cols; col++)
-                {
-                    auto &o = operator()(row * cols + col);
-                    m.ptr<uint8_t>(row)[3 * col + 2] = (o >> 16) & 0xFF;
-                    m.ptr<uint8_t>(row)[3 * col + 1] = (o >> 8) & 0xFF;
-                    m.ptr<uint8_t>(row)[3 * col + 0] = (o >> 0) & 0xFF;
-                }
-            }
-            return m;
-        }
-    }
-#endif
 };
 
 inline void write_mat_bmp(const path &filename, int width, int height, int bits, const uint8_t *b, size_t s)

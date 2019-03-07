@@ -42,7 +42,8 @@ void build(Solution &s)
     add_exe_with_common("tm_converter");
     add_exe("name_generator");
     add_exe_with_common("save_loader");
-    add_exe("unpaker");
+    if (s.Settings.TargetOS.Arch == ArchType::x86)
+        add_exe("unpaker"); // 32-bit only
 
     // not so simple targets
     auto &script2txt = tools.addStaticLibrary("script2txt");

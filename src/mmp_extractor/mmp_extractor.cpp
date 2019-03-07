@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <opencv2/highgui.hpp>
 #include "mmp.h"
 
 #include <primitives/filesystem.h>
@@ -37,10 +36,11 @@ int main(int argc, char *argv[])
     cl::opt<path> p(cl::Positional, cl::desc("<file.mmp or directory>"), cl::Required);
     cl::opt<path> texture_ids(cl::Positional, cl::desc("<path to texture_ids.txt>"));
     cl::opt<bool> split_colormap("split_colormap", cl::desc("split colormap into separate images"));
+    cl::opt<bool> tex_al("texture_alphamaps", cl::desc("write texture alpha maps"));
 
     cl::ParseCommandLineOptions(argc, argv);
 
-    auto func = [&texture_ids, &split_colormap](auto &p)
+    auto func = [&texture_ids, &split_colormap, &tex_al](auto &p)
     {
         mmp m;
         if (!texture_ids.empty())
@@ -52,7 +52,8 @@ int main(int argc, char *argv[])
         m.writeHeightMap();
         //m.writeHeightMapSegmented();
         m.writeTextureMap();
-        m.writeTextureAlphaMaps();
+        if (tex_al)
+            m.writeTextureAlphaMaps();
         m.writeTextureMapColored();
         m.writeColorMap();
         m.writeShadowMap();
