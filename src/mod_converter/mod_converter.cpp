@@ -17,7 +17,6 @@
  */
 
 #include <buffer.h>
-#include "fbx.h"
 #include "model.h"
 
 #include <primitives/filesystem.h>
@@ -41,6 +40,7 @@ bool silent = false;
 bool printMaxPolygonBlock = false;
 
 cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files>"), cl::value_desc("file or directory"), cl::Required);
+cl::opt<bool> all_formats("a", cl::desc("All formats"));
 
 yaml root;
 cl::opt<bool> stats("i", cl::desc("Gather information from (models)"));
@@ -84,15 +84,12 @@ void convert_model(const path &fn)
 
 int main(int argc, char *argv[])
 {
-    cl::opt<bool> af("a", cl::desc("All formats"));
     cl::opt<bool> mr("mr", cl::desc("AIM Racing MOD file"));
 
     cl::ParseCommandLineOptions(argc, argv);
 
     if (mr)
         gameType = GameType::AimR;
-    if (af)
-        all_formats = true;
 
     if (fs::is_regular_file(p))
         convert_model(p);

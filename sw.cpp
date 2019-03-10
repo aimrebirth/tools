@@ -55,7 +55,10 @@ void build(Solution &s)
     auto &model = tools.addStaticLibrary("model");
     model.CPPVersion = CPPLanguageStandard::CPP17;
     model.setRootDirectory("src/model");
-    model.Public += common, "org.sw.demo.unicode.icu.i18n-*"_dep;
+    model.Public += common,
+        "org.sw.demo.unicode.icu.i18n"_dep,
+        "org.sw.demo.eigen"_dep
+        ;
 
     add_exe("mod_reader") += model;
 

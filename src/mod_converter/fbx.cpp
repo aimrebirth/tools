@@ -1,15 +1,18 @@
-#include "fbx.h"
-
 #include "model.h"
 
 #include <boost/algorithm/string.hpp>
 #include <primitives/string.h>
+#include <primitives/templates.h>
+#include <primitives/sw/cl.h>
 #include <fbxsdk.h>
 
 #ifdef IOS_REF
 #undef  IOS_REF
 #define IOS_REF (*(pManager->GetIOSettings()))
 #endif
+
+cl::opt<bool> text_fbx("t", cl::desc("Produce ascii .fbx"));
+extern cl::opt<bool> all_formats;
 
 bool CreateScene(const model &m, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene);
 
@@ -38,6 +41,10 @@ void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
         FBXSDK_printf("Error: Unable to create FBX scene!\n");
         exit(1);
     }
+
+    pScene->GetSceneInfo()->LastSaved_ApplicationVendor.Set("lzwdgc's");
+    pScene->GetSceneInfo()->LastSaved_ApplicationName.Set("mod_converter");
+    pScene->GetSceneInfo()->LastSaved_ApplicationVersion.Set(version().c_str());
 }
 
 void DestroySdkObjects(FbxManager* pManager, bool pExitStatus)
@@ -57,7 +64,9 @@ bool SaveScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename,
     // Create an exporter.
     FbxExporter* lExporter = FbxExporter::Create(pManager, "");
 
-    auto pFileFormat = pManager->GetIOPluginRegistry()->GetNativeWriterFormat(); // 1 for ascii
+    auto pFileFormat = pManager->GetIOPluginRegistry()->GetNativeWriterFormat();
+    if (text_fbx)
+        pFileFormat = 1; // 1 for ascii
     FbxString lDesc = pManager->GetIOPluginRegistry()->GetWriterFormatDescription(pFileFormat);
 
     // Set the export states. By default, the export states are always set to
@@ -210,12 +219,15 @@ void model::printFbx(const std::string &fn) const
     // Prepare the FBX SDK.
     InitializeSdkObjects(lSdkManager, lScene);
 
+    //FbxAxisSystem::MayaZUp.ConvertScene(lScene);
+
     // Create the scene.
     CreateScene(*this, fn, lSdkManager, lScene);
 
-    SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str());
-    if (all_formats)
-        SaveScene(lSdkManager, lScene, (fn + "_blender.fbx").c_str(), true);
+    SaveScene(lSdkManager, lScene, (fn + ".fbx").c_str());
+    //SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str());
+    //if (all_formats)
+        //SaveScene(lSdkManager, lScene, (fn + "_blender.fbx").c_str(), true);
 
     // Destroy all objects created by the FBX SDK.
     DestroySdkObjects(lSdkManager, true);
@@ -230,7 +242,7 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
     auto create_socket_named = [&pScene](const std::string &name)
     {
         FbxNode *socket = FbxNode::Create(pScene, ("SOCKET_" + name).c_str());
-        auto n = FbxNull::Create(socket, "");
+        auto n = FbxNull::Create(pScene, "");
         socket->SetNodeAttribute(n);
         pScene->GetRootNode()->AddChild(socket);
         return socket;
@@ -242,24 +254,24 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         for (auto &v : b.vertices)
         {
             FbxVector4 x;
-            x.Set(v.coordinates.z * scale_mult, v.coordinates.y * scale_mult, v.coordinates.x * scale_mult, v.coordinates.w);
+            x.Set(v.coordinates.x * scale_mult(), v.coordinates.y * scale_mult(), v.coordinates.z * scale_mult(), v.coordinates.w);
             c += x;
         }
         c /= b.vertices.size();
 
         auto s = create_socket_named(name);
+        // here we must mirror 'first' number (original x)
+        // it depends on what order was during loading
         if (mirror_x)
-            c.mData[2] = -c.mData[2];
+            c.mData[get_x_coordinate_id()] = -c.mData[get_x_coordinate_id()];
         s->LclTranslation.Set(c);
+        //s->LclScaling.Set(FbxDouble3(scale_mult(), scale_mult(), scale_mult()));
     };
 
-    //std::map<std::string,
     int engine_id = 0;
     int fx_id = 0;
     for (auto &b : model.blocks)
     {
-        // b.h.name == "SHAPE" - collision object
-
         //
         if (b.isEngineFx())
         {
@@ -295,12 +307,12 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         const auto block_name = b.h.name;
 
         // mesh
-        auto m = FbxMesh::Create(pSdkManager, block_name.c_str());
+        auto m = FbxMesh::Create(pScene, block_name.c_str());
 
         // node
         FbxNode *node = FbxNode::Create(pScene, block_name.c_str());
         node->SetNodeAttribute(m);
-        //node->SetShadingMode(FbxNode::eTextureShading); // change?! was texture sh
+        node->SetShadingMode(FbxNode::eFullShading); // change?! was texture sh
 
         // vertices
         m->InitControlPoints(b.vertices.size());
@@ -324,13 +336,11 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         auto s_uv = create_uv(gSpecularElementName);
 
         // add vertices, normals, uvs
-        int i = 0;
-        for (auto &v : b.vertices)
+        for (const auto &[i,v] : enumerate(b.vertices))
         {
-            FbxVector4 x;
-            x.Set(v.coordinates.z * scale_mult, v.coordinates.x * scale_mult, v.coordinates.y * scale_mult, v.coordinates.w);
-            m->SetControlPointAt(x, i++);
-            normal->GetDirectArray().Add(FbxVector4(v.normal.z, -v.normal.x, v.normal.y));
+            FbxVector4 x(v.coordinates.x * scale_mult(), v.coordinates.y * scale_mult(), v.coordinates.z * scale_mult(), v.coordinates.w);
+            FbxVector4 n(v.normal.x, v.normal.y, v.normal.z);
+            m->SetControlPointAt(x, n, i);
 
             float f;
             auto uc = modf(fabs(v.texture_coordinates.u), &f);
@@ -346,10 +356,15 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
             // Set the control point indices of the bottom side of the pyramid
             m->BeginPolygon();
             m->AddPolygon(v.x);
-            m->AddPolygon(v.z);
             m->AddPolygon(v.y);
+            m->AddPolygon(v.z);
             m->EndPolygon();
         }
+
+        m->BuildMeshEdgeArray();
+
+        //if (m->GenerateNormals(true))
+            //throw SW_RUNTIME_ERROR("Cannot generate normals");
 
         // mats
         auto lMaterial = node->GetSrcObject<FbxSurfacePhong>(0);
@@ -393,7 +408,7 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
             lMaterial->DiffuseFactor.Set(b.mat.diffuse.r);
 
             //lMaterial->TransparencyFactor.Set(0.4);
-            //lMaterial->ShadingModel.Set(lShadingName);
+            lMaterial->ShadingModel.Set(lShadingName);
             //lMaterial->Shininess.Set(0.5);
 
             lMaterial->Specular.Set(lSpecularColor);
@@ -442,8 +457,12 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         //convert soft/hard edge info to smoothing group info
         lGeometryConverter.ComputePolygonSmoothingFromEdgeSmoothing(m);
 
+        // scale
+        //node->LclScaling.Set(FbxDouble3(scale_mult(), scale_mult(), scale_mult()));
+
         //
         pScene->GetRootNode()->AddChild(node);
     }
+
     return true;
 }

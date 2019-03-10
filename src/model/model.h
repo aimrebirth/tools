@@ -20,13 +20,13 @@
 
 #include "types.h"
 
+//#include <Eigen/Dense>
 #include <primitives/yaml.h>
 
 #include <stdint.h>
 #include <string>
 #include <vector>
 
-const float scale_mult = 30.f;
 const std::string texture_extension = ".TM.bmp";
 
 class buffer;
@@ -296,3 +296,6 @@ struct model
     void printFbx(const std::string &fn) const;
     void save(yaml &root) const;
 };
+
+float scale_mult();
+int get_x_coordinate_id();

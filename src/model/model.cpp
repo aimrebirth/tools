@@ -31,11 +31,13 @@
 //#include <Eigen/Dense>
 
 #include <boost/algorithm/string.hpp>
-
+#include <primitives/sw/cl.h>
 #include <unicode/translit.h>
 #include <unicode/errorcode.h>
 
 #include <iostream>
+
+cl::opt<float> scale_multiplier("s", cl::desc("Model scale multiplier"), cl::init(1.0f));
 
 template <typename T>
 inline bool replace_all(T &str, const T &from, const T &to)
@@ -58,6 +60,11 @@ inline bool replace_all(std::string &str, const std::string &from, const std::st
 
 std::string version();
 
+float scale_mult()
+{
+    return scale_multiplier;
+}
+
 // UE does not recognize russian strings in .obj
 // what about fbx?
 // TODO: what to do with signs: soft sign -> ' ?
@@ -77,19 +84,71 @@ std::string translate(const std::string &s)
     return s3;
 }
 
+enum class AxisSystem
+{
+    MayaYUpZFrontRH,
+    AIM,
+    UE4 = AIM,
+};
+
+AxisSystem AS = AxisSystem::AIM;
+
+int get_x_coordinate_id()
+{
+    switch (AS)
+    {
+    case AxisSystem::MayaYUpZFrontRH:
+        return 0;
+    case AxisSystem::AIM:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 template <typename T>
 void aim_vector3<T>::load(const buffer &b)
 {
-    READ(b, base::x);
-    x = -x; // fix ue4 left hand coordinate system
-    READ(b, base::z);
-    READ(b, base::y);
+    /*
+    Our coord system:
+
+        ^ z
+        |
+         ---> y
+       /
+      v x
+
+    AIM Coordinates:
+    1st number: +Y (left) (or -Y (right)?)
+    2nd number: +X (front) - 100% sure
+    3rd number: +Z (up) - 100% sure
+
+    This is Z UP, LH axis system.
+
+    Also see https://twitter.com/FreyaHolmer/status/644881436982575104
+    */
+
+    switch (AS)
+    {
+    case AxisSystem::MayaYUpZFrontRH:
+        // MAYA Y UP, Z FRONT (RH)
+        READ(b, base::x);
+        READ(b, base::z);
+        READ(b, base::y);
+        break;
+    case AxisSystem::AIM:
+        // AIM viewer, UE4, Z UP (LH)
+        READ(b, base::y);
+        READ(b, base::x);
+        READ(b, base::z);
+        break;
+    default:
+        throw SW_RUNTIME_ERROR("Unknown Axis System");
+    }
 
     /*
-    // direction will match to m viewer
-    READ(b, base::y);
-    READ(b, base::x);
-    READ(b, base::z);
+    // Y UP, X FRONT (LH?) (blender accepts such fbx)
+    z,x,y
     */
 }
 
@@ -110,7 +169,8 @@ std::string aim_vector4::print() const
 void vertex::load(const buffer &b, uint32_t flags)
 {
     coordinates.load(b, flags);
-    READ(b, normal);
+    normal.load(b);
+    //READ(b, normal);
     READ(b, texture_coordinates);
 }
 
@@ -129,18 +189,18 @@ std::string vertex::printVertex(bool rotate_x_90) const
     {
         // that rotation is really equivalent to exchanging y and z and z sign
         s = "v " +
-            std::to_string(-coordinates.x * scale_mult) + " " +
-            std::to_string(coordinates.z * scale_mult) + " " +
-            std::to_string(coordinates.y * scale_mult) + " " +
+            std::to_string(-coordinates.x * scale_mult()) + " " +
+            std::to_string(coordinates.z * scale_mult()) + " " +
+            std::to_string(coordinates.y * scale_mult()) + " " +
             std::to_string(coordinates.w)
             ;
     }
     else
     {
         s = "v " +
-            std::to_string(-coordinates.x * scale_mult) + " " +
-            std::to_string(coordinates.y * scale_mult) + " " +
-            std::to_string(-coordinates.z * scale_mult) + " " +
+            std::to_string(-coordinates.x * scale_mult()) + " " +
+            std::to_string(coordinates.y * scale_mult()) + " " +
+            std::to_string(-coordinates.z * scale_mult()) + " " +
             std::to_string(coordinates.w)
             ;
     }
@@ -440,7 +500,7 @@ void block::loadPayload(const buffer &data)
         v.load(data, flags);
     faces.resize(n_triangles);
     for (auto &t : faces)
-        READ(data, t);
+        t.load(data);
 
     // animations
     for (auto &a : animations)
@@ -513,6 +573,10 @@ bool block::canPrint() const
 
     // particles
     if (h.type == BlockType::ParticleEmitter)
+        return false;
+
+    // collision object
+    if (h.name == "SHAPE")
         return false;
 
     // default

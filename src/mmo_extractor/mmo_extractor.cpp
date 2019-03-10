@@ -122,8 +122,10 @@ void write_mmo(Storage *storage, const mmo_storage &s)
 
     if (map_id == 0)
     {
-        printf("error: this map is not found in the database\n");
-        return;
+        auto m = storage->addMap();
+        m->text_id = map_name;
+        map_id = m->getId();
+        //throw SW_RUNTIME_ERROR("error: map '" + map_name + "' is not found in the database");
     }
 
     auto this_map = storage->maps[map_id];
@@ -312,7 +314,13 @@ int main(int argc, char *argv[])
     }
     else
     {
+        bool e = fs::exists(db_path);
         auto storage = initStorage(db_path.u8string());
+        if (!e)
+        {
+            storage->create();
+            storage->save();
+        }
         storage->load();
         action([&storage](const path &, const auto &m) {write_mmo(storage.get(), m); });
         if (inserted_all)
