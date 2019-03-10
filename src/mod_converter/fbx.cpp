@@ -219,6 +219,7 @@ void model::printFbx(const std::string &fn) const
     // Prepare the FBX SDK.
     InitializeSdkObjects(lSdkManager, lScene);
 
+    // default is ???
     //FbxAxisSystem::MayaZUp.ConvertScene(lScene);
 
     // Create the scene.

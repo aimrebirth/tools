@@ -84,21 +84,32 @@ std::string translate(const std::string &s)
     return s3;
 }
 
-enum class AxisSystem
+enum AxisSystem
 {
     MayaYUpZFrontRH,
+    Windows3dViewer = MayaYUpZFrontRH,
+
     AIM,
-    UE4 = AIM,
+    UE4 = AIM, // Do not use 'Convert scene' during UE4 import!
+
+    ax_aim = AIM,
+    ax_ue4,
+    ax_maya_y = MayaYUpZFrontRH,
+    ax_win_3d_viewer,
 };
 
-AxisSystem AS = AxisSystem::AIM;
+cl::opt<AxisSystem> AS(cl::desc("Choose axis system:"),
+    cl::values(
+        clEnumVal(ax_ue4, "Original AIM or UE4 axis system"),
+        clEnumVal(ax_maya_y, "Default MAYA Y-Up Z-Front or Windows 3d Viewer axis system")
+    )
+    , cl::init(AxisSystem::UE4)
+);
 
 int get_x_coordinate_id()
 {
     switch (AS)
     {
-    case AxisSystem::MayaYUpZFrontRH:
-        return 0;
     case AxisSystem::AIM:
         return 1;
     default:
@@ -131,13 +142,13 @@ void aim_vector3<T>::load(const buffer &b)
     switch (AS)
     {
     case AxisSystem::MayaYUpZFrontRH:
-        // MAYA Y UP, Z FRONT (RH)
+        // Y UP, Z FRONT (RH)
         READ(b, base::x);
         READ(b, base::z);
         READ(b, base::y);
         break;
     case AxisSystem::AIM:
-        // AIM viewer, UE4, Z UP (LH)
+        // Z UP, X FRONT (LH)
         READ(b, base::y);
         READ(b, base::x);
         READ(b, base::z);
