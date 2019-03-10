@@ -93,9 +93,9 @@ enum AxisSystem
     UE4 = AIM, // Do not use 'Convert scene' during UE4 import!
 
     ax_aim = AIM,
-    ax_ue4,
+    ax_ue4 = ax_aim,
     ax_maya_y = MayaYUpZFrontRH,
-    ax_win_3d_viewer,
+    ax_win_3d_viewer = ax_maya_y,
 };
 
 cl::opt<AxisSystem> AS(cl::desc("Choose axis system:"),

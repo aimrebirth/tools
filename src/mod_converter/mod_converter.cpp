@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
         }
     }
     else
-        throw std::runtime_error("Bad fs object");
+        throw std::runtime_error("No such file or directory: " + normalize_path(p));
 
     if (stats)
     {
