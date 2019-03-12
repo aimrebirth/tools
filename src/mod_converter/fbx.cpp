@@ -346,9 +346,9 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
             float f;
             auto uc = modf(fabs(v.texture_coordinates.u), &f);
             auto vc = modf(fabs(v.texture_coordinates.v), &f);
-            d_uv->GetDirectArray().Add(FbxVector2(uc, 1 - vc));
-            a_uv->GetDirectArray().Add(FbxVector2(uc, 1 - vc));
-            s_uv->GetDirectArray().Add(FbxVector2(uc, 1 - vc));
+            d_uv->GetDirectArray().Add(FbxVector2(uc, vc));
+            a_uv->GetDirectArray().Add(FbxVector2(uc, vc));
+            s_uv->GetDirectArray().Add(FbxVector2(uc, vc));
         }
 
         // faces

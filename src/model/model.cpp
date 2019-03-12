@@ -117,21 +117,20 @@ int get_x_coordinate_id()
     }
 }
 
-template <typename T>
-void aim_vector3<T>::load(const buffer &b)
+static void load_translated(aim_vector3<float> &v, const buffer &b)
 {
     /*
     Our coord system:
 
-        ^ z
-        |
-         ---> y
-       /
-      v x
+    ^ z
+    |
+    ---> y
+    /
+    v x
 
     AIM Coordinates:
-    1st number: +Y (left) (or -Y (right)?)
-    2nd number: +X (front) - 100% sure
+    1st number: +Y (left) (or -Y (right)?) (-Y?)
+    2nd number: +X (front) - 100% sure (-X?)
     3rd number: +Z (up) - 100% sure
 
     This is Z UP, LH axis system.
@@ -143,15 +142,15 @@ void aim_vector3<T>::load(const buffer &b)
     {
     case AxisSystem::MayaYUpZFrontRH:
         // Y UP, Z FRONT (RH)
-        READ(b, base::x);
-        READ(b, base::z);
-        READ(b, base::y);
+        READ(b, v.x);
+        READ(b, v.z);
+        READ(b, v.y);
         break;
     case AxisSystem::AIM:
         // Z UP, X FRONT (LH)
-        READ(b, base::y);
-        READ(b, base::x);
-        READ(b, base::z);
+        READ(b, v.y);
+        READ(b, v.x);
+        READ(b, v.z);
         break;
     default:
         throw SW_RUNTIME_ERROR("Unknown Axis System");
@@ -165,9 +164,12 @@ void aim_vector3<T>::load(const buffer &b)
 
 void aim_vector4::load(const buffer &b, uint32_t flags)
 {
-    base::load(b);
-    if (flags & F_USE_W_COORDINATE)
-        READ(b, w);
+    load_translated(*this, b);
+    if (flags & F_WIND_TRANSFORM)
+    {
+        float f;
+        READ(b, f);
+    }
 }
 
 std::string aim_vector4::print() const
@@ -177,54 +179,55 @@ std::string aim_vector4::print() const
     return s;
 }
 
+void vertex_normal::load(const buffer &b)
+{
+    load_translated(*this, b);
+}
+
+void uv::load(const buffer &b)
+{
+    READ(b, u);
+    READ(b, v);
+    v = 1 - v;
+}
+
 void vertex::load(const buffer &b, uint32_t flags)
 {
     coordinates.load(b, flags);
     normal.load(b);
-    //READ(b, normal);
-    READ(b, texture_coordinates);
+    texture_coordinates.load(b);
 }
 
-std::string vertex::printVertex(bool rotate_x_90) const
+void face::load(const buffer &b)
 {
-    // rotate by 90 grad over Ox axis
-/*#define M_PI_2     1.57079632679489661923
-    Eigen::Vector3f x;
-    x << -coordinates.x, coordinates.y, -coordinates.z;
+    READ(b, x);
+    READ(b, y);
+    READ(b, z);
+}
 
-    Eigen::AngleAxis<float> rx(M_PI_2, Eigen::Vector3f(1, 0, 0));
-    auto x2 = rx * x;*/
+static String print_float(double v)
+{
+    char buf[20];
+    snprintf(buf, sizeof(buf), "%.10f", v);
+    return buf;
+};
 
+std::string vertex::printVertex() const
+{
     std::string s;
-    if (rotate_x_90)
-    {
-        // that rotation is really equivalent to exchanging y and z and z sign
-        s = "v " +
-            std::to_string(-coordinates.x * scale_mult()) + " " +
-            std::to_string(coordinates.z * scale_mult()) + " " +
-            std::to_string(coordinates.y * scale_mult()) + " " +
-            std::to_string(coordinates.w)
-            ;
-    }
-    else
-    {
-        s = "v " +
-            std::to_string(-coordinates.x * scale_mult()) + " " +
-            std::to_string(coordinates.y * scale_mult()) + " " +
-            std::to_string(-coordinates.z * scale_mult()) + " " +
-            std::to_string(coordinates.w)
-            ;
-    }
+    s = "v " +
+        print_float(coordinates.x * scale_mult())
+        + " " + print_float(coordinates.y * scale_mult())
+        + " " + print_float(coordinates.z * scale_mult())
+        //+ " " + print_float(coordinates.w)
+        ;
     return s;
 }
 
-std::string vertex::printNormal(bool rotate_x_90) const
+std::string vertex::printNormal() const
 {
     std::string s;
-    if (rotate_x_90)
-        s = "vn " + std::to_string(-normal.x) + " " + std::to_string(-normal.z) + " " + std::to_string(normal.y);
-    else
-        s = "vn " + std::to_string(-normal.x) + " " + std::to_string(normal.y) + " " + std::to_string(-normal.z);
+    s = "vn " + print_float(normal.x) + " " + print_float(normal.y) + " " + print_float(normal.z);
     return s;
 }
 
@@ -234,7 +237,7 @@ std::string vertex::printTex() const
     float i;
     auto u = modf(fabs(texture_coordinates.u), &i);
     auto v = modf(fabs(texture_coordinates.v), &i);
-    s = "vt " + std::to_string(u) + " " + std::to_string(1 - v);
+    s = "vt " + print_float(u) + " " + print_float(v);
     return s;
 }
 
@@ -258,7 +261,7 @@ void damage_model::load(const buffer &b)
     for (auto &v : vertices)
         v.load(b, flags);
     for (auto &t : faces)
-        READ(b, t);
+        t.load(b);
 }
 
 std::string mat_color::print() const
@@ -350,7 +353,7 @@ std::string block::printMtl() const
     return s;
 }
 
-std::string block::printObj(int group_offset, bool rotate_x_90) const
+std::string block::printObj(int group_offset) const
 {
     std::string s;
     s += "usemtl " + h.name + "\n";
@@ -359,16 +362,20 @@ std::string block::printObj(int group_offset, bool rotate_x_90) const
     s += "s 1\n"; // still unk how to use
     s += "\n";
 
+    s += "# " + std::to_string(vertices.size()) + " vertices\n";
     for (auto &v : vertices)
-        s += v.printVertex(rotate_x_90) + "\n";
+        s += v.printVertex() + "\n";
     s += "\n";
+    s += "# " + std::to_string(vertices.size()) + " vertex normals\n";
     for (auto &v : vertices)
-        s += v.printNormal(rotate_x_90) + "\n";
+        s += v.printNormal() + "\n";
     s += "\n";
+    s += "# " + std::to_string(vertices.size()) + " texture coords\n";
     for (auto &v : vertices)
         s += v.printTex() + "\n";
     s += "\n";
 
+    s += "# " + std::to_string(vertices.size()) + " faces\n";
     for (auto &t : faces)
     {
         auto x = std::to_string(t.x + 1 + group_offset);
@@ -502,7 +509,7 @@ void block::loadPayload(const buffer &data)
     READ(data, rot);
     READ(data, flags);
     uint32_t n_vertex;
-    uint32_t n_faces; // ??? edges? polygons?
+    uint32_t n_faces; // ??? edges? polygons? triangles?
     READ(data, n_vertex);
     vertices.resize(n_vertex);
     READ(data, n_faces);
@@ -523,7 +530,7 @@ void block::loadPayload(const buffer &data)
     {
         n_faces *= 6; // 7
 
-        auto faces2 = faces;
+        decltype(faces) faces2;
         faces2.resize(n_faces / 3);
         for (auto &t : faces2)
             READ(data, t);
@@ -532,7 +539,7 @@ void block::loadPayload(const buffer &data)
     // maybe two winds anims?
     // small wind and big wind?
     if (triangles_mult_7 && !unk11 &&
-        ((flags & F_USE_W_COORDINATE) || flags == 0x112)
+        ((flags & F_WIND_TRANSFORM) || flags == 0x112)
         )
     {
         read_more_faces();
@@ -553,7 +560,7 @@ void block::loadPayload(const buffer &data)
         else
         {
             // unknown end of block
-            auto triangles2 = faces;
+            decltype(faces) triangles2;
             auto d = data.end() - data.index();
             triangles2.resize(d / sizeof(face));
             for (auto &t : triangles2)
@@ -655,7 +662,7 @@ void model::print(const std::string &fn) const
         o << "\n";
     };
 
-    auto print_obj = [&](const auto &n, bool rotate_x_90 = false)
+    auto print_obj = [&](const auto &n)
     {
         std::ofstream o(n);
         title(o);
@@ -667,7 +674,7 @@ void model::print(const std::string &fn) const
             if (!b.canPrint())
                 continue;
 
-            o << b.printObj(n_vert, rotate_x_90) << "\n";
+            o << b.printObj(n_vert) << "\n";
             n_vert += b.vertices.size();
         }
     };
@@ -678,8 +685,7 @@ void model::print(const std::string &fn) const
     for (auto &b : blocks)
         m << b.printMtl() << "\n";
 
-    print_obj(fn + "_fbx.obj");
-    print_obj(fn + "_ue4.obj", true);
+    print_obj(fn + ".obj");
 }
 
 void model::save(yaml &root) const

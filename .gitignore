@@ -2,6 +2,7 @@ win*
 build
 bin
 .cppan
+doc
 
 *.dll
 *.lnk

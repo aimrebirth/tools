@@ -33,7 +33,7 @@ class buffer;
 
 enum
 {
-    F_USE_W_COORDINATE  =   0x4, // F_USE_QUANTERNION/F_QUANTERNION?
+    F_WIND_TRANSFORM = 0x4,
 };
 
 enum class AdditionalParameter : uint32_t
@@ -83,8 +83,6 @@ template <typename T>
 struct aim_vector3 : vector3<T>
 {
     using base = vector3<T>;
-
-    void load(const buffer &b);
 };
 
 struct aim_vector4 : aim_vector3<float>
@@ -97,26 +95,36 @@ struct aim_vector4 : aim_vector3<float>
     void load(const buffer &b, uint32_t flags = 0);
 };
 
+struct vertex_normal : aim_vector3<float>
+{
+    void load(const buffer &b);
+};
+
 struct uv
 {
     float u;
     float v;
+
+    void load(const buffer &b);
 };
 
 struct vertex
 {
     aim_vector4 coordinates;
-    aim_vector3<float> normal;
+    vertex_normal normal;
     uv texture_coordinates;
 
     void load(const buffer &b, uint32_t flags);
 
-    std::string printVertex(bool rotate_x_90 = false) const;
-    std::string printNormal(bool rotate_x_90 = false) const;
+    std::string printVertex() const;
+    std::string printNormal() const;
     std::string printTex() const;
 };
 
-using face = aim_vector3<uint16_t>;
+struct face : aim_vector3<uint16_t>
+{
+    void load(const buffer &b);
+};
 
 struct animation
 {
@@ -279,7 +287,7 @@ struct block
     void loadPayload(const buffer &b);
 
     std::string printMtl() const;
-    std::string printObj(int group_offset, bool rotate_x_90 = false) const;
+    std::string printObj(int group_offset) const;
     block_info save(yaml &root) const;
 
     bool canPrint() const;
