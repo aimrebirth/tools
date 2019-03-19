@@ -14,10 +14,9 @@ This repository contains different tools for A.I.M. games.
 10. Save loader (dummy implementation).
 
 # Build instructions
-1. Download and install latest CMake http://www.cmake.org/download/
-1. Download and add to PATH latest CPPAN https://cppan.org/client/
+1. Download and add to PATH latest SW https://software-network.org/
 2. Clone this repository
 3. Open the source directory
-4. Execute in console `cppan --generate .`
+4. Execute in console `sw generate`
 5. Open generated solution file (Visual Studio solution file)
 6. Build the project
