@@ -26,6 +26,8 @@
 #include <iostream>
 #include <string>
 
+// for aim2 1.4.30
+
 int main(int argc, char *argv[])
 {
     cl::opt<path> p(cl::Positional, cl::desc("<file.sav or saves dir>"), cl::Required);

@@ -26,7 +26,16 @@ void weather::load(const buffer &b)
     READ(b, smoke_1);
     READ(b, smoke_3);
     READ(b, smokeType);
-    READ(b, unk2);
+    switch (smokeType)
+    {
+    case SmokeType::biexp:
+        READ(b, unk2);
+        b.skip(4);
+        break;
+    default:
+        READ(b, unk2);
+        break;
+    }
     READ_STRING(b, cloud_layer1);
     READ_STRING(b, cloud_layer2);
     READ(b, cloud_layer1_speed);
@@ -47,7 +56,16 @@ void weather::load(const buffer &b)
     READ(b, smoke_4);
     READ(b, slider_3);
     READ(b, slider_1);
-    READ(b, unk8);
+    switch (smokeType)
+    {
+    case SmokeType::biexp:
+        READ(b, unk8);
+        b.skip(-4);
+        break;
+    default:
+        READ(b, unk8);
+        break;
+    }
 }
 
 void weather_group::load(const buffer &b)

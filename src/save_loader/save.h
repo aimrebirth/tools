@@ -35,38 +35,13 @@ struct changes
     float money = 0;
     bool upgrade_equ_for_player = false;
 
-    void rewrite_mech_org(const buffer &b, std::string &org)
-    {
-        if (mech_org.empty())
-            return;
+    void rewrite_mech_org(const buffer &b, std::string &org);
+    void rewrite_money(const buffer &b);
+    void rewrite_upgrade_equ_for_player(const buffer &b, uint32_t value);
 
-        // setpos
-        out.seek(b.index());
-        out.skip(-0x20);
-        out.write(mech_org);
+};
 
-        org = mech_org;
-    }
-
-    void rewrite_money(const buffer &b)
-    {
-        if (money == 0)
-            return;
-        out.seek(b.index());
-        out.skip(-4);
-        out.write(money);
-    }
-
-    void rewrite_upgrade_equ_for_player(const buffer &b, uint32_t value)
-    {
-        if (!upgrade_equ_for_player)
-            return;
-        out.seek(b.index());
-        out.skip(-4);
-        out.write(value);
-    }
-
-} save_changes;
+extern changes save_changes;
 
 // common structs
 
@@ -75,11 +50,7 @@ struct int_variable
     std::string name;
     uint32_t value;
 
-    void load(const buffer &b)
-    {
-        READ_STRING(b, name);
-        READ(b, value);
-    }
+    void load(const buffer &b);
 };
 
 template <class T = uint32_t>
@@ -97,10 +68,7 @@ struct single_string
 {
     std::string name;
 
-    void load(const buffer &b)
-    {
-        READ_STRING(b, name);
-    }
+    void load(const buffer &b);
 };
 
 struct string_variable
@@ -108,11 +76,7 @@ struct string_variable
     std::string name;
     std::string value;
 
-    void load(const buffer &b)
-    {
-        READ_STRING(b, name);
-        READ_STRING(b, value);
-    }
+    void load(const buffer &b);
 };
 
 // segments
@@ -132,37 +96,21 @@ struct header_segment : public segment
     Common camera;
     uint32_t unk2[7];
 
-    void load(const buffer &b)
-    {
-        READ(b, unk1);
-        READ_STRING_N(b, save_name, 0x60);
-        READ(b, position);
-        READ_STRING_N(b, mmp_file, 0x110);
-        READ_STRING(b, location_name);
-        READ(b, camera);
-        READ(b, unk2);
-    }
+    void load(const buffer &b);
 };
 
 struct string_segment : public segment
 {
     std::string s;
 
-    void load(const buffer &b)
-    {
-        READ_PASCAL_STRING(b, s);
-    }
+    void load(const buffer &b);
 };
 
 struct screen_segment : public segment
 {
     mat<color> screenshot{ 128, 128 };
 
-    void load(const buffer &b)
-    {
-        b._read((uint8_t*)screenshot.getData().data(), screenshot.getBytesLength());
-        // rows should be swapped now: bottom is the first row etc.
-    }
+    void load(const buffer &b);
 };
 
 struct scripts_segment : public segment
@@ -172,23 +120,14 @@ struct scripts_segment : public segment
         std::string name;
         std::string path;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ_STRING_N(b, path, 0x80);
-        }
+        void load(const buffer &b);
     };
 
     struct script_entry_ext : public script_entry
     {
         uint32_t unk0[10];
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ(b, unk0);
-            READ_STRING_N(b, path, 0x80);
-        }
+        void load(const buffer &b);
     };
 
     std::vector<script_entry> bases;
@@ -197,14 +136,7 @@ struct scripts_segment : public segment
     std::vector<int_variable> int_variables;
     std::vector<string_variable> str_variables;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(bases);
-        b.read_vector(events);
-        b.read_vector(unk0);
-        b.read_vector(int_variables);
-        b.read_vector(str_variables);
-    }
+    void load(const buffer &b);
 };
 
 // todo
@@ -214,16 +146,45 @@ struct radar_segment : public segment
     {
         char unk0[0x1C4];
 
-        void load(const buffer &b)
-        {
-            READ(b, unk0);
-        }
+        void load(const buffer &b);
     };
 
     struct mechanoid5
     {
         std::string name;
         float unk0[6];
+
+        void load(const buffer &b);
+    };
+
+    std::vector<radar> radars;
+    uint16_t unk0;
+    std::vector<mechanoid5> mechanoid5s;
+    std::vector<single_string> orgs;
+
+    void load(const buffer &b);
+};
+
+struct gamedata_segment : public segment
+{
+    struct loc
+    {
+        float unk0;
+        uint32_t unk1[2];
+        std::string name;
+
+        void load(const buffer &b)
+        {
+            READ(b, unk0);
+            READ(b, unk1);
+            READ_STRING(b, name);
+        }
+    };
+
+    struct org
+    {
+        std::string name;
+        uint32_t unk0; // flags?
 
         void load(const buffer &b)
         {
@@ -232,26 +193,49 @@ struct radar_segment : public segment
         }
     };
 
-    std::vector<radar> radars;
-    uint16_t unk0;
-    std::vector<mechanoid5> mechanoid5s;
-    std::vector<single_string> orgs;
-
-    void load(const buffer &b)
+    struct unk0s
     {
-        b.read_vector(radars);
-        READ(b, unk0);
-        b.read_vector(mechanoid5s);
-        b.read_vector(orgs);
-    }
-};
+        float unk0[2];
+        uint32_t unk1;
 
-// todo
-struct gamedata_segment : public segment
-{
-    void load(const buffer &b)
+        void load(const buffer &b)
+        {
+            READ(b, unk0);
+            READ(b, unk1);
+        }
+    };
+
+    struct unk1s
     {
-    }
+        std::string name; // loc part?
+        char unk0[0xE0];
+        uint32_t unk1;
+        uint32_t unk2;
+        std::string location; // loc
+
+        void load(const buffer &b)
+        {
+            READ_STRING(b, name);
+            READ(b, unk0);
+            READ(b, unk1);
+            READ(b, unk2);
+            READ_STRING(b, location);
+        }
+    };
+
+    char unk00[0x5C];
+    std::vector<loc> locs;
+    std::vector<org> orgs;
+    uint32_t unk0;
+    std::vector<unk0s> unk1;
+    std::string base_name;
+    uint32_t unk2;
+    std::string user_name; // mech name?
+    std::vector<unk1s> unk3;
+    std::string icon; // clan icon?
+    uint32_t unk4;
+
+    void load(const buffer &b);
 };
 
 struct questlog_segment : public segment
@@ -263,13 +247,7 @@ struct questlog_segment : public segment
         uint32_t unk0[2];
         std::string endtime;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ_STRING(b, name_journal);
-            READ(b, unk0);
-            READ_STRING(b, endtime);
-        }
+        void load(const buffer &b);
     };
 
     uint32_t unk0;
@@ -278,13 +256,7 @@ struct questlog_segment : public segment
     std::vector<record> events;
     std::vector<string_variable> story_quests;
 
-    void load(const buffer &b)
-    {
-        READ(b, unk0);
-        b.read_vector(int_variables);
-        b.read_vector(events);
-        b.read_vector(story_quests);
-    }
+    void load(const buffer &b);
 };
 
 struct trade_segment : public segment
@@ -292,13 +264,14 @@ struct trade_segment : public segment
     struct Price
     {
         std::string tov_name;
-        float unk2[6];
+        uint32_t unk0;
+        float mass;
+        float price;
+        uint32_t notrade;
+        uint32_t type;
+        float unk1;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, tov_name);
-            READ(b, unk2);
-        }
+        void load(const buffer &b);
     };
 
     struct BuildingPrice
@@ -307,51 +280,36 @@ struct trade_segment : public segment
         std::vector<Price> prices;
         uint32_t unk0;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            b.read_vector(prices);
-            READ(b, unk0);
-        }
+        void load(const buffer &b);
     };
 
     uint32_t unk0 = 0;
     std::vector<BuildingPrice> buildingPrices;
 
-    void load(const buffer &b)
-    {
-        READ(b, unk0);
-        b.read_vector(buildingPrices);
-    }
+    void load(const buffer &b);
 };
 
-// todo
 struct env_segment : public segment
 {
-    void load(const buffer &b)
-    {
-    }
+    char unk0[0x151];
+    weather w;
+
+    void load(const buffer &b);
 };
 
-// todo
 struct orgrel_segment : public segment
 {
     struct org_rep
     {
-        char unk1[0xE0];
+        char unk0[0x8];
+        bool unk1;
 
-        void load(const buffer &b)
-        {
-            READ(b, unk1);
-        }
+        void load(const buffer &b);
     };
 
     std::vector<org_rep> org_reps;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(org_reps);
-    }
+    void load(const buffer &b);
 };
 
 struct others_segment : public segment
@@ -359,11 +317,7 @@ struct others_segment : public segment
     uint32_t unk0;
     uint32_t unk1;
 
-    void load(const buffer &b)
-    {
-        READ(b, unk0);
-        READ(b, unk1);
-    }
+    void load(const buffer &b);
 };
 
 struct mech_segment : public segment
@@ -375,13 +329,7 @@ struct mech_segment : public segment
         uint32_t unk0;
         uint32_t unk1;
 
-        void load(const buffer &b)
-        {
-            READ(b, id);
-            READ_STRING(b, name);
-            READ(b, unk0);
-            READ(b, unk1);
-        }
+        void load(const buffer &b);
     };
 
     struct moddable_equipment
@@ -389,11 +337,7 @@ struct mech_segment : public segment
         std::string name;
         ModificatorMask mask;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ(b, mask);
-        }
+        void load(const buffer &b);
     };
 
     struct moddable_equipment2
@@ -403,13 +347,7 @@ struct mech_segment : public segment
         uint32_t unk0; // health?
         ModificatorMask mask;
 
-        void load(const buffer &b)
-        {
-            READ(b, id);
-            READ_STRING(b, name);
-            READ(b, unk0);
-            READ(b, mask);
-        }
+        void load(const buffer &b);
     };
 
     struct hold_item
@@ -426,24 +364,14 @@ struct mech_segment : public segment
         uint32_t unk0;
         uint32_t unk1;
 
-        void load(const buffer &b)
-        {
-            READ(b, type);
-            READ_STRING(b, name);
-            READ(b, count);
-            READ(b, unk0);
-            READ(b, unk1);
-        }
+        void load(const buffer &b);
     };
 
     struct ammo
     {
         std::string name;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-        }
+        void load(const buffer &b);
     };
 
     struct ammo_count
@@ -451,11 +379,7 @@ struct mech_segment : public segment
         std::string name;
         uint32_t count;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ(b, count);
-        }
+        void load(const buffer &b);
     };
 
     enum class MechFlags : uint32_t
@@ -534,159 +458,14 @@ struct mech_segment : public segment
         uint32_t g_unk9 = 0;
         uint8_t g_unk10 = 0;
 
-        void load(const buffer &b)
-        {
-            READ(b, id);
-            READ_STRING(b, name);
-            READ_STRING(b, name2);
-            READ_STRING(b, org);
-            save_changes.rewrite_mech_org(b, org);
-            READ_STRING(b, building);
+        void load(const buffer &b);
 
-            READ(b, flags);
-            READ(b, unk11);
-            READ(b, unk12);
-            READ(b, unk13);
-            READ(b, unk14);
-
-            auto f = (uint32_t)flags;
-            if (!(f == 0x01000101 ||
-                f == 0x00000001 ||
-                f == 0x00000101 ||
-                f == 0x01000001))
-            {
-                READ(b, unk16);
-                return;
-            }
-
-            READ(b, unk15);
-
-            if (unk14 == 0)
-                return;
-
-            READ(b, unk15_1); // size?
-
-            b.read_vector(equipments);
-
-            READ(b, unk40);
-            READ(b, unk4);
-
-            //
-            glider.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
-            weapon1.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
-            weapon2.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
-            reactor1.load(b);
-            reactor2.load(b);
-            engine1.load(b);
-            engine2.load(b);
-            energy_shield.load(b);
-            armor.load(b);
-
-            // ?
-            READ(b, g_unk0);
-            if (g_unk0 == 0)
-                READ(b, g_unk1);
-            READ(b, g_unk2);
-
-            if (g_unk0 == 0)
-                b.read_vector(ammos, g_unk1);
-
-            b.read_vector(ammos1, g_unk0);
-
-            if (g_unk0 != 0 || g_unk1 != 0)
-            {
-                READ(b, g_unk3);
-                if (g_unk0 > 0)
-                {
-                    uint32_t n;
-                    b.skip(-8);
-                    READ(b, n);
-                    b.skip(4);
-                    b.read_vector(ammos2, n);
-                    std::vector<single_int<>> v;
-                    b.read_vector(v, n);
-                }
-                if (g_unk1 > 0)
-                {
-                    g_unk1--;
-                    while (g_unk1--)
-                        READ(b, g_unk3);
-                }
-            }
-
-            ureactor1.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
-            ureactor2.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
-            uengine1.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
-            uengine2.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
-            uenergy_shield.load(b);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x5666);
-            uarmor.load(b);
-
-            g_unk4.load(b);
-
-            READ(b, glider_mask);
-            if (isPlayer())
-                save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
-
-            b.read_vector(ammos3);
-
-            READ(b, money);
-            if (name == "PLAYER")
-                save_changes.rewrite_money(b);
-
-            b.read_vector(items);
-
-            READ(b, g_unk6);
-
-            // TODO
-
-            //if (g_unk0 == 1)
-            //if ((uint32_t)g_unk2 == 15)
-            //if ((uint32_t)g_unk3 == 0)
-            //if (unk13[0] == 5)
-            if (g_unk6[26][0] != 0 &&
-                strcmp((const char *)b.getPtr(), "GROUPS") != 0)
-            {
-
-                READ(b, g_unk7);
-                /*if (g_unk7 != 0)
-                {
-                    b.skip(-4);
-                    return;
-                }*/
-                READ(b, g_unk8);
-                READ(b, g_unk9);
-                READ(b, g_unk10);
-            }
-        }
-
-        bool isPlayer() const
-        {
-            return name == "PLAYER";
-        }
+        bool isPlayer() const;
     };
 
     std::vector<mech> mechs;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(mechs);
-    }
+    void load(const buffer &b);
 };
 
 // todo
@@ -700,14 +479,7 @@ struct groups_segment : public segment
         uint32_t unk2[2];
         float unk3;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ(b, unk0);
-            READ(b, unk1);
-            READ(b, unk2);
-            READ(b, unk3);
-        }
+        void load(const buffer &b);
     };
 
     struct group
@@ -715,28 +487,15 @@ struct groups_segment : public segment
         vector3f pos;
         std::string org;
         std::string base;
-        float unk0[4];
-        uint16_t unk1;
 
         std::vector<mech> mechs;
 
-        void load(const buffer &b)
-        {
-            READ(b, pos);
-            READ_STRING(b, org);
-            READ_STRING(b, base);
-            READ(b, unk0);
-            READ(b, unk1);
-            b.read_vector(mechs);
-        }
+        void load(const buffer &b);
     };
 
     std::vector<group> groups;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(groups);
-    }
+    void load(const buffer &b);
 };
 
 struct orgdata_segment : public segment
@@ -745,10 +504,7 @@ struct orgdata_segment : public segment
     {
         std::vector<single_string> names;
 
-        void load(const buffer &b)
-        {
-            b.read_vector(names);
-        }
+        void load(const buffer &b);
     };
 
     struct orgdata
@@ -760,23 +516,12 @@ struct orgdata_segment : public segment
         float rep[50];
         std::vector<org_config> configs;
 
-        void load(const buffer &b)
-        {
-            READ(b, unk0);
-            READ_STRING(b, org);
-            READ(b, unk1);
-            READ(b, unk2);
-            READ(b, rep);
-            b.read_vector(configs, 3);
-        }
+        void load(const buffer &b);
     };
 
     std::vector<orgdata> orgdatas;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(orgdatas);
-    }
+    void load(const buffer &b);
 };
 
 struct builds_segment : public segment
@@ -787,20 +532,12 @@ struct builds_segment : public segment
         std::string org;
         float unk1;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, bld);
-            READ_STRING(b, org);
-            READ(b, unk1);
-        }
+        void load(const buffer &b);
     };
 
     std::vector<build> builds;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(builds);
-    }
+    void load(const buffer &b);
 };
 
 // todo
@@ -808,17 +545,12 @@ struct orgs_segment : public segment
 {
     struct org
     {
-        void load(const buffer &b)
-        {
-        }
+        void load(const buffer &b);
     };
 
     std::vector<org> orgs;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(orgs);
-    }
+    void load(const buffer &b);
 };
 
 struct tradeeqp_segment : public segment
@@ -832,15 +564,7 @@ struct tradeeqp_segment : public segment
         int32_t count;
         float probability;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, tov_name);
-            READ(b, unk0);
-            READ(b, mask);
-            READ(b, price);
-            READ(b, count);
-            READ(b, probability);
-        }
+        void load(const buffer &b);
     };
 
     struct bld
@@ -848,23 +572,14 @@ struct tradeeqp_segment : public segment
         std::string name;
         std::vector<Good> prices;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            b.read_vector(prices);
-        }
+        void load(const buffer &b);
     };
 
     uint32_t unk0 = 0;
     std::vector<Good> prices;
     std::vector<bld> blds;
 
-    void load(const buffer &b)
-    {
-        READ(b, unk0);
-        b.read_vector(prices);
-        b.read_vector(blds);
-    }
+    void load(const buffer &b);
 };
 
 // todo
@@ -876,30 +591,20 @@ struct objects_segment : public segment
         uint32_t unk0[26];
         uint16_t unk1;
 
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ(b, unk0);
-            READ(b, unk1);
-        }
+        void load(const buffer &b);
     };
 
     std::vector<base> bases;
 
-    void load(const buffer &b)
-    {
-        b.read_vector(bases);
-    }
+    void load(const buffer &b);
 };
 
+// what is mms?
 struct mms_state_segment : public segment
 {
     std::string name;
 
-    void load(const buffer &b)
-    {
-        READ_STRING(b, name);
-    }
+    void load(const buffer &b);
 };
 
 // todo
@@ -907,38 +612,26 @@ struct mms_c_config_segment : public segment
 {
     struct object
     {
-        void load(const buffer &b)
-        {
-        }
+        void load(const buffer &b) {}
     };
 
     std::vector<object> objects;
 
-    void load(const buffer &b)
-    {
-        // todo: insert config read from mech
-        b.read_vector(objects);
-    }
+    void load(const buffer &b);
 };
 
 struct mms_world_data_segment : public segment
 {
     float unk0;
 
-    void load(const buffer &b)
-    {
-        READ(b, unk0);
-    }
+    void load(const buffer &b);
 };
 
 struct mainmech_segment : public segment
 {
     uint32_t unk0[9];
 
-    void load(const buffer &b)
-    {
-        READ(b, unk0);
-    }
+    void load(const buffer &b);
 };
 
 struct segment_desc
@@ -946,82 +639,14 @@ struct segment_desc
     std::string name;
     segment *seg = nullptr;
 
-    void load(const buffer &b)
-    {
-        READ_STRING(b, name);
-        uint32_t unk0;
-        READ(b, unk0);
-        uint32_t len;
-        READ(b, len);
-        uint32_t offset;
-        READ(b, offset);
-        uint32_t unk1;
-        READ(b, unk1);
-        uint32_t len2;
-        READ(b, len2);
-
-        uint32_t start = b.index();
-        uint32_t end = start + len2;
-
-#define SWITCH(s, t) if (name == s) seg = new t
-#define CASE(s, t) else SWITCH(s, t)
-#define DEFAULT else
-
-        SWITCH("HEADER", header_segment);
-        CASE("CAPTION", string_segment);
-        CASE("PLAYER", string_segment);
-        CASE("SCREEN", screen_segment);
-        CASE("SCRIPTS", scripts_segment);
-        //CASE("RADAR", radar_segment);
-        //CASE("GAMEDATA", gamedata_segment);
-        CASE("QUESTLOG", questlog_segment);
-        CASE("TRADE", trade_segment);
-        //CASE("ENV", env_segment);
-        //CASE("ORGREL", orgrel_segment);
-        CASE("OTHERS", others_segment);
-        CASE("MECH", mech_segment);
-        //CASE("GROUPS", groups_segment);
-        CASE("ORGDATA", orgdata_segment);
-        CASE("BUILDS", builds_segment);
-        //CASE("ORGS", orgs_segment);
-        CASE("TRADEEQP", tradeeqp_segment);
-        //CASE("OBJECTS", objects_segment);
-        CASE("MMS_STATE", mms_state_segment);
-        //CASE("MMS_C_CONFIG", mms_c_config_segment); // (my) clan config
-        CASE("MMS_WORLD_DATA", mms_world_data_segment);
-        CASE("MAINMECH", mainmech_segment);
-        DEFAULT
-        {
-            std::cout << "skipped " << name << " size = " << len2 << "\n";
-            b.skip(len2);
-            return;
-        }
-
-        seg->load(b);
-
-#undef SWITCH
-#undef CASE
-#undef DEFAULT
-    }
+    void load(const buffer &b);
 };
 
 struct save
 {
-    uint32_t magick;
+    uint32_t magic;
     uint32_t version;
     std::vector<segment_desc> segments;
 
-    void load(const buffer &b)
-    {
-        READ(b, magick);
-        READ(b, version);
-
-        while (!b.eof())
-        {
-            segment_desc sd;
-            sd.load(b);
-            if (sd.seg)
-                segments.push_back(sd);
-        }
-    }
+    void load(const buffer &b);
 };

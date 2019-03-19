@@ -122,10 +122,10 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     /*
     Our coord system:
 
-    ^ z
-    |
-    ---> y
-    /
+      ^ z
+      |
+       ---> y
+     /
     v x
 
     AIM Coordinates:
