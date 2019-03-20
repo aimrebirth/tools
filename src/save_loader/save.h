@@ -226,7 +226,7 @@ struct gamedata_segment : public segment
     char unk00[0x5C];
     std::vector<loc> locs;
     std::vector<org> orgs;
-    uint32_t unk0;
+    //uint32_t unk0;
     std::vector<unk0s> unk1;
     std::string base_name;
     uint32_t unk2;
@@ -443,10 +443,6 @@ struct mech_segment : public segment
             std::vector<hold_item> items;
 
             uint32_t g_unk6[28][3] = { 0 };
-            float g_unk7 = 0;
-            float g_unk8 = 0;
-            uint32_t g_unk9 = 0;
-            uint8_t g_unk10 = 0;
 
             void load(const buffer &b);
         };

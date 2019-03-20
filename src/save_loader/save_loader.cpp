@@ -54,9 +54,11 @@ int main(int argc, char *argv[])
         func(p);
     else if (fs::is_directory(p))
     {
-        auto files = enumerate_files_like(p, ".*\\.sav", false);
+        auto files = enumerate_files_like(p, ".*", false);
         for (auto &f : files)
         {
+            if (f.extension() != ".sav" && f.extension() != "")
+                continue;
             std::cout << "processing: " << f << "\n";
             func(f);
         }

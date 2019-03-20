@@ -138,7 +138,7 @@ void gamedata_segment::load(const buffer &b)
     READ(b, unk00);
     b.read_vector(locs);
     b.read_vector(orgs);
-    READ(b, unk0);
+    //READ(b, unk0);
     b.read_vector(unk1);
     READ_STRING(b, base_name);
     READ(b, unk2);
@@ -346,6 +346,48 @@ void mech_segment::mech::glider_desc::load(const buffer &b)
     b.read_vector(items);
 
     READ(b, g_unk6);
+}
+
+void mech_segment::mech::load(const buffer &b)
+{
+    READ(b, id); // 3 for mech?
+    /*switch (id)
+    {
+    case 3:
+    {*/
+        READ_STRING(b, name);
+        READ_STRING(b, name2);
+        READ_STRING(b, org);
+        //save_changes.rewrite_mech_org(b, org);
+        READ_STRING(b, building);
+
+        READ(b, flags);
+        READ(b, unk11);
+        READ(b, unk12);
+        READ(b, unk13);
+        READ(b, unk14);
+
+        auto f = (uint32_t)flags;
+        if (!(f == 0x01000101 || f == 0x00000001 || f == 0x00000101 || f == 0x01000001))
+        {
+            READ(b, unk16);
+            return;
+        }
+
+        READ(b, unk15);
+
+        if (unk14 == 0)
+            return;
+    /*}
+        break;
+    case 1:
+        break;
+    default:
+        std::cerr << "unknown mechanoid type: " << (int)id << "\n";
+        break;
+    }*/
+
+    gl.load(b);
 
     // TODO
 
@@ -353,8 +395,12 @@ void mech_segment::mech::glider_desc::load(const buffer &b)
     // if ((uint32_t)g_unk2 == 15)
     // if ((uint32_t)g_unk3 == 0)
     // if (unk13[0] == 5)
-    if (g_unk6[26][0] != 0 && strcmp((const char *)b.getPtr(), "GROUPS") != 0)
+    //if (g_unk6[26][0] != 0 && strcmp((const char *)b.getPtr(), "GROUPS") != 0)
     {
+        float g_unk7 = 0;
+        float g_unk8 = 0;
+        uint32_t g_unk9 = 0;
+        uint8_t g_unk10 = 0;
 
         READ(b, g_unk7);
         /*if (g_unk7 != 0)
@@ -365,37 +411,13 @@ void mech_segment::mech::glider_desc::load(const buffer &b)
         READ(b, g_unk8);
         READ(b, g_unk9);
         READ(b, g_unk10);
+
+        if (g_unk10 > 1)
+            std::cerr << "g_unk10 > 1" << "\n";
+
+        if (g_unk10)
+            gl.load(b);
     }
-}
-
-void mech_segment::mech::load(const buffer &b)
-{
-    READ(b, id);
-    READ_STRING(b, name);
-    READ_STRING(b, name2);
-    READ_STRING(b, org);
-    //save_changes.rewrite_mech_org(b, org);
-    READ_STRING(b, building);
-
-    READ(b, flags);
-    READ(b, unk11);
-    READ(b, unk12);
-    READ(b, unk13);
-    READ(b, unk14);
-
-    auto f = (uint32_t)flags;
-    if (!(f == 0x01000101 || f == 0x00000001 || f == 0x00000101 || f == 0x01000001))
-    {
-        READ(b, unk16);
-        return;
-    }
-
-    READ(b, unk15);
-
-    if (unk14 == 0)
-        return;
-
-    gl.load(b);
 }
 
 bool mech_segment::mech::isPlayer() const
@@ -534,9 +556,20 @@ void objects_segment::object::load(const buffer &b)
     READ_STRING(b, owner);
     READ(b, type);
     READ(b, unk1);
+    switch (type)
+    {
+    case 0x16: // trgun
+    {
+        b.skip(0x4);
+        return;
+    }
+    }
     READ(b, unk01);
     READ(b, coords);
     READ(b, len0); // flags?
+
+    if (len0 == 0)
+        return;
 
     switch (type)
     {
@@ -568,6 +601,8 @@ void objects_segment::object::load(const buffer &b)
             ;
         else if (what == "TT_CONTAINER")
             ;
+        else if (what == "TT_FUNGUS")
+            ;
         else
             std::cerr << "unknown object: " << what << "\n";
 
@@ -579,6 +614,11 @@ void objects_segment::object::load(const buffer &b)
         READ(b, unk3);
     }
     break;
+    case 0x17: // trgate
+    {
+        b.skip(0x4);
+        return;
+    }
     case 0x1a: // mech in base
     {
         float unk3;
@@ -603,19 +643,20 @@ void objects_segment::object::load(const buffer &b)
         READ(b, flags);
         READ(b, unk10);
 
-        if (flags == 1)
-        {
+        //if (flags == 1)
+        //{
             READ_STRING(b, unk12);
-        }
-        else
+        //}
+        /*else
         {
             READ(b, unk100);
             READ(b, len1);
             READ(b, unk11);
             READ(b, unk111);
-        }
+        }*/
 
         std::vector<std::string> mechs;
+        std::vector<std::string> mechs2;
         uint32_t n;
         READ(b, n);
         mechs.resize(n);
@@ -623,13 +664,14 @@ void objects_segment::object::load(const buffer &b)
             READ_STRING(b, mechs[i]);
 
         //  in production?
-        if (flags == 1)
+        //if (flags == 1)
         {
             std::string s;
             uint32_t n;
             READ(b, n);
-            while (n--)
-                READ_STRING(b, s);
+            mechs2.resize(n);
+            for (int i = 0; i < n; i++)
+                READ_STRING(b, mechs2[i]);
         }
     }
     break;
@@ -708,7 +750,7 @@ void segment_desc::load(const buffer &b)
     CASE("ENV", env_segment);
     CASE("ORGREL", orgrel_segment);
     CASE("OTHERS", others_segment);
-    CASE("MECH", mech_segment);
+    //CASE("MECH", mech_segment);
     // CASE("GROUPS", groups_segment);
     CASE("ORGDATA", orgdata_segment);
     CASE("BUILDS", builds_segment);
