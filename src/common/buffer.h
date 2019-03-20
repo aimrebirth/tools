@@ -34,16 +34,6 @@
 
 #define READ_PASCAL_STRING(b, var) var = b.read_pascal_string()
 
-#define READ_N_OBJECTS_WITH_LOAD(b, o) \
-    do                                 \
-    {                                  \
-        uint32_t n;                    \
-        READ(b, n);                    \
-        o.resize(n);                   \
-        for (auto &e : o)              \
-            e.load(b);                 \
-    } while (0)
-
 #define WRITE(b, var) b.write(&var)
 
 std::string version();

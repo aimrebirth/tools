@@ -79,8 +79,8 @@ struct mmo_storage
             uint32_t len = 0;
             READ(b, len);
 
-            READ_N_OBJECTS_WITH_LOAD(b, organizations);
-            READ_N_OBJECTS_WITH_LOAD(b, organizationBases);
+            b.read_vector(organizations);
+            b.read_vector(organizationBases);
 
             prices.load(b);
         }

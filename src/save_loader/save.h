@@ -392,6 +392,58 @@ struct mech_segment : public segment
 
     struct mech
     {
+        struct glider_desc
+        {
+            // glider
+            // g_unk = glider unknown
+
+            // mask works only for weapons
+            moddable_equipment glider;
+            moddable_equipment weapon1;
+            moddable_equipment weapon2;
+            moddable_equipment reactor1;
+            moddable_equipment reactor2;
+            moddable_equipment engine1;
+            moddable_equipment engine2;
+            moddable_equipment energy_shield;
+            moddable_equipment armor;
+
+            uint32_t g_unk0;
+            uint32_t g_unk1 = 0;
+            uint32_t g_unk2;
+
+            std::vector<ammo> ammos;
+            std::vector<ammo> ammos1;
+            std::vector<ammo> ammos2;
+
+            uint32_t g_unk3 = 0;
+
+            // mask works for all except uarmor
+            moddable_equipment2 ureactor1;
+            moddable_equipment2 ureactor2;
+            moddable_equipment2 uengine1;
+            moddable_equipment2 uengine2;
+            moddable_equipment2 uenergy_shield;
+            moddable_equipment2 uarmor;
+            //
+            moddable_equipment g_unk4;
+            ModificatorMask glider_mask;
+
+            std::vector<ammo_count> ammos3;
+
+            float money;
+
+            std::vector<hold_item> items;
+
+            uint32_t g_unk6[28][3] = { 0 };
+            float g_unk7 = 0;
+            float g_unk8 = 0;
+            uint32_t g_unk9 = 0;
+            uint8_t g_unk10 = 0;
+
+            void load(const buffer &b);
+        };
+
         uint8_t id;
         std::string name;
         std::string name2;
@@ -412,51 +464,7 @@ struct mech_segment : public segment
         float unk40;
         uint32_t unk4[7];
 
-        // glider
-        // g_unk = glider unknown
-
-        // mask works only for weapons
-        moddable_equipment glider;
-        moddable_equipment weapon1;
-        moddable_equipment weapon2;
-        moddable_equipment reactor1;
-        moddable_equipment reactor2;
-        moddable_equipment engine1;
-        moddable_equipment engine2;
-        moddable_equipment energy_shield;
-        moddable_equipment armor;
-
-        uint32_t g_unk0;
-        uint32_t g_unk1 = 0;
-        uint32_t g_unk2;
-
-        std::vector<ammo> ammos;
-        std::vector<ammo> ammos1;
-        std::vector<ammo> ammos2;
-
-        uint32_t g_unk3 = 0;
-
-        // mask works for all except uarmor
-        moddable_equipment2 ureactor1;
-        moddable_equipment2 ureactor2;
-        moddable_equipment2 uengine1;
-        moddable_equipment2 uengine2;
-        moddable_equipment2 uenergy_shield;
-        moddable_equipment2 uarmor;
-        moddable_equipment g_unk4;
-        ModificatorMask glider_mask;
-
-        std::vector<ammo_count> ammos3;
-
-        float money;
-
-        std::vector<hold_item> items;
-
-        uint32_t g_unk6[28][3] = { 0 };
-        float g_unk7 = 0;
-        float g_unk8 = 0;
-        uint32_t g_unk9 = 0;
-        uint8_t g_unk10 = 0;
+        glider_desc gl;
 
         void load(const buffer &b);
 
@@ -540,11 +548,49 @@ struct builds_segment : public segment
     void load(const buffer &b);
 };
 
-// todo
 struct orgs_segment : public segment
 {
     struct org
     {
+        struct base
+        {
+            struct mech
+            {
+                std::string name;
+                u32 unk0[2];
+                std::string org;
+                u32 unk1;
+                f32 unk2;
+
+                void load(const buffer &b)
+                {
+                    READ_STRING(b, name);
+                    READ(b, unk0);
+                    READ_STRING(b, org);
+                    READ(b, unk1);
+                    READ(b, unk2);
+                }
+            };
+
+            std::string name;
+            float unk2;
+            u8 unk3;
+            uint32_t unk4[2];
+            std::vector<mech> mechs;
+
+            void load(const buffer &b)
+            {
+                READ_STRING(b, name);
+                READ(b, unk2);
+                READ(b, unk3);
+                READ(b, unk4);
+                b.read_vector(mechs);
+            }
+        };
+
+        uint32_t unk0[9];
+        base base;
+
         void load(const buffer &b);
     };
 
@@ -582,19 +628,21 @@ struct tradeeqp_segment : public segment
     void load(const buffer &b);
 };
 
-// todo
 struct objects_segment : public segment
 {
-    struct base
+    struct object
     {
-        std::string name;
-        uint32_t unk0[26];
-        uint16_t unk1;
+        std::string owner; // empty for outdoor and outmech
+        u32 type;
+        u8 unk1;
+        u32 unk01;
+        vector3f coords;
+        u32 len0;
 
         void load(const buffer &b);
     };
 
-    std::vector<base> bases;
+    std::vector<object> objects;
 
     void load(const buffer &b);
 };
@@ -607,12 +655,14 @@ struct mms_state_segment : public segment
     void load(const buffer &b);
 };
 
-// todo
 struct mms_c_config_segment : public segment
 {
     struct object
     {
-        void load(const buffer &b) {}
+        u32 unk0[10]; // maybe attach to glider_desc?
+        mech_segment::mech::glider_desc gl;
+
+        void load(const buffer &b);
     };
 
     std::vector<object> objects;

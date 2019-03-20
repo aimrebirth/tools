@@ -35,8 +35,9 @@ int main(int argc, char *argv[])
     cl::ParseCommandLineOptions(argc, argv);
 
     //save_changes.mech_org = "ORG_PLAYER";
-    save_changes.money = 999999999.0f;
-    save_changes.upgrade_equ_for_player = true;
+
+    //save_changes.money = 999999999.0f;
+    //save_changes.upgrade_equ_for_player = true;
 
     auto func = [](auto &p)
     {
@@ -46,7 +47,7 @@ int main(int argc, char *argv[])
         save s;
         s.load(f);
 
-        writeFile(p.string(), save_changes.out.buf());
+        //writeFile(p.string(), save_changes.out.buf());
     };
 
     if (fs::is_regular_file(p))

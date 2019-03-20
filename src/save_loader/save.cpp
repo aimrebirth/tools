@@ -136,14 +136,14 @@ void radar_segment::load(const buffer &b)
 void gamedata_segment::load(const buffer &b)
 {
     READ(b, unk00);
-    READ_N_OBJECTS_WITH_LOAD(b, locs);
-    READ_N_OBJECTS_WITH_LOAD(b, orgs);
+    b.read_vector(locs);
+    b.read_vector(orgs);
     READ(b, unk0);
-    READ_N_OBJECTS_WITH_LOAD(b, unk1);
+    b.read_vector(unk1);
     READ_STRING(b, base_name);
     READ(b, unk2);
     READ_PASCAL_STRING(b, user_name);
-    READ_N_OBJECTS_WITH_LOAD(b, unk3);
+    b.read_vector(unk3);
     READ_STRING(b, icon);
     READ(b, unk4);
 }
@@ -255,50 +255,18 @@ void mech_segment::ammo_count::load(const buffer &b)
     READ(b, count);
 }
 
-void mech_segment::mech::load(const buffer &b)
+void mech_segment::mech::glider_desc::load(const buffer &b)
 {
-    READ(b, id);
-    READ_STRING(b, name);
-    READ_STRING(b, name2);
-    READ_STRING(b, org);
-    save_changes.rewrite_mech_org(b, org);
-    READ_STRING(b, building);
-
-    READ(b, flags);
-    READ(b, unk11);
-    READ(b, unk12);
-    READ(b, unk13);
-    READ(b, unk14);
-
-    auto f = (uint32_t)flags;
-    if (!(f == 0x01000101 || f == 0x00000001 || f == 0x00000101 || f == 0x01000001))
-    {
-        READ(b, unk16);
-        return;
-    }
-
-    READ(b, unk15);
-
-    if (unk14 == 0)
-        return;
-
-    READ(b, unk15_1); // size?
-
-    b.read_vector(equipments);
-
-    READ(b, unk40);
-    READ(b, unk4);
-
     //
     glider.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
+    //if (isPlayer())
+        //save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
     weapon1.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
+    //if (isPlayer())
+        //save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
     weapon2.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
+    //if (isPlayer())
+        //save_changes.rewrite_upgrade_equ_for_player(b, 0x2666);
     reactor1.load(b);
     reactor2.load(b);
     engine1.load(b);
@@ -339,33 +307,34 @@ void mech_segment::mech::load(const buffer &b)
     }
 
     ureactor1.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
+    //if (isPlayer())
+    //save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
     ureactor2.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
+    //if (isPlayer())
+    //save_changes.rewrite_upgrade_equ_for_player(b, 0x3666);
     uengine1.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
+    //if (isPlayer())
+    //save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
     uengine2.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
+    //if (isPlayer())
+    //save_changes.rewrite_upgrade_equ_for_player(b, 0x4666);
     uenergy_shield.load(b);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x5666);
+    //if (isPlayer())
+    //save_changes.rewrite_upgrade_equ_for_player(b, 0x5666);
     uarmor.load(b);
 
     g_unk4.load(b);
 
     READ(b, glider_mask);
-    if (isPlayer())
-        save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
+    //if (isPlayer())
+    //save_changes.rewrite_upgrade_equ_for_player(b, 0x1666);
 
     b.read_vector(ammos3);
 
+    //
     READ(b, money);
-    if (name == "PLAYER")
-        save_changes.rewrite_money(b);
+    //if (name == "PLAYER")
+    //save_changes.rewrite_money(b);
 
     b.read_vector(items);
 
@@ -383,13 +352,50 @@ void mech_segment::mech::load(const buffer &b)
         READ(b, g_unk7);
         /*if (g_unk7 != 0)
         {
-            b.skip(-4);
-            return;
+        b.skip(-4);
+        return;
         }*/
         READ(b, g_unk8);
         READ(b, g_unk9);
         READ(b, g_unk10);
     }
+}
+
+void mech_segment::mech::load(const buffer &b)
+{
+    READ(b, id);
+    READ_STRING(b, name);
+    READ_STRING(b, name2);
+    READ_STRING(b, org);
+    //save_changes.rewrite_mech_org(b, org);
+    READ_STRING(b, building);
+
+    READ(b, flags);
+    READ(b, unk11);
+    READ(b, unk12);
+    READ(b, unk13);
+    READ(b, unk14);
+
+    auto f = (uint32_t)flags;
+    if (!(f == 0x01000101 || f == 0x00000001 || f == 0x00000101 || f == 0x01000001))
+    {
+        READ(b, unk16);
+        return;
+    }
+
+    READ(b, unk15);
+
+    if (unk14 == 0)
+        return;
+
+    READ(b, unk15_1); // size?
+
+    b.read_vector(equipments);
+
+    READ(b, unk40);
+    READ(b, unk4);
+
+    gl.load(b);
 }
 
 bool mech_segment::mech::isPlayer() const
@@ -413,15 +419,18 @@ void groups_segment::mech::load(const buffer &b)
 
 void groups_segment::group::load(const buffer &b)
 {
-    READ(b, pos);
-    READ_STRING(b, org);
-    READ_STRING(b, base);
     uint32_t unk0;
     uint16_t unk1;
     float unk2[3];
+
+    READ(b, pos);
+    READ_STRING(b, org);
+    READ_STRING(b, base);
+
     READ(b, unk0);
     READ(b, unk1);
     READ(b, unk2);
+
     b.read_vector(mechs);
 }
 
@@ -464,42 +473,8 @@ void builds_segment::load(const buffer &b)
 
 void orgs_segment::org::load(const buffer &b)
 {
-    struct base
-    {
-        struct mech
-        {
-            std::string name;
-
-            void load(const buffer &b)
-            {
-                READ_STRING(b, name);
-            }
-        };
-
-        std::string name;
-        float unk2;
-        bool unk3;
-        uint32_t unk4[2];
-        std::vector<mech> mechs;
-        std::string mname; // mech
-
-        void load(const buffer &b)
-        {
-            READ_STRING(b, name);
-            READ(b, unk2);
-            READ(b, unk3);
-            READ(b, unk4);
-            b.read_vector(mechs);
-        }
-    };
-
-    uint32_t unk0[8];
-    std::vector<base> bases;
-    std::string unk1;
-
     READ(b, unk0);
-    b.read_vector(bases);
-    READ_STRING(b, unk1);
+    base.load(b);
 }
 
 void orgs_segment::load(const buffer &b)
@@ -530,16 +505,118 @@ void tradeeqp_segment::load(const buffer &b)
     b.read_vector(blds);
 }
 
-void objects_segment::base::load(const buffer &b)
+void objects_segment::object::load(const buffer &b)
 {
-    READ_STRING(b, name);
-    READ(b, unk0);
+    READ_STRING(b, owner);
+    READ(b, type);
     READ(b, unk1);
+    READ(b, unk01);
+    READ(b, coords);
+    READ(b, len0); // flags?
+
+    switch (type)
+    {
+    case 0x10: // ammo (mines etc.)
+    {
+        std::string name;
+        READ_STRING(b, name);
+        std::string owner;
+        READ_STRING(b, owner);
+        b.skip(0x1E);
+    }
+    break;
+    case 0x15: // mech, money, tov
+    {
+        std::string what;
+        u8 unk0;
+        u32 unk1[2];
+        std::string s1;
+        u32 unk2;
+        std::string s2;
+        f32 unk3;
+
+        READ_STRING(b, what);
+        if (what == "TT_MONEY")
+            ;
+        else if (what == "TT_MECHANOID")
+            ;
+        else if (what == "TT_RAW_FRAGMENT")
+            ;
+        else if (what == "TT_CONTAINER")
+            ;
+        else
+            std::cerr << "unknown object: " << what << "\n";
+
+        READ(b, unk0);
+        READ(b, unk1);
+        READ_STRING(b, s1);
+        READ(b, unk2);
+        READ_STRING(b, s2);
+        READ(b, unk3);
+    }
+    break;
+    case 0x1a: // mech in base
+    {
+        float unk3;
+        u8 unk4; // also flags? 0x47 for in buildings, 0x4f
+
+        float unk5[2][3];
+        u32 flags;
+        float unk10[2];
+
+        // flags != 1
+        float unk100[3];
+        u32 len1;
+        float unk11[4];
+        u32 unk111;
+
+        // flags == 1
+        std::string unk12;
+
+        READ(b, unk3);
+        READ(b, unk4);
+        READ(b, unk5);
+        READ(b, flags);
+        READ(b, unk10);
+
+        if (flags == 1)
+        {
+            READ_STRING(b, unk12);
+        }
+        else
+        {
+            READ(b, unk100);
+            READ(b, len1);
+            READ(b, unk11);
+            READ(b, unk111);
+        }
+
+        std::vector<std::string> mechs;
+        uint32_t n;
+        READ(b, n);
+        mechs.resize(n);
+        for (int i = 0; i < n; i++)
+            READ_STRING(b, mechs[i]);
+
+        //  in production?
+        if (flags == 1)
+        {
+            std::string s;
+            uint32_t n;
+            READ(b, n);
+            while (n--)
+                READ_STRING(b, s);
+        }
+    }
+    break;
+    default:
+        throw SW_RUNTIME_ERROR("unknown object in OBJECTS with type " + std::to_string(type));
+    }
 }
 
 void objects_segment::load(const buffer &b)
 {
-    b.read_vector(bases);
+    b.read_vector(objects);
 }
 
 void mms_state_segment::load(const buffer &b)
@@ -547,10 +624,20 @@ void mms_state_segment::load(const buffer &b)
     READ_STRING(b, name);
 }
 
+void mms_c_config_segment::object::load(const buffer &b)
+{
+    READ(b, unk0);
+    gl.load(b);
+}
+
 void mms_c_config_segment::load(const buffer &b)
 {
-    // todo: insert config read from mech
-    b.read_vector(objects);
+    while (!b.eof())
+    {
+        object o;
+        o.load(b);
+        objects.push_back(o);
+    }
 }
 
 void mms_world_data_segment::load(const buffer &b)
@@ -570,13 +657,14 @@ void segment_desc::load(const buffer &b)
     READ(b, magic);
     if (magic != (uint32_t)-2)
         throw SW_RUNTIME_ERROR("bad magic for segment: " + name);
-    uint32_t len;
-    READ(b, len); // length of segment + 4 (sizeof(int) - internal segment length)
+
+    uint32_t len; // length of segment + 4 (sizeof(int) or internal segment length size)
+    READ(b, len);
     uint32_t offset;
     READ(b, offset);
     uint32_t unk1;
     READ(b, unk1);
-    uint32_t len2;
+    uint32_t len2; // length of segment
     READ(b, len2);
     if (len != len2 + sizeof(len2))
         throw SW_RUNTIME_ERROR("bad length for segment: " + name);
@@ -606,11 +694,11 @@ void segment_desc::load(const buffer &b)
     // CASE("GROUPS", groups_segment);
     CASE("ORGDATA", orgdata_segment);
     CASE("BUILDS", builds_segment);
-    //CASE("ORGS", orgs_segment);
+    CASE("ORGS", orgs_segment);
     CASE("TRADEEQP", tradeeqp_segment);
-    // CASE("OBJECTS", objects_segment);
+    CASE("OBJECTS", objects_segment);
     CASE("MMS_STATE", mms_state_segment);
-    // CASE("MMS_C_CONFIG", mms_c_config_segment); // (my) clan config
+    CASE("MMS_C_CONFIG", mms_c_config_segment); // (my) clan config
     CASE("MMS_WORLD_DATA", mms_world_data_segment);
     CASE("MAINMECH", mainmech_segment);
     DEFAULT
@@ -620,7 +708,7 @@ void segment_desc::load(const buffer &b)
         return;
     }
 
-    seg->load(b);
+    seg->load(buffer(b, len2));
     if (b.index() != end)
         throw SW_RUNTIME_ERROR("bad segment read: " + name);
 

@@ -158,8 +158,8 @@ void map_music::load(const buffer &b)
 
 void organizations::load(const buffer &b)
 {
-    READ_N_OBJECTS_WITH_LOAD(b, orgs);
-    READ_N_OBJECTS_WITH_LOAD(b, organizationBases);
+    b.read_vector(orgs);
+    b.read_vector(organizationBases);
 }
 
 void gliders_n_goods::load(const buffer &b)

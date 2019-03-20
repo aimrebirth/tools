@@ -59,8 +59,11 @@ void weather::load(const buffer &b)
     switch (smokeType)
     {
     case SmokeType::biexp:
-        READ(b, unk8);
-        b.skip(-4);
+    {
+        float unk81[10];
+        READ(b, unk81);
+        memcpy(unk8, unk81, sizeof(f32) * 10);
+    }
         break;
     default:
         READ(b, unk8);

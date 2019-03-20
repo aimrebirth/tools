@@ -23,6 +23,11 @@
 #include "buffer.h"
 #include "color.h"
 
+using u8 = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using f32 = float;
+
 enum class GameType
 {
     Aim1,
@@ -207,7 +212,7 @@ struct BuildingGoods
     void load(const buffer &b)
     {
         READ_STRING(b, name);
-        READ_N_OBJECTS_WITH_LOAD(b, goods);
+        b.read_vector(goods);
     }
 };
 
