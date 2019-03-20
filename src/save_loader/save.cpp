@@ -257,6 +257,13 @@ void mech_segment::ammo_count::load(const buffer &b)
 
 void mech_segment::mech::glider_desc::load(const buffer &b)
 {
+    READ(b, unk15_1); // size?
+
+    b.read_vector(equipments);
+
+    READ(b, unk40);
+    READ(b, unk4);
+
     //
     glider.load(b);
     //if (isPlayer())
@@ -388,13 +395,6 @@ void mech_segment::mech::load(const buffer &b)
     if (unk14 == 0)
         return;
 
-    READ(b, unk15_1); // size?
-
-    b.read_vector(equipments);
-
-    READ(b, unk40);
-    READ(b, unk4);
-
     gl.load(b);
 }
 
@@ -469,6 +469,30 @@ void builds_segment::build::load(const buffer &b)
 void builds_segment::load(const buffer &b)
 {
     b.read_vector(builds);
+}
+
+void orgs_segment::org::base::mech::load(const buffer &b)
+{
+    READ_STRING(b, name);
+}
+
+void orgs_segment::org::base::load(const buffer &b)
+{
+    READ_STRING(b, name);
+    READ(b, unk2);
+    READ(b, unk3);
+    READ(b, unk4);
+    b.read_vector(mechs);
+
+    u32 n;
+    u32 unk0;
+    READ(b, n);
+    while (n--)
+        READ(b, unk0);
+
+    READ_STRING(b, org);
+    READ(b, unk5);
+    READ(b, unk6);
 }
 
 void orgs_segment::org::load(const buffer &b)
@@ -624,17 +648,11 @@ void mms_state_segment::load(const buffer &b)
     READ_STRING(b, name);
 }
 
-void mms_c_config_segment::object::load(const buffer &b)
-{
-    READ(b, unk0);
-    gl.load(b);
-}
-
 void mms_c_config_segment::load(const buffer &b)
 {
     while (!b.eof())
     {
-        object o;
+        mech_segment::mech::glider_desc o;
         o.load(b);
         objects.push_back(o);
     }

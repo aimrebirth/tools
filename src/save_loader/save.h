@@ -394,6 +394,13 @@ struct mech_segment : public segment
     {
         struct glider_desc
         {
+            uint32_t unk15_1; // size of segment (glider_desc struct)
+
+            std::vector<equipment> equipments;
+
+            float unk40;
+            uint32_t unk4[7];
+
             // glider
             // g_unk = glider unknown
 
@@ -456,13 +463,8 @@ struct mech_segment : public segment
         uint32_t unk13[3];
         uint8_t unk14;
         uint32_t unk15;
-        uint32_t unk15_1;
+
         uint32_t unk16 = 0;
-
-        std::vector<equipment> equipments;
-
-        float unk40;
-        uint32_t unk4[7];
 
         glider_desc gl;
 
@@ -557,19 +559,8 @@ struct orgs_segment : public segment
             struct mech
             {
                 std::string name;
-                u32 unk0[2];
-                std::string org;
-                u32 unk1;
-                f32 unk2;
 
-                void load(const buffer &b)
-                {
-                    READ_STRING(b, name);
-                    READ(b, unk0);
-                    READ_STRING(b, org);
-                    READ(b, unk1);
-                    READ(b, unk2);
-                }
+                void load(const buffer &b);
             };
 
             std::string name;
@@ -577,15 +568,13 @@ struct orgs_segment : public segment
             u8 unk3;
             uint32_t unk4[2];
             std::vector<mech> mechs;
+            // u32 n;
+            // u32 unk0[n];
+            std::string org;
+            u32 unk5;
+            f32 unk6;
 
-            void load(const buffer &b)
-            {
-                READ_STRING(b, name);
-                READ(b, unk2);
-                READ(b, unk3);
-                READ(b, unk4);
-                b.read_vector(mechs);
-            }
+            void load(const buffer &b);
         };
 
         uint32_t unk0[9];
@@ -657,15 +646,7 @@ struct mms_state_segment : public segment
 
 struct mms_c_config_segment : public segment
 {
-    struct object
-    {
-        u32 unk0[10]; // maybe attach to glider_desc?
-        mech_segment::mech::glider_desc gl;
-
-        void load(const buffer &b);
-    };
-
-    std::vector<object> objects;
+    std::vector<mech_segment::mech::glider_desc> objects;
 
     void load(const buffer &b);
 };
