@@ -384,9 +384,9 @@ struct mech_segment : public segment
 
     enum class MechFlags : uint32_t
     {
-        unk0    = 0x1,
-        unk1    = 0x0100,
-        Dead    = 0x010000,
+        unk0    = 0x00000001,
+        unk1    = 0x00000100,
+        Dead    = 0x00010000,
         Dead2   = 0x01000000,
     };
 

@@ -396,11 +396,21 @@ void mech_segment::mech::load(const buffer &b)
     // if ((uint32_t)g_unk3 == 0)
     // if (unk13[0] == 5)
     //if (g_unk6[26][0] != 0 && strcmp((const char *)b.getPtr(), "GROUPS") != 0)
+    //if (f == 1)
     {
         float g_unk7 = 0;
         float g_unk8 = 0;
         uint32_t g_unk9 = 0;
         uint8_t g_unk10 = 0;
+
+        // hack on
+        if (b.eof())
+            return;
+        READ(b, g_unk10);
+        b.skip(-1);
+        if (g_unk10 == 3)
+            return;
+        // hack off
 
         READ(b, g_unk7);
         /*if (g_unk7 != 0)
@@ -413,7 +423,7 @@ void mech_segment::mech::load(const buffer &b)
         READ(b, g_unk10);
 
         if (g_unk10 > 1)
-            std::cerr << "g_unk10 > 1" << "\n";
+            std::cerr << "g_unk10 (" << (int)g_unk10 << ") > 1" << "\n";
 
         if (g_unk10)
             gl.load(b);
@@ -750,7 +760,7 @@ void segment_desc::load(const buffer &b)
     CASE("ENV", env_segment);
     CASE("ORGREL", orgrel_segment);
     CASE("OTHERS", others_segment);
-    //CASE("MECH", mech_segment);
+    CASE("MECH", mech_segment);
     // CASE("GROUPS", groups_segment);
     CASE("ORGDATA", orgdata_segment);
     CASE("BUILDS", builds_segment);
