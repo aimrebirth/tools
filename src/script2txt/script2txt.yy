@@ -43,7 +43,7 @@
 
 %code requires // forward decl of C++ driver (our parser) in HPP
 {
-#include <Polygon4/DataManager/Schema/Context.h>
+#include <Polygon4/DataManager/Schema/Emitter.h>
 
 #include <set>
 }
@@ -52,10 +52,10 @@
 {
 struct MY_PARSER_DRIVER : MY_PARSER
 {
-    void setContext(Context &&ctx) { context = std::move(ctx); }
-    const Context &getContext() const { return context; }
+    void setContext(Emitter &&ctx) { context = std::move(ctx); }
+    const Emitter &getContext() const { return context; }
 
-    Context context;
+    Emitter context;
     std::set<std::string> functions;
 };
 }
@@ -82,7 +82,7 @@ struct MY_PARSER_DRIVER : MY_PARSER
     conds cond condition_body
     function_call
 
-%type <Context> condition condition_begin
+%type <Emitter> condition condition_begin
     statements statement
     proc_statements proc_statement
     procedure
@@ -114,7 +114,7 @@ global_statements: global_statement
 
 global_statement: function_call
     {
-        Context ctx;
+        Emitter ctx;
         ctx.addLine($1);
         $$ = std::move(ctx);
     }
@@ -123,22 +123,22 @@ global_statement: function_call
     | procedure
     { $$ = std::move($1); }
     | R_CURLY_BRACKET
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     | END
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     | ERROR_SYMBOL
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     | POINT
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     | STRING
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     | R_BRACKET
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     ;
 
 procedure: procedure_begin proc_statements END
     {
-        Context ctx;
+        Emitter ctx;
         ctx.beginBlock($1);
         ctx.addWithRelativeIndent($2);
         ctx.endBlock();
@@ -146,14 +146,14 @@ procedure: procedure_begin proc_statements END
     }
     | procedure_begin END
     {
-        Context ctx;
+        Emitter ctx;
         ctx.beginBlock($1);
         ctx.endBlock();
         $$ = std::move(ctx);
     }
     | procedure_begin L_CURLY_BRACKET statements R_CURLY_BRACKET
     {
-        Context ctx;
+        Emitter ctx;
         ctx.beginBlock($1);
         ctx.addWithRelativeIndent($3);
         ctx.endBlock();
@@ -177,24 +177,24 @@ proc_statements: proc_statement
     ;
 proc_statement: function_call
     {
-        Context ctx;
+        Emitter ctx;
         ctx.addLine($1);
         $$ = std::move(ctx);
     }
     | _PROC function_call
     {
-        Context ctx;
+        Emitter ctx;
         ctx.addLine("_PROC " + $2);
         $$ = std::move(ctx);
     }
     | condition
     { $$ = std::move($1); }
     | COLON
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     | R_BRACKET
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     | ERROR_SYMBOL
-    { $$ = Context(); }
+    { $$ = Emitter(); }
     ;
 
 statements: statement
@@ -210,7 +210,7 @@ statement: proc_statement
     { $$ = std::move($1); }
     | END
     {
-        Context ctx;
+        Emitter ctx;
         ctx.addLine("END");
         $$ = std::move(ctx);
     }
@@ -251,7 +251,7 @@ condition: condition_begin
     ;
 condition_begin: IF L_BRACKET condition_body R_BRACKET L_CURLY_BRACKET statements R_CURLY_BRACKET
     {
-        Context ctx;
+        Emitter ctx;
         ctx.beginBlock("if (" + $3 + ")");
         ctx.addWithRelativeIndent($6);
         ctx.endBlock();
@@ -259,7 +259,7 @@ condition_begin: IF L_BRACKET condition_body R_BRACKET L_CURLY_BRACKET statement
     }
     | IF L_BRACKET condition_body L_CURLY_BRACKET statements R_CURLY_BRACKET
     {
-        Context ctx;
+        Emitter ctx;
         ctx.beginBlock("if (" + $3 + ")");
         ctx.addWithRelativeIndent($5);
         ctx.endBlock();
@@ -267,7 +267,7 @@ condition_begin: IF L_BRACKET condition_body R_BRACKET L_CURLY_BRACKET statement
     }
     | IF L_BRACKET condition_body R_BRACKET L_CURLY_BRACKET R_CURLY_BRACKET
     {
-        Context ctx;
+        Emitter ctx;
         ctx.beginBlock("if (" + $3 + ")");
         ctx.endBlock();
         $$ = std::move(ctx);
