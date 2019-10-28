@@ -107,7 +107,7 @@ global_statements: global_statement
     {
         auto &ctx = $1;
         ctx.addLine();
-        ctx.addWithRelativeIndent($2);
+        ctx.addEmitter($2);
         $$ = std::move(ctx);
     }
     ;
@@ -140,7 +140,7 @@ procedure: procedure_begin proc_statements END
     {
         Emitter ctx;
         ctx.beginBlock($1);
-        ctx.addWithRelativeIndent($2);
+        ctx.addEmitter($2);
         ctx.endBlock();
         $$ = std::move(ctx);
     }
@@ -155,7 +155,7 @@ procedure: procedure_begin proc_statements END
     {
         Emitter ctx;
         ctx.beginBlock($1);
-        ctx.addWithRelativeIndent($3);
+        ctx.addEmitter($3);
         ctx.endBlock();
         $$ = std::move(ctx);
     }
@@ -171,7 +171,7 @@ proc_statements: proc_statement
     | proc_statements proc_statement
     {
         auto &ctx = $1;
-        ctx.addWithRelativeIndent($2);
+        ctx.addEmitter($2);
         $$ = std::move(ctx);
     }
     ;
@@ -202,7 +202,7 @@ statements: statement
     | statements statement
     {
         auto &ctx = $1;
-        ctx.addWithRelativeIndent($2);
+        ctx.addEmitter($2);
         $$ = std::move(ctx);
     }
     ;
@@ -244,7 +244,7 @@ condition: condition_begin
     {
         auto &ctx = $1;
         ctx.beginBlock("else");
-        ctx.addWithRelativeIndent($4);
+        ctx.addEmitter($4);
         ctx.endBlock();
         $$ = std::move(ctx);
     }
@@ -253,7 +253,7 @@ condition_begin: IF L_BRACKET condition_body R_BRACKET L_CURLY_BRACKET statement
     {
         Emitter ctx;
         ctx.beginBlock("if (" + $3 + ")");
-        ctx.addWithRelativeIndent($6);
+        ctx.addEmitter($6);
         ctx.endBlock();
         $$ = std::move(ctx);
     }
@@ -261,7 +261,7 @@ condition_begin: IF L_BRACKET condition_body R_BRACKET L_CURLY_BRACKET statement
     {
         Emitter ctx;
         ctx.beginBlock("if (" + $3 + ")");
-        ctx.addWithRelativeIndent($5);
+        ctx.addEmitter($5);
         ctx.endBlock();
         $$ = std::move(ctx);
     }

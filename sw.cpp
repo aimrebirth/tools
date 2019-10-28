@@ -42,7 +42,7 @@ void build(Solution &s)
     add_exe_with_common("tm_converter");
     add_exe("name_generator");
     add_exe_with_common("save_loader");
-    if (common.getSettings().TargetOS.Arch == ArchType::x86)
+    if (common.getBuildSettings().TargetOS.Arch == ArchType::x86)
         add_exe("unpaker"); // 32-bit only
 
     // not so simple targets
@@ -67,10 +67,13 @@ void build(Solution &s)
     path sdk = "d:/arh/apps/Autodesk/FBX/FBX SDK/2019.0";
     mod_converter += IncludeDirectory(sdk / "include");
     String cfg = "release";
-    if (mod_converter.getSettings().Native.ConfigurationType == ConfigurationType::Debug)
+    if (mod_converter.getBuildSettings().Native.ConfigurationType == ConfigurationType::Debug)
         cfg = "debug";
     String arch = "x64";
-    if (mod_converter.getSettings().TargetOS.Arch == ArchType::x86)
+    if (mod_converter.getBuildSettings().TargetOS.Arch == ArchType::x86)
         arch = "x86";
-    mod_converter += LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-md.lib"));
+    String md = "md";
+    if (mod_converter.getBuildSettings().Native.MT)
+        md = "mt";
+    mod_converter += LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-" + md + ".lib"));
 }
