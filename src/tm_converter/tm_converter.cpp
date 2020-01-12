@@ -61,7 +61,7 @@ void convert(const path &fn)
     src._read(&dxt5_flag, 1);
     src.seek(0x4C);
 
-    auto s = fn.string() + ".bmp";
+    auto s = path(fn) += ".bmp";
     mat<uint32_t> m(width, height);
     if (dxt5_flag)
     {

@@ -65,8 +65,8 @@ void convert_model(const model &m, const path &fn)
 {
     // write all
     if (all_formats)
-        m.print(fn.string());
-    m.printFbx(fn.string());
+        m.print(fn.u8string());
+    m.printFbx(fn.u8string());
 }
 
 void convert_model(const path &fn)
@@ -75,7 +75,7 @@ void convert_model(const path &fn)
 
     if (stats)
     {
-        m.save(root[fn.filename().string()]);
+        m.save(root[fn.filename().u8string()]);
         return;
     }
 

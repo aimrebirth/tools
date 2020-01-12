@@ -105,7 +105,7 @@ mmo_storage read_mmo(const path &fn)
 
 void write_mmo(Storage *storage, const mmo_storage &s)
 {
-    std::string map_name = s.name.filename().stem().string();
+    std::string map_name = s.name.filename().stem().u8string();
     if (!prefix.empty())
         map_name = prefix + "." + map_name;
     std::transform(map_name.begin(), map_name.end(), map_name.begin(), ::tolower);
@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
                 std::cout << mg.name;
                 std::cout << " " << mg.org;
                 std::cout << " " << mg.mechanoids.size();
-                std::cout << " " << file.filename().stem().string();
+                std::cout << " " << file.filename().stem().u8string();
                 std::cout << "\n";
             }
         });

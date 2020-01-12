@@ -143,10 +143,9 @@ void db::load(const buffer &b)
 
 void db::open(const path &p)
 {
-    std::string fn = p.string();
-    t.load(buffer(read_file(fn + ".tab")));
-    load(buffer(read_file(fn + ".ind")));
-    buffer b(read_file(fn + ".dat"));
+    t.load(buffer(read_file(path(p) += ".tab")));
+    load(buffer(read_file(path(p) += ".ind")));
+    buffer b(read_file(path(p) += ".dat"));
     for (auto &v : values)
         v.load_fields(t, b);
 }

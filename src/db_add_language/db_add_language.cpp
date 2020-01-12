@@ -219,7 +219,7 @@ void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4
         AimKV kv1;
         if (db.number_of_values)
         {
-            kv1 = ::get_kv(db, get_cp(p.filename().string()));
+            kv1 = ::get_kv(db, get_cp(p.filename().u8string()));
             kvm.insert(kv1.begin(), kv1.end());
         }
     };
@@ -282,7 +282,7 @@ void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4
         str += wstring2string(kv.second.s) + "\n";
         str += "\n================================================\n\n";
     }*/
-    write_file(p / (p.filename().string() + "_diff.txt"), str);
+    write_file(p / (p.filename() += "_diff.txt"), str);
 }
 
 int main(int argc, char *argv[])
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 #undef ADD_LANGUAGE
         else
         {
-            std::cerr << "No such lang: " << p.filename().string() << "\n";
+            std::cerr << "No such lang: " << p.filename().u8string() << "\n";
             continue;
         }
     }

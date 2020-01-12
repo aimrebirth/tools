@@ -63,7 +63,7 @@ mmm read_mmm(const path &fn)
 void process_mmm(const path &fn)
 {
     auto m = read_mmm(fn);
-    write_mat_bmp(fn.string() + ".bmp", m.data.unpack_mmm());
+    write_mat_bmp(fn.u8string() + ".bmp", m.data.unpack_mmm());
 }
 
 int main(int argc, char *argv[])
