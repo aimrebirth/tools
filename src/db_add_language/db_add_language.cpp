@@ -54,12 +54,12 @@ int get_cp(const std::string &cp)
 
 struct string_index
 {
-    std::wstring s;
+    P4String s;
     polygon4::detail::IdType i = -1;
 
     void setString(const std::string &rhs, int cp)
     {
-        s = str2utf16(rhs, cp);
+        s = to_string(str2utf16(rhs, cp));
     }
 };
 
@@ -180,7 +180,7 @@ AimKVResolved get_kv_resolved(const path &d, const polygon4::Storage &storage)
                 std::cout << "total kvs: " << ++i << "/" << sz << "\n";
                 std::map<int, polygon4::detail::IdType> m;
                 for (auto &s : storage.strings)
-                    m[levenshtein_distance<std::wstring>(kv.second.s, s.second->string.ru)] = s.first;
+                    m[levenshtein_distance(kv.second.s, s.second->string.ru)] = s.first;
                 if (m.empty())
                     return;
                 kv.second.i = m.begin()->second;
@@ -235,7 +235,7 @@ void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4
         if (i == kv_resolved.end())
             continue;
         auto &sold = s.strings[i->second]->string.*field;
-        auto d = levenshtein_distance<std::wstring>(sold, kv.second.s);
+        auto d = levenshtein_distance(sold, kv.second.s);
         dist.insert({ d, kv.first });
         //if (d == 0)
         //    continue;
@@ -260,10 +260,10 @@ void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4
         str += "kd: " + std::to_string(d2.first) + "\n";
         str += "key: " + i->first + "\n\n";
         str += "old:\n";
-        str += wstring2string(sold) + "\n";
+        str += sold + "\n";
         str += "\n";
         str += "new:\n";
-        str += wstring2string(kv.second.s) + "\n";
+        str += kv.second.s + "\n";
         str += "\n================================================\n\n";
     }
     /*for (auto &kv : kvm)
