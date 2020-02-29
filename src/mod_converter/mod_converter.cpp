@@ -45,6 +45,23 @@ cl::opt<bool> all_formats("af", cl::desc("All formats (.obj, .fbx)"));
 yaml root;
 cl::opt<bool> stats("i", cl::desc("Gather information from (models)"));
 
+// https://twitter.com/FreyaHolmer/status/644881436982575104
+// https://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_class_fbx_axis_system_html
+cl::opt<AxisSystem> AS(cl::desc("Choose axis system (.fbx only):"),
+    cl::values(
+#define axisval(x, y) \
+        cl::OptionEnumValue{ #x, (int)AxisSystem::x, y }
+
+        axisval(eMayaZUp,         "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded (         also 3dsMax, Blender)\n"
+            "(Blender: when importing, disable 'Use Pre/Post Rotation')"),
+        axisval(eMayaYUp,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded (default, also MotionBuilder, OpenGL)"),
+        axisval(eDirectX,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded  (         also Lightwave)")
+
+#undef axisval
+    )
+    , cl::init(AxisSystem::Default)
+);
+
 auto read_model(const path &fn)
 {
     buffer b(read_file(fn));
@@ -65,8 +82,8 @@ void convert_model(const model &m, const path &fn)
 {
     // write all
     if (all_formats)
-        m.print(fn.u8string());
-    m.printFbx(fn.u8string());
+        m.print(fn.u8string(), AS);
+    m.printFbx(fn.u8string(), AS);
 }
 
 void convert_model(const path &fn)

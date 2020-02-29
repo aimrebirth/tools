@@ -211,57 +211,20 @@ bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename)
     return lStatus;
 }
 
-// https://twitter.com/FreyaHolmer/status/644881436982575104
-// https://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_class_fbx_axis_system_html
-cl::opt<FbxAxisSystem::EPreDefinedAxisSystem> AS(cl::desc("Choose axis system (fbx only):"),
-    cl::values(
-#define axisval(x, y) \
-        cl::OptionEnumValue{ #x, FbxAxisSystem::EPreDefinedAxisSystem::x, y }
-
-        axisval(eMayaZUp,         "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded"),
-        axisval(eMayaYUp,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded (default)"),
-        axisval(eMax,             "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded"),
-        cl::OptionEnumValue{"eBlender", FbxAxisSystem::EPreDefinedAxisSystem::eMax,
-                                  "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded\n(when importing, disable 'Use Pre/Post Rotation')"},
-        axisval(eMotionBuilder,   "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded"),
-        axisval(eOpenGL,          "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded"),
-        axisval(eDirectX,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded"),
-        axisval(eLightwave,       "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded")
-
-#undef axisval
-    )
-    , cl::init(FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
-);
-
-void ConvertScene(FbxScene* lScene)
+void ConvertScene(FbxScene* lScene, AxisSystem as)
 {
-    switch (AS.getValue())
+    switch (as)
     {
-    case FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp:
+    case AxisSystem::eMayaZUp:
         FbxAxisSystem::MayaZUp.ConvertScene(lScene);
         break;
-    case FbxAxisSystem::EPreDefinedAxisSystem::eMax:
-        FbxAxisSystem::Max.ConvertScene(lScene);
-        break;
-    case FbxAxisSystem::EPreDefinedAxisSystem::eMotionBuilder:
-        FbxAxisSystem::Motionbuilder.ConvertScene(lScene);
-        break;
-    case FbxAxisSystem::EPreDefinedAxisSystem::eOpenGL:
-        FbxAxisSystem::OpenGL.ConvertScene(lScene);
-        break;
-    case FbxAxisSystem::EPreDefinedAxisSystem::eDirectX:
+    case AxisSystem::eDirectX:
         FbxAxisSystem::DirectX.ConvertScene(lScene);
-        break;
-    case FbxAxisSystem::EPreDefinedAxisSystem::eLightwave:
-        FbxAxisSystem::Lightwave.ConvertScene(lScene);
-        break;
-    case FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp:
-    default:
         break;
     }
 }
 
-void model::printFbx(const std::string &fn) const
+void model::printFbx(const std::string &fn, AxisSystem as) const
 {
     FbxManager* lSdkManager = NULL;
     FbxScene* lScene = NULL;
@@ -272,7 +235,7 @@ void model::printFbx(const std::string &fn) const
     // Create the scene.
     CreateScene(*this, fn, lSdkManager, lScene);
 
-    ConvertScene(lScene);
+    ConvertScene(lScene, as);
 
     SaveScene(lSdkManager, lScene, (fn + ".fbx").c_str());
     //SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str());

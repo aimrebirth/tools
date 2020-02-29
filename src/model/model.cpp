@@ -151,19 +151,32 @@ static String print_float(double v)
     return buf;
 };
 
+// input (AIM Coordinates) are in eMayaYUp
 template <class T>
-static aim_vector3<T> rotate(const aim_vector3<T> &in, int rot_type = 0)
+static aim_vector3<T> rotate(const aim_vector3<T> &in, AxisSystem rot_type)
 {
-    // input is AIM Coordinates, Z UP, RH axis system - eMax (same as eMayaZUp) in fbx.
-    // TODO: perform rotations using rot_type from fbx (its constants)
+    // it is not so simple
+    // we can change coords, but normals and other stuff require recalculation?
+    return in;
 
-    auto v = in;
+    aim_vector3<T> v = in;
+    switch (rot_type)
+    {
+    case AxisSystem::eMayaZUp:
+        v.y = in.z;
+        v.z = in.y;
+        v.y = -v.y;
+        break;
+    case AxisSystem::eDirectX:
+        v.x = -v.x;
+        break;
+    }
     return v;
 }
 
-std::string vertex::printVertex() const
+std::string vertex::printVertex(AxisSystem as) const
 {
-    auto v = rotate(coordinates);
+    auto v = rotate(coordinates, as);
 
     std::string s;
     s = "v " +
@@ -175,9 +188,9 @@ std::string vertex::printVertex() const
     return s;
 }
 
-std::string vertex::printNormal() const
+std::string vertex::printNormal(AxisSystem as) const
 {
-    auto v = rotate(normal);
+    auto v = rotate(normal, as);
 
     std::string s;
     s = "vn " + print_float(v.x) + " " + print_float(v.y) + " " + print_float(v.z);
@@ -306,7 +319,7 @@ std::string block::printMtl() const
     return s;
 }
 
-std::string block::printObj(int group_offset) const
+std::string block::printObj(int group_offset, AxisSystem as) const
 {
     std::string s;
     s += "usemtl " + h.name + "\n";
@@ -317,11 +330,11 @@ std::string block::printObj(int group_offset) const
 
     s += "# " + std::to_string(vertices.size()) + " vertices\n";
     for (auto &v : vertices)
-        s += v.printVertex() + "\n";
+        s += v.printVertex(as) + "\n";
     s += "\n";
     s += "# " + std::to_string(vertices.size()) + " vertex normals\n";
     for (auto &v : vertices)
-        s += v.printNormal() + "\n";
+        s += v.printNormal(as) + "\n";
     s += "\n";
     s += "# " + std::to_string(vertices.size()) + " texture coords\n";
     for (auto &v : vertices)
@@ -331,7 +344,7 @@ std::string block::printObj(int group_offset) const
     s += "# " + std::to_string(vertices.size()) + " faces\n";
     for (auto &t : faces)
     {
-        auto v = rotate(t);
+        auto v = rotate(t, as);
 
         auto x = std::to_string(v.x + 1 + group_offset);
         auto y = std::to_string(v.y + 1 + group_offset);
@@ -607,7 +620,7 @@ void model::load(const buffer &b)
         f.load(b);
 }
 
-void model::print(const std::string &fn) const
+void model::print(const std::string &fn, AxisSystem as) const
 {
     auto title = [](auto &o)
     {
@@ -629,7 +642,7 @@ void model::print(const std::string &fn) const
             if (!b.canPrint())
                 continue;
 
-            o << b.printObj(n_vert) << "\n";
+            o << b.printObj(n_vert, as) << "\n";
             n_vert += b.vertices.size();
         }
     };

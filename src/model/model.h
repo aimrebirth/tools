@@ -79,6 +79,26 @@ enum class MaterialType : uint32_t
     Fire2                                                   = 0x3D,
 };
 
+enum class AxisSystem
+{
+    // UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded
+    // default, AIM
+    eMayaYUp,
+    eMotionBuilder = eMayaYUp,
+    eOpenGL = eMayaYUp,
+
+    // UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded
+    eMayaZUp,
+    eMax = eMayaZUp,
+
+    // UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded
+    eDirectX,
+    eLightwave = eDirectX,
+
+    // special
+    Default = 0,
+};
+
 template <typename T>
 struct aim_vector3 : vector3<T>
 {
@@ -118,8 +138,8 @@ struct vertex
 
     void load(const buffer &b, uint32_t flags);
 
-    std::string printVertex() const;
-    std::string printNormal() const;
+    std::string printVertex(AxisSystem as) const;
+    std::string printNormal(AxisSystem as) const;
     std::string printTex() const;
 };
 
@@ -289,7 +309,7 @@ struct block
     void loadPayload(const buffer &b);
 
     std::string printMtl() const;
-    std::string printObj(int group_offset) const;
+    std::string printObj(int group_offset, AxisSystem as) const;
     block_info save(yaml &root) const;
 
     bool canPrint() const;
@@ -302,8 +322,8 @@ struct model
 
     void load(const buffer &b);
 
-    void print(const std::string &fn) const;
-    void printFbx(const std::string &fn) const;
+    void print(const std::string &fn, AxisSystem) const;
+    void printFbx(const std::string &fn, AxisSystem) const;
     void save(yaml &root) const;
 };
 
