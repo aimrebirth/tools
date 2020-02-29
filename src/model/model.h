@@ -85,9 +85,11 @@ struct aim_vector3 : vector3<T>
     using base = vector3<T>;
 };
 
-struct aim_vector4 : aim_vector3<float>
+using aim_vector3f = aim_vector3<float>;
+
+struct aim_vector4 : aim_vector3f
 {
-    using base = aim_vector3<float>;
+    using base = aim_vector3f;
 
     float w = 1.0f;
 
@@ -95,7 +97,7 @@ struct aim_vector4 : aim_vector3<float>
     void load(const buffer &b, uint32_t flags = 0);
 };
 
-struct vertex_normal : aim_vector3<float>
+struct vertex_normal : aim_vector3f
 {
     void load(const buffer &b);
 };
