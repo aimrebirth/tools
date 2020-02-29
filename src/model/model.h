@@ -306,4 +306,3 @@ struct model
 };
 
 float scale_mult();
-int get_x_coordinate_id();

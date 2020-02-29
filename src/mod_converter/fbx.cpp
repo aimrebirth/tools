@@ -211,6 +211,56 @@ bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename)
     return lStatus;
 }
 
+// https://twitter.com/FreyaHolmer/status/644881436982575104
+// https://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_class_fbx_axis_system_html
+cl::opt<FbxAxisSystem::EPreDefinedAxisSystem> AS(cl::desc("Choose axis system (fbx only):"),
+    cl::values(
+#define axisval(x, y) \
+        cl::OptionEnumValue{ #x, FbxAxisSystem::EPreDefinedAxisSystem::x, y }
+
+        axisval(eMayaZUp,         "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded"),
+        axisval(eMayaYUp,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded (default)"),
+        axisval(eMax,             "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded"),
+        cl::OptionEnumValue{"eBlender", FbxAxisSystem::EPreDefinedAxisSystem::eMax,
+                                  "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded\n(when importing, disable 'Use Pre/Post Rotation')"},
+        axisval(eMotionBuilder,   "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded"),
+        axisval(eOpenGL,          "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded"),
+        axisval(eDirectX,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded"),
+        axisval(eLightwave,       "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded")
+
+#undef axisval
+    )
+    , cl::init(FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
+);
+
+void ConvertScene(FbxScene* lScene)
+{
+    switch (AS.getValue())
+    {
+    case FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp:
+        FbxAxisSystem::MayaZUp.ConvertScene(lScene);
+        break;
+    case FbxAxisSystem::EPreDefinedAxisSystem::eMax:
+        FbxAxisSystem::Max.ConvertScene(lScene);
+        break;
+    case FbxAxisSystem::EPreDefinedAxisSystem::eMotionBuilder:
+        FbxAxisSystem::Motionbuilder.ConvertScene(lScene);
+        break;
+    case FbxAxisSystem::EPreDefinedAxisSystem::eOpenGL:
+        FbxAxisSystem::OpenGL.ConvertScene(lScene);
+        break;
+    case FbxAxisSystem::EPreDefinedAxisSystem::eDirectX:
+        FbxAxisSystem::DirectX.ConvertScene(lScene);
+        break;
+    case FbxAxisSystem::EPreDefinedAxisSystem::eLightwave:
+        FbxAxisSystem::Lightwave.ConvertScene(lScene);
+        break;
+    case FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp:
+    default:
+        break;
+    }
+}
+
 void model::printFbx(const std::string &fn) const
 {
     FbxManager* lSdkManager = NULL;
@@ -219,11 +269,10 @@ void model::printFbx(const std::string &fn) const
     // Prepare the FBX SDK.
     InitializeSdkObjects(lSdkManager, lScene);
 
-    // default is ???
-    //FbxAxisSystem::MayaZUp.ConvertScene(lScene);
-
     // Create the scene.
     CreateScene(*this, fn, lSdkManager, lScene);
+
+    ConvertScene(lScene);
 
     SaveScene(lSdkManager, lScene, (fn + ".fbx").c_str());
     //SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str());
@@ -249,7 +298,7 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         return socket;
     };
 
-    auto create_socket = [&create_socket_named](const auto &b, const std::string &name, bool mirror_x = false)
+    auto create_socket = [&create_socket_named](const auto &b, const std::string &name, bool mirror_y = false)
     {
         FbxVector4 c;
         for (auto &v : b.vertices)
@@ -261,12 +310,9 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         c /= b.vertices.size();
 
         auto s = create_socket_named(name);
-        // here we must mirror 'first' number (original x)
-        // it depends on what order was during loading
-        if (mirror_x)
-            c.mData[get_x_coordinate_id()] = -c.mData[get_x_coordinate_id()];
+        if (mirror_y) // y is the second coord, idx = 1
+            c.mData[1] = -c.mData[1];
         s->LclTranslation.Set(c);
-        //s->LclScaling.Set(FbxDouble3(scale_mult(), scale_mult(), scale_mult()));
     };
 
     int engine_id = 0;
@@ -339,9 +385,9 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         // add vertices, normals, uvs
         for (const auto &[i,v] : enumerate(b.vertices))
         {
-            FbxVector4 x(v.coordinates.x * scale_mult(), v.coordinates.y * scale_mult(), v.coordinates.z * scale_mult(), v.coordinates.w);
+            FbxVector4 cp(v.coordinates.x * scale_mult(), v.coordinates.y * scale_mult(), v.coordinates.z * scale_mult(), v.coordinates.w);
             FbxVector4 n(v.normal.x, v.normal.y, v.normal.z);
-            m->SetControlPointAt(x, n, i);
+            m->SetControlPointAt(cp, n, i);
 
             float f;
             auto uc = modf(fabs(v.texture_coordinates.u), &f);

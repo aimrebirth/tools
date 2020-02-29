@@ -84,82 +84,21 @@ std::string translate(const std::string &s)
     return s3;
 }
 
-enum AxisSystem
-{
-    MayaYUpZFrontRH,
-    Windows3dViewer = MayaYUpZFrontRH,
-
-    AIM,
-    UE4 = AIM, // Do not use 'Convert scene' during UE4 import!
-
-    ax_aim = AIM,
-    ax_ue4 = ax_aim,
-    ax_maya_y = MayaYUpZFrontRH,
-    ax_win_3d_viewer = ax_maya_y,
-};
-
-cl::opt<AxisSystem> AS(cl::desc("Choose axis system:"),
-    cl::values(
-        clEnumVal(ax_ue4, "Original AIM or UE4 axis system"),
-        clEnumVal(ax_maya_y, "Default MAYA Y-Up Z-Front or Windows 3d Viewer axis system")
-    )
-    , cl::init(AxisSystem::UE4)
-);
-
-int get_x_coordinate_id()
-{
-    switch (AS)
-    {
-    case AxisSystem::AIM:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
 static void load_translated(aim_vector3<float> &v, const buffer &b)
 {
     /*
-    Our coord system:
-
-      ^ z
-      |
-       ---> y
-     /
-    v x
-
-    AIM Coordinates:
-    1st number: +Y (left) (or -Y (right)?) (-Y?)
-    2nd number: +X (front) - 100% sure (-X?)
-    3rd number: +Z (up) - 100% sure
-
-    This is Z UP, LH axis system.
-
-    Also see https://twitter.com/FreyaHolmer/status/644881436982575104
+    AIM Coordinates (.mod file coord system, 100% sure):
+        1st number: -Y (front, -ParityOdd)
+        2nd number: +X (right, thus RH)
+        3rd number: +Z (up)
+    This is Z UP, RH axis system - eMax (same as eMayaZUp) in fbx.
     */
 
-    switch (AS)
-    {
-    case AxisSystem::MayaYUpZFrontRH:
-        // Y UP, Z FRONT (RH)
-        READ(b, v.x);
-        READ(b, v.z);
-        READ(b, v.y);
-        break;
-    case AxisSystem::AIM:
-        // Z UP, X FRONT (LH)
-        READ(b, v.y);
-        READ(b, v.x);
-        READ(b, v.z);
-        break;
-    default:
-        throw SW_RUNTIME_ERROR("Unknown Axis System");
-    }
-
-    /*
-    // Y UP, X FRONT (LH?) (blender accepts such fbx)
-    z,x,y
-    */
+    // this is correct order and correct Y fix
+    READ(b, v.y);
+    READ(b, v.x);
+    READ(b, v.z);
+    v.y = -v.y;
 }
 
 void aim_vector4::load(const buffer &b, uint32_t flags)

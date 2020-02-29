@@ -40,7 +40,7 @@ bool silent = false;
 bool printMaxPolygonBlock = false;
 
 cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files>"), cl::value_desc("file or directory"), cl::Required);
-cl::opt<bool> all_formats("af", cl::desc("All formats"));
+cl::opt<bool> all_formats("af", cl::desc("All formats (.obj, .fbx)"));
 
 yaml root;
 cl::opt<bool> stats("i", cl::desc("Gather information from (models)"));
