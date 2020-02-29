@@ -151,13 +151,25 @@ static String print_float(double v)
     return buf;
 };
 
+template <class T>
+static aim_vector3<T> rotate(const aim_vector3<T> &in, int rot_type = 0)
+{
+    // input is AIM Coordinates, Z UP, RH axis system - eMax (same as eMayaZUp) in fbx.
+    // TODO: perform rotations using rot_type from fbx (its constants)
+
+    auto v = in;
+    return v;
+}
+
 std::string vertex::printVertex() const
 {
+    auto v = rotate(coordinates);
+
     std::string s;
     s = "v " +
-        print_float(coordinates.x * scale_mult())
-        + " " + print_float(coordinates.y * scale_mult())
-        + " " + print_float(coordinates.z * scale_mult())
+        print_float(v.x * scale_mult())
+        + " " + print_float(v.y * scale_mult())
+        + " " + print_float(v.z * scale_mult())
         //+ " " + print_float(coordinates.w)
         ;
     return s;
@@ -165,8 +177,10 @@ std::string vertex::printVertex() const
 
 std::string vertex::printNormal() const
 {
+    auto v = rotate(normal);
+
     std::string s;
-    s = "vn " + print_float(normal.x) + " " + print_float(normal.y) + " " + print_float(normal.z);
+    s = "vn " + print_float(v.x) + " " + print_float(v.y) + " " + print_float(v.z);
     return s;
 }
 
@@ -317,9 +331,11 @@ std::string block::printObj(int group_offset) const
     s += "# " + std::to_string(vertices.size()) + " faces\n";
     for (auto &t : faces)
     {
-        auto x = std::to_string(t.x + 1 + group_offset);
-        auto y = std::to_string(t.y + 1 + group_offset);
-        auto z = std::to_string(t.z + 1 + group_offset);
+        auto v = rotate(t);
+
+        auto x = std::to_string(v.x + 1 + group_offset);
+        auto y = std::to_string(v.y + 1 + group_offset);
+        auto z = std::to_string(v.z + 1 + group_offset);
         x += "/" + x + "/" + x;
         y += "/" + y + "/" + y;
         z += "/" + z + "/" + z;
