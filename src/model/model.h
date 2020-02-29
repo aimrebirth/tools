@@ -90,6 +90,7 @@ enum class AxisSystem
     // UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded
     eMayaZUp,
     eMax = eMayaZUp,
+    eBlender = eMayaZUp, // TODO: check: actually Blender might have +ParityOdd
 
     // UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded
     eDirectX,
