@@ -221,6 +221,11 @@ void ConvertScene(FbxScene* lScene, AxisSystem as)
     case AxisSystem::eDirectX:
         FbxAxisSystem::DirectX.ConvertScene(lScene);
         break;
+    case AxisSystem::eWindows3DViewer:
+        // UpVector = +Z, FrontVector = +Y, CoordSystem = +X (RightHanded)
+        // UpVector = ZAxis, FrontVector = ParityOdd, CoordSystem = RightHanded
+        FbxAxisSystem(FbxAxisSystem::eZAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eRightHanded).ConvertScene(lScene);
+        break;
     }
 }
 
