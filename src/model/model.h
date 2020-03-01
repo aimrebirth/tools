@@ -96,6 +96,9 @@ enum class AxisSystem
     eDirectX,
     eLightwave = eDirectX,
 
+    // UpVector = ZAxis, FrontVector = ParityOdd, CoordSystem = RightHanded
+    eWindows3DViewer,
+
     // special
     Default = 0,
 };

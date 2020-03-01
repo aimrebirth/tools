@@ -99,6 +99,8 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     READ(b, v.x);
     READ(b, v.z);
     v.y = -v.y;
+
+    // after load we have eMayaYUp
 }
 
 void aim_vector4::load(const buffer &b, uint32_t flags)
@@ -149,21 +151,19 @@ static String print_float(double v)
     return buf;
 };
 
-// input (AIM Coordinates) are in eMayaYUp
 template <class T>
 static aim_vector3<T> rotate(const aim_vector3<T> &in, AxisSystem rot_type)
 {
-    // it is not so simple
-    // we can change coords, but normals and other stuff require recalculation?
-    return in;
+    // input (AIM Coordinates) are in eMayaYUp
 
     aim_vector3<T> v = in;
     switch (rot_type)
     {
     case AxisSystem::eMayaZUp:
+        v.y = -v.y;
+    case AxisSystem::eWindows3DViewer:
         v.y = in.z;
         v.z = in.y;
-        v.y = -v.y;
         break;
     case AxisSystem::eDirectX:
         v.x = -v.x;

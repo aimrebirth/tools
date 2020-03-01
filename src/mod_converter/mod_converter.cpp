@@ -52,13 +52,25 @@ cl::opt<AxisSystem> AS(cl::desc("Choose axis system (.fbx only):"),
     cl::values(
 #define axisval(x, y) \
         cl::OptionEnumValue{ #x, (int)AxisSystem::x, y }
+#define axisalias(x, a) \
+    cl::OptionEnumValue{ #x, (int)AxisSystem::a, "Same as " #a }
 
         axisval(eMayaZUp,         "UpVector = ZAxis, FrontVector = -ParityOdd, CoordSystem = RightHanded (         also 3dsMax, Blender)\n"
             "(Blender: when importing, disable 'Use Pre/Post Rotation')"),
+        axisalias(eMax, eMayaZUp),
+        axisalias(eBlender, eMayaZUp),
+
         axisval(eMayaYUp,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded (default, also MotionBuilder, OpenGL)"),
-        axisval(eDirectX,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded  (         also Lightwave)")
+        axisalias(eMotionbuilder, eMayaYUp),
+        axisalias(eOpenGL, eMayaYUp),
+
+        axisval(eDirectX,         "UpVector = YAxis, FrontVector =  ParityOdd, CoordSystem = LeftHanded  (         also Lightwave)"),
+        axisalias(eLightwave, eDirectX),
+
+        axisval(eWindows3DViewer, "UpVector = ZAxis, FrontVector =  ParityOdd, CoordSystem = RightHanded (         also Lightwave)")
 
 #undef axisval
+#undef axisalias
     )
     , cl::init(AxisSystem::Default)
 );
