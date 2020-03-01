@@ -144,8 +144,10 @@ struct vertex
     std::string printTex() const;
 };
 
-struct face : aim_vector3<uint16_t>
+struct face
 {
+    uint16_t vertex_list[3];
+
     void load(const buffer &b);
 };
 
@@ -311,10 +313,15 @@ struct block
 
     std::string printMtl() const;
     std::string printObj(int group_offset, AxisSystem as) const;
+    std::string printObjSlow(int group_offset, AxisSystem as) const;
     block_info save(yaml &root) const;
 
     bool canPrint() const;
     bool isEngineFx() const;
+
+private:
+    std::string block::printObj(int group_offset, AxisSystem as,
+        const std::vector<vertex> &vertices, const std::vector<face> &faces) const;
 };
 
 struct model

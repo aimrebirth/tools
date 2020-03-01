@@ -139,9 +139,7 @@ void vertex::load(const buffer &b, uint32_t flags)
 
 void face::load(const buffer &b)
 {
-    READ(b, x);
-    READ(b, y);
-    READ(b, z);
+    READ(b, vertex_list);
 }
 
 static String print_float(double v)
@@ -319,15 +317,10 @@ std::string block::printMtl() const
     return s;
 }
 
-std::string block::printObj(int group_offset, AxisSystem as) const
+static std::string print_vertices_and_faces(int group_offset, AxisSystem as,
+    const std::vector<vertex> &vertices, const std::vector<face> &faces)
 {
     std::string s;
-    s += "usemtl " + h.name + "\n";
-    s += "\n";
-    s += "g " + h.name + "\n";
-    s += "s 1\n"; // still unk how to use
-    s += "\n";
-
     s += "# " + std::to_string(vertices.size()) + " vertices\n";
     for (auto &v : vertices)
         s += v.printVertex(as) + "\n";
@@ -344,20 +337,76 @@ std::string block::printObj(int group_offset, AxisSystem as) const
     s += "# " + std::to_string(vertices.size()) + " faces\n";
     for (auto &t : faces)
     {
-        auto v = rotate(t, as);
+        // no rotate here
+        // it is not face operation
+        s += "f ";
+        for (auto v : t.vertex_list)
+        {
+            auto x = std::to_string(v + 1 + group_offset);
+            x += "/" + x + "/" + x;
+            s += x + " ";
+        }
+        s += "\n";
+    }
+    return s;
+}
 
-        auto x = std::to_string(v.x + 1 + group_offset);
-        auto y = std::to_string(v.y + 1 + group_offset);
-        auto z = std::to_string(v.z + 1 + group_offset);
-        x += "/" + x + "/" + x;
-        y += "/" + y + "/" + y;
-        z += "/" + z + "/" + z;
-        s += "f " + x + " " + z + " " + y + "\n";
+std::string block::printObj(int group_offset, AxisSystem as,
+    const std::vector<vertex> &vertices, const std::vector<face> &faces) const
+{
+    std::string s;
+    s += "usemtl " + h.name + "\n";
+    s += "\n";
+    s += "g " + h.name + "\n";
+    s += "s 1\n"; // still unk how to use
+    s += "\n";
+
+    s += print_vertices_and_faces(group_offset, as, vertices, faces);
+    return s;
+}
+
+std::string block::printObj(int group_offset, AxisSystem as) const
+{
+    return printObj(group_offset, as, vertices, faces);
+}
+
+std::string block::printObjSlow(int group_offset, AxisSystem as) const
+{
+    // TODO: this implementation is not working now
+    // Correct one is at https://pastebin.com/KewhggDj
+
+    std::vector<vertex> vertices2;
+    vertices2.reserve(vertices.size());
+    std::unordered_map<short, short> repl;
+    repl.reserve(vertices.size());
+
+    auto sz = vertices.size();
+    for (int i = 0; i < sz; i++)
+    {
+        auto it = std::find_if(vertices2.begin(), vertices2.end(), [this, i](auto &v1)
+        {
+            return (aim_vector3f&)vertices[i].coordinates == (aim_vector3f&)v1.coordinates;
+        });
+        if (it == vertices2.end())
+            vertices2.push_back(vertices[i]);
+        else
+            repl[i] = std::distance(vertices2.begin(), it);
     }
 
-    s += "\n";
-    s += "\n";
-    return s;
+    std::vector<face> faces2;
+    for (auto f : faces)
+    {
+        for (auto &v : f.vertex_list)
+            v = repl[v];
+        auto it = std::find_if(faces2.begin(), faces2.end(), [f](auto &f1)
+        {
+            return f.vertex_list == f1.vertex_list;
+        });
+        if (it == faces2.end())
+            faces2.push_back(f);
+    }
+
+    return printObj(group_offset, as, vertices2, faces2);
 }
 
 void block::header::texture::load(const buffer &b)
@@ -630,7 +679,7 @@ void model::print(const std::string &fn, AxisSystem as) const
         o << "\n";
     };
 
-    auto print_obj = [&](const auto &n)
+    auto print_obj = [&](const auto &n, bool patched)
     {
         std::ofstream o(n);
         title(o);
@@ -642,7 +691,7 @@ void model::print(const std::string &fn, AxisSystem as) const
             if (!b.canPrint())
                 continue;
 
-            o << b.printObj(n_vert, as) << "\n";
+            o << (patched ? b.printObjSlow(n_vert, as) : b.printObj(n_vert, as)) << "\n";
             n_vert += b.vertices.size();
         }
     };
@@ -653,7 +702,8 @@ void model::print(const std::string &fn, AxisSystem as) const
     for (auto &b : blocks)
         m << b.printMtl() << "\n";
 
-    print_obj(fn + ".obj");
+    print_obj(fn + ".obj", false);
+    print_obj(fn + "_patched.obj", true);
 }
 
 void model::save(yaml &root) const

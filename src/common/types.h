@@ -43,6 +43,11 @@ struct vector3
     T x;
     T y;
     T z;
+
+    bool operator==(const vector3 &rhs) const
+    {
+        return std::tie(x,y,z) == std::tie(rhs.x,rhs.y,rhs.z);
+    }
 };
 
 using vector3f = vector3<float>;

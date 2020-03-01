@@ -365,9 +365,8 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         {
             // Set the control point indices of the bottom side of the pyramid
             m->BeginPolygon();
-            m->AddPolygon(v.x);
-            m->AddPolygon(v.y);
-            m->AddPolygon(v.z);
+            for (auto i : v.vertex_list)
+                m->AddPolygon(i);
             m->EndPolygon();
         }
 
