@@ -370,51 +370,6 @@ std::string block::printObj(int group_offset, AxisSystem as) const
     return printObj(group_offset, as, vertices, faces);
 }
 
-static auto linkFaces(const std::vector<vertex> &vertices, const std::vector<face> &faces)
-{
-    // reference implementation by Razum: https://pastebin.com/KewhggDj
-
-    std::vector<vertex> vertices2;
-    vertices2.reserve(vertices.size());
-    std::unordered_map<short, short> repl;
-    repl.reserve(vertices.size());
-
-    auto sz = vertices.size();
-    for (int i = 0; i < sz; i++)
-    {
-        auto it = std::find_if(vertices2.begin(), vertices2.end(), [&vertices, i](auto &v1)
-        {
-            return (aim_vector3f&)vertices[i].coordinates == (aim_vector3f&)v1.coordinates;
-        });
-        if (it == vertices2.end())
-        {
-            vertices2.push_back(vertices[i]);
-            repl[i] = vertices2.size() - 1;
-        }
-        else
-            repl[i] = std::distance(vertices2.begin(), it);
-    }
-
-    std::vector<face> faces2;
-    faces2.reserve(faces.size());
-    for (auto f : faces)
-    {
-        for (auto &v : f.vertex_list)
-            v = repl[v];
-        // remove duplicates
-        if (std::find(faces2.begin(), faces2.end(), f) == faces2.end())
-            faces2.push_back(f);
-    }
-
-    return std::tuple{ vertices2, faces2 };
-}
-
-std::string block::printObjSlow(int group_offset, AxisSystem as) const
-{
-    auto [vertices2, faces2] = linkFaces(vertices, faces);
-    return printObj(group_offset, as, vertices2, faces2);
-}
-
 void block::header::texture::load(const buffer &b)
 {
     READ_STRING(b, name);
@@ -597,6 +552,52 @@ void block::loadPayload(const buffer &data)
         throw std::logic_error(s);
 }
 
+static auto linkFaces(const std::vector<vertex> &vertices, const std::vector<face> &faces)
+{
+    // reference implementation by Razum: https://pastebin.com/KewhggDj
+
+    std::vector<vertex> vertices2;
+    vertices2.reserve(vertices.size());
+    std::unordered_map<short, short> repl;
+    repl.reserve(vertices.size());
+
+    auto sz = vertices.size();
+    for (int i = 0; i < sz; i++)
+    {
+        auto it = std::find_if(vertices2.begin(), vertices2.end(), [&vertices, i](auto &v1)
+        {
+            return (aim_vector3f&)vertices[i].coordinates == (aim_vector3f&)v1.coordinates;
+        });
+        if (it == vertices2.end())
+        {
+            vertices2.push_back(vertices[i]);
+            repl[i] = vertices2.size() - 1;
+        }
+        else
+            repl[i] = std::distance(vertices2.begin(), it);
+    }
+
+    std::vector<face> faces2;
+    faces2.reserve(faces.size());
+    for (auto f : faces)
+    {
+        for (auto &v : f.vertex_list)
+            v = repl[v];
+        // remove duplicates
+        if (std::find(faces2.begin(), faces2.end(), f) == faces2.end())
+            faces2.push_back(f);
+    }
+
+    return std::tuple{ vertices2, faces2 };
+}
+
+void block::linkFaces()
+{
+    auto [v, f] = ::linkFaces(vertices, faces);
+    vertices = v;
+    faces = f;
+}
+
 bool block::isEngineFx() const
 {
     return h.type == BlockType::HelperObject && h.name.find(boost::to_lower_copy(std::string("FIRE"))) == 0;
@@ -675,6 +676,12 @@ void model::load(const buffer &b)
         f.load(b);
 }
 
+void model::linkFaces()
+{
+    for (auto &f : blocks)
+        f.linkFaces();
+}
+
 void model::print(const std::string &fn, AxisSystem as) const
 {
     auto title = [](auto &o)
@@ -685,7 +692,7 @@ void model::print(const std::string &fn, AxisSystem as) const
         o << "\n";
     };
 
-    auto print_obj = [&](const auto &n, bool patched)
+    auto print_obj = [&](const auto &n)
     {
         std::ofstream o(n);
         title(o);
@@ -697,7 +704,7 @@ void model::print(const std::string &fn, AxisSystem as) const
             if (!b.canPrint())
                 continue;
 
-            o << (patched ? b.printObjSlow(n_vert, as) : b.printObj(n_vert, as)) << "\n";
+            o << b.printObj(n_vert, as) << "\n";
             n_vert += b.vertices.size();
         }
     };
@@ -708,8 +715,7 @@ void model::print(const std::string &fn, AxisSystem as) const
     for (auto &b : blocks)
         m << b.printMtl() << "\n";
 
-    print_obj(fn + ".obj", false);
-    print_obj(fn + "_patched.obj", true);
+    print_obj(fn + ".obj");
 }
 
 void model::save(yaml &root) const

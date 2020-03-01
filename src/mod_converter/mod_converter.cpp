@@ -41,6 +41,7 @@ bool printMaxPolygonBlock = false;
 
 cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files>"), cl::value_desc("file or directory"), cl::Required);
 cl::opt<bool> all_formats("af", cl::desc("All formats (.obj, .fbx)"));
+cl::opt<bool> link_faces("lf", cl::desc("Link faces (default: true)"), cl::init(true));
 
 yaml root;
 cl::opt<bool> stats("i", cl::desc("Gather information from (models)"));
@@ -67,6 +68,8 @@ auto read_model(const path &fn)
     buffer b(read_file(fn));
     model m;
     m.load(b);
+    if (link_faces)
+        m.linkFaces();
 
     if (!b.eof())
     {

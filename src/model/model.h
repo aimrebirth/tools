@@ -311,10 +311,10 @@ struct block
 
     void load(const buffer &b);
     void loadPayload(const buffer &b);
+    void linkFaces();
 
     std::string printMtl() const;
     std::string printObj(int group_offset, AxisSystem as) const;
-    std::string printObjSlow(int group_offset, AxisSystem as) const;
     block_info save(yaml &root) const;
 
     bool canPrint() const;
@@ -330,6 +330,7 @@ struct model
     std::vector<block> blocks;
 
     void load(const buffer &b);
+    void linkFaces();
 
     void print(const std::string &fn, AxisSystem) const;
     void printFbx(const std::string &fn, AxisSystem) const;
