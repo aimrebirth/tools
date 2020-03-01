@@ -370,10 +370,9 @@ std::string block::printObj(int group_offset, AxisSystem as) const
     return printObj(group_offset, as, vertices, faces);
 }
 
-std::string block::printObjSlow(int group_offset, AxisSystem as) const
+static auto linkFaces(const std::vector<vertex> &vertices, const std::vector<face> &faces)
 {
-    // TODO: this implementation is not working now
-    // Correct one is at https://pastebin.com/KewhggDj
+    // reference implementation by Razum: https://pastebin.com/KewhggDj
 
     std::vector<vertex> vertices2;
     vertices2.reserve(vertices.size());
@@ -383,29 +382,36 @@ std::string block::printObjSlow(int group_offset, AxisSystem as) const
     auto sz = vertices.size();
     for (int i = 0; i < sz; i++)
     {
-        auto it = std::find_if(vertices2.begin(), vertices2.end(), [this, i](auto &v1)
+        auto it = std::find_if(vertices2.begin(), vertices2.end(), [&vertices, i](auto &v1)
         {
             return (aim_vector3f&)vertices[i].coordinates == (aim_vector3f&)v1.coordinates;
         });
         if (it == vertices2.end())
+        {
             vertices2.push_back(vertices[i]);
+            repl[i] = vertices2.size() - 1;
+        }
         else
             repl[i] = std::distance(vertices2.begin(), it);
     }
 
     std::vector<face> faces2;
+    faces2.reserve(faces.size());
     for (auto f : faces)
     {
         for (auto &v : f.vertex_list)
             v = repl[v];
-        auto it = std::find_if(faces2.begin(), faces2.end(), [f](auto &f1)
-        {
-            return f.vertex_list == f1.vertex_list;
-        });
-        if (it == faces2.end())
+        // remove duplicates
+        if (std::find(faces2.begin(), faces2.end(), f) == faces2.end())
             faces2.push_back(f);
     }
 
+    return std::tuple{ vertices2, faces2 };
+}
+
+std::string block::printObjSlow(int group_offset, AxisSystem as) const
+{
+    auto [vertices2, faces2] = linkFaces(vertices, faces);
     return printObj(group_offset, as, vertices2, faces2);
 }
 

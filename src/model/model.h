@@ -149,6 +149,7 @@ struct face
     uint16_t vertex_list[3];
 
     void load(const buffer &b);
+    bool operator==(const face &rhs) const { return vertex_list == rhs.vertex_list; }
 };
 
 struct animation
