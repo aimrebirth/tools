@@ -94,7 +94,6 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     This is Z UP, RH axis system - eMax (same as eMayaZUp) in fbx.
     */
 
-    // this is correct order and correct Y fix
     READ(b, v.y);
     READ(b, v.x);
     READ(b, v.z);

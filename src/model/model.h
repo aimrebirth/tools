@@ -232,7 +232,6 @@ struct additional_parameters
     float detalization_koef;
 };
 
-// mechlab .asc format?
 struct block
 {
     struct header
