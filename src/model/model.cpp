@@ -617,7 +617,7 @@ bool block::canPrint() const
         return false;
 
     // collision object
-    if (h.name == "SHAPE")
+    if (h.name.find("SHAPE") != h.name.npos)
         return false;
 
     // default
