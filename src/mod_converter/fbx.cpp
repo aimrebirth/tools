@@ -241,6 +241,7 @@ void model::printFbx(const std::string &fn, AxisSystem as) const
     CreateScene(*this, fn, lSdkManager, lScene);
 
     ConvertScene(lScene, as);
+    //FbxSystemUnit::cm.ConvertScene(lScene);
 
     SaveScene(lSdkManager, lScene, (fn + ".fbx").c_str());
     //SaveScene(lSdkManager, lScene, (fn + "_ue4.fbx").c_str());
