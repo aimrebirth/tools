@@ -132,6 +132,8 @@ struct uv
     float v;
 
     void load(const buffer &b);
+
+    bool operator==(const uv &rhs) const { return std::tie(u, v) == std::tie(rhs.u, rhs.v); }
 };
 
 struct vertex
@@ -141,10 +143,6 @@ struct vertex
     uv texture_coordinates;
 
     void load(const buffer &b, uint32_t flags);
-
-    std::string printVertex(AxisSystem as) const;
-    std::string printNormal(AxisSystem as) const;
-    std::string printTex() const;
 };
 
 struct face
@@ -152,7 +150,39 @@ struct face
     uint16_t vertex_list[3];
 
     void load(const buffer &b);
+
     bool operator==(const face &rhs) const { return vertex_list == rhs.vertex_list; }
+};
+
+struct model_data
+{
+    std::vector<vertex> vertices;
+    std::vector<face> faces; // triangles
+
+    void load(const buffer &b, uint32_t flags);
+};
+
+struct processed_model_data
+{
+    struct face
+    {
+        struct point
+        {
+            // indices
+            uint16_t vertex;
+            uint16_t normal;
+            uint16_t uv;
+        };
+
+        point points[3];
+    };
+
+    std::vector<aim_vector4> vertices;
+    std::vector<vertex_normal> normals;
+    std::vector<uv> uvs;
+    std::vector<face> faces;
+
+    std::string print(int group_offset, AxisSystem as) const;
 };
 
 struct animation
@@ -189,8 +219,7 @@ struct damage_model
     std::string name;
     std::vector<uint16_t> model_polygons;
     uint32_t flags;
-    std::vector<vertex> vertices;
-    std::vector<face> faces;
+    model_data data;
 
     uint8_t unk6;
     float unk8[3];
@@ -296,8 +325,7 @@ struct block
     additional_parameters additional_params;
     rotation rot;
     uint32_t flags;
-    std::vector<vertex> vertices;
-    std::vector<face> faces; // triangles
+    model_data md;
 
     // animations
     std::vector<animation> animations;
@@ -322,9 +350,8 @@ struct block
     bool canPrint() const;
     bool isEngineFx() const;
 
-private:
-    std::string block::printObj(int group_offset, AxisSystem as,
-        const std::vector<vertex> &vertices, const std::vector<face> &faces) const;
+    //
+    processed_model_data pmd;
 };
 
 struct model

@@ -258,36 +258,36 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
     static const char* gAmbientElementName = "AmbientUV";
     static const char* gSpecularElementName = "SpecularUV";
 
-    auto create_socket_named = [&pScene](const std::string &name)
-    {
-        FbxNode *socket = FbxNode::Create(pScene, ("SOCKET_" + name).c_str());
-        auto n = FbxNull::Create(pScene, "");
-        socket->SetNodeAttribute(n);
-        pScene->GetRootNode()->AddChild(socket);
-        return socket;
-    };
-
-    auto create_socket = [&create_socket_named](const auto &b, const std::string &name, bool mirror_y = false)
-    {
-        FbxVector4 c;
-        for (auto &v : b.vertices)
-        {
-            FbxVector4 x;
-            x.Set(v.coordinates.x * scale_mult(), v.coordinates.y * scale_mult(), v.coordinates.z * scale_mult(), v.coordinates.w);
-            c += x;
-        }
-        c /= b.vertices.size();
-
-        auto s = create_socket_named(name);
-        if (mirror_y) // y is the second coord, idx = 1
-            c.mData[1] = -c.mData[1];
-        s->LclTranslation.Set(c);
-    };
-
     int engine_id = 0;
     int fx_id = 0;
     for (auto &b : model.blocks)
     {
+        auto create_socket_named = [&pScene](const std::string &name)
+        {
+            FbxNode *socket = FbxNode::Create(pScene, ("SOCKET_" + name).c_str());
+            auto n = FbxNull::Create(pScene, "");
+            socket->SetNodeAttribute(n);
+            pScene->GetRootNode()->AddChild(socket);
+            return socket;
+        };
+
+        auto create_socket = [&create_socket_named](const auto &b, const std::string &name, bool mirror_y = false)
+        {
+            FbxVector4 c;
+            for (auto &v : b.pmd.vertices)
+            {
+                FbxVector4 x;
+                x.Set(v.x * scale_mult(), v.y * scale_mult(), v.z * scale_mult(), v.w);
+                c += x;
+            }
+            c /= b.pmd.vertices.size();
+
+            auto s = create_socket_named(name);
+            if (mirror_y) // y is the second coord, idx = 1
+                c.mData[1] = -c.mData[1];
+            s->LclTranslation.Set(c);
+        };
+
         //
         if (b.isEngineFx())
         {
@@ -331,7 +331,7 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         node->SetShadingMode(FbxNode::eFullShading); // change?! was texture sh
 
         // vertices
-        m->InitControlPoints(b.vertices.size());
+        m->InitControlPoints(b.pmd.vertices.size());
 
         // normals
         auto normal = m->CreateElementNormal();
@@ -352,27 +352,32 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         auto s_uv = create_uv(gSpecularElementName);
 
         // add vertices, normals, uvs
-        for (const auto &[i,v] : enumerate(b.vertices))
+        SW_CHECK(b.pmd.vertices.size() == b.pmd.normals.size());
+        for (const auto &[i,v] : enumerate(b.pmd.vertices))
         {
-            FbxVector4 cp(v.coordinates.x * scale_mult(), v.coordinates.y * scale_mult(), v.coordinates.z * scale_mult(), v.coordinates.w);
-            FbxVector4 n(v.normal.x, v.normal.y, v.normal.z);
+            FbxVector4 cp(v.x * scale_mult(), v.y * scale_mult(), v.z * scale_mult(), v.w);
+            FbxVector4 n(b.pmd.normals[i].x, b.pmd.normals[i].y, b.pmd.normals[i].z);
             m->SetControlPointAt(cp, n, i);
+        }
 
+        // uvs
+        for (const auto &[u,v] : b.pmd.uvs)
+        {
             float f;
-            auto uc = modf(fabs(v.texture_coordinates.u), &f);
-            auto vc = modf(fabs(v.texture_coordinates.v), &f);
+            auto uc = modf(fabs(u), &f);
+            auto vc = modf(fabs(v), &f);
             d_uv->GetDirectArray().Add(FbxVector2(uc, vc));
             a_uv->GetDirectArray().Add(FbxVector2(uc, vc));
             s_uv->GetDirectArray().Add(FbxVector2(uc, vc));
         }
 
         // faces
-        for (auto &v : b.faces)
+        for (auto &v : b.pmd.faces)
         {
             // Set the control point indices of the bottom side of the pyramid
             m->BeginPolygon();
-            for (auto i : v.vertex_list)
-                m->AddPolygon(i);
+            for (auto &i : v.points)
+                m->AddPolygon(i.vertex);
             m->EndPolygon();
         }
 

@@ -171,37 +171,18 @@ static aim_vector3<T> rotate(const aim_vector3<T> &in, AxisSystem rot_type)
     return v;
 }
 
-std::string vertex::printVertex(AxisSystem as) const
+void model_data::load(const buffer &b, uint32_t flags)
 {
-    auto v = rotate(coordinates, as);
-
-    std::string s;
-    s = "v " +
-        print_float(v.x * scale_mult())
-        + " " + print_float(v.y * scale_mult())
-        + " " + print_float(v.z * scale_mult())
-        //+ " " + print_float(coordinates.w)
-        ;
-    return s;
-}
-
-std::string vertex::printNormal(AxisSystem as) const
-{
-    auto v = rotate(normal, as);
-
-    std::string s;
-    s = "vn " + print_float(v.x) + " " + print_float(v.y) + " " + print_float(v.z);
-    return s;
-}
-
-std::string vertex::printTex() const
-{
-    std::string s;
-    float i;
-    auto u = modf(fabs(texture_coordinates.u), &i);
-    auto v = modf(fabs(texture_coordinates.v), &i);
-    s = "vt " + print_float(u) + " " + print_float(v);
-    return s;
+    uint32_t n_vertex;
+    uint32_t n_faces;
+    READ(b, n_vertex);
+    vertices.resize(n_vertex);
+    READ(b, n_faces);
+    faces.resize(n_faces / 3);
+    for (auto &v : vertices)
+        v.load(b, flags);
+    for (auto &t : faces)
+        t.load(b);
 }
 
 void damage_model::load(const buffer &b)
@@ -215,16 +196,7 @@ void damage_model::load(const buffer &b)
         READ(b, t);
     READ(b, unk6);
     READ(b, flags);
-    uint32_t n_vertex;
-    uint32_t n_faces;
-    READ(b, n_vertex);
-    vertices.resize(n_vertex);
-    READ(b, n_faces);
-    faces.resize(n_faces / 3);
-    for (auto &v : vertices)
-        v.load(b, flags);
-    for (auto &t : faces)
-        t.load(b);
+    data.load(b, flags);
 }
 
 std::string mat_color::print() const
@@ -316,21 +288,53 @@ std::string block::printMtl() const
     return s;
 }
 
-static std::string print_vertices_and_faces(int group_offset, AxisSystem as,
-    const std::vector<vertex> &vertices, const std::vector<face> &faces)
+static std::string printVertex(const aim_vector4 &coordinates, AxisSystem as)
+{
+    auto v = rotate(coordinates, as);
+
+    std::string s;
+    s = "v " +
+        print_float(v.x * scale_mult())
+        + " " + print_float(v.y * scale_mult())
+        + " " + print_float(v.z * scale_mult())
+        //+ " " + print_float(coordinates.w)
+        ;
+    return s;
+}
+
+static std::string printNormal(const vertex_normal &normal, AxisSystem as)
+{
+    auto v = rotate(normal, as);
+
+    std::string s;
+    s = "vn " + print_float(v.x) + " " + print_float(v.y) + " " + print_float(v.z);
+    return s;
+}
+
+static std::string printTex(const uv &texture_coordinates)
+{
+    std::string s;
+    float i;
+    auto u = modf(fabs(texture_coordinates.u), &i);
+    auto v = modf(fabs(texture_coordinates.v), &i);
+    s = "vt " + print_float(u) + " " + print_float(v);
+    return s;
+}
+
+std::string processed_model_data::print(int group_offset, AxisSystem as) const
 {
     std::string s;
     s += "# " + std::to_string(vertices.size()) + " vertices\n";
     for (auto &v : vertices)
-        s += v.printVertex(as) + "\n";
+        s += printVertex(v, as) + "\n";
     s += "\n";
-    s += "# " + std::to_string(vertices.size()) + " vertex normals\n";
-    for (auto &v : vertices)
-        s += v.printNormal(as) + "\n";
+    s += "# " + std::to_string(normals.size()) + " vertex normals\n";
+    for (auto &n : normals)
+        s += printNormal(n, as) + "\n";
     s += "\n";
-    s += "# " + std::to_string(vertices.size()) + " texture coords\n";
-    for (auto &v : vertices)
-        s += v.printTex() + "\n";
+    s += "# " + std::to_string(uvs.size()) + " texture coords\n";
+    for (auto &v : uvs)
+        s += printTex(v) + "\n";
     s += "\n";
 
     s += "# " + std::to_string(vertices.size()) + " faces\n";
@@ -339,10 +343,14 @@ static std::string print_vertices_and_faces(int group_offset, AxisSystem as,
         // no rotate here
         // it is not face operation
         s += "f ";
-        for (auto v : t.vertex_list)
+        for (auto &v : t.points)
         {
-            auto x = std::to_string(v + 1 + group_offset);
-            x += "/" + x + "/" + x;
+            std::string x;
+            x += std::to_string(v.vertex + 1 + group_offset);
+            x += "/";
+            x += std::to_string(v.uv + 1 + group_offset); // uv goes second in .obj
+            x += "/";
+            x += std::to_string(v.normal + 1 + group_offset);
             s += x + " ";
         }
         s += "\n";
@@ -350,8 +358,35 @@ static std::string print_vertices_and_faces(int group_offset, AxisSystem as,
     return s;
 }
 
-std::string block::printObj(int group_offset, AxisSystem as,
-    const std::vector<vertex> &vertices, const std::vector<face> &faces) const
+static processed_model_data process_block(const model_data &d)
+{
+    processed_model_data pmd;
+    pmd.vertices.reserve(d.vertices.size());
+    pmd.normals.reserve(d.vertices.size());
+    pmd.uvs.reserve(d.vertices.size());
+    pmd.faces.reserve(d.faces.size());
+
+    for (auto &v : d.vertices)
+    {
+        pmd.vertices.push_back(v.coordinates);
+        pmd.normals.push_back(v.normal);
+        pmd.uvs.push_back(v.texture_coordinates);
+    }
+    for (auto &v : d.faces)
+    {
+        processed_model_data::face f;
+        for (const auto &[i,idx] : enumerate(v.vertex_list))
+        {
+            f.points[i].vertex = idx;
+            f.points[i].normal = idx;
+            f.points[i].uv = idx;
+        }
+        pmd.faces.push_back(f);
+    }
+    return pmd;
+}
+
+std::string block::printObj(int group_offset, AxisSystem as) const
 {
     std::string s;
     s += "usemtl " + h.name + "\n";
@@ -360,13 +395,8 @@ std::string block::printObj(int group_offset, AxisSystem as,
     s += "s 1\n"; // still unk how to use
     s += "\n";
 
-    s += print_vertices_and_faces(group_offset, as, vertices, faces);
+    s += pmd.print(group_offset, as);
     return s;
-}
-
-std::string block::printObj(int group_offset, AxisSystem as) const
-{
-    return printObj(group_offset, as, vertices, faces);
 }
 
 void block::header::texture::load(const buffer &b)
@@ -422,6 +452,8 @@ void block::load(const buffer &b)
     // else - pass current
     // no copy when buffer is created before
     loadPayload(h.size == 0 ? b : data);
+
+    pmd = process_block(md);
 }
 
 void block::loadPayload(const buffer &data)
@@ -473,10 +505,10 @@ void block::loadPayload(const buffer &data)
     READ(data, unk12);
     READ(data, triangles_mult_7); // particle system?
 
-    /*if (unk7 != 0)
-        std::cout << "nonzero unk7 = " << unk7 << " in block " << h.name << "\n";
-    if (unk9 != 0)
-        std::cout << "nonzero unk9 = " << unk9 << " in block " << h.name << "\n";*/
+    //if (unk7 != 0)
+        //std::cout << "nonzero unk7 = " << unk7 << " in block " << h.name << "\n";
+    //if (unk9 != 0)
+        //std::cout << "nonzero unk9 = " << unk9 << " in block " << h.name << "\n";
     //
 
     READ(data, additional_params);
@@ -485,17 +517,7 @@ void block::loadPayload(const buffer &data)
     damage_models.resize(n_damage_models);
     READ(data, rot);
     READ(data, flags);
-    uint32_t n_vertex;
-    uint32_t n_faces; // ??? edges? polygons? triangles?
-    READ(data, n_vertex);
-    vertices.resize(n_vertex);
-    READ(data, n_faces);
-    auto n_triangles = n_faces / 3;
-    for (auto &v : vertices)
-        v.load(data, flags);
-    faces.resize(n_triangles);
-    for (auto &t : faces)
-        t.load(data);
+    md.load(data, flags);
 
     // animations
     for (auto &a : animations)
@@ -505,9 +527,10 @@ void block::loadPayload(const buffer &data)
 
     auto read_more_faces = [&]()
     {
+        auto n_faces = md.faces.size();
         n_faces *= 6; // 7
 
-        decltype(faces) faces2;
+        decltype(md.faces) faces2;
         faces2.resize(n_faces / 3);
         for (auto &t : faces2)
             READ(data, t);
@@ -537,7 +560,7 @@ void block::loadPayload(const buffer &data)
         else
         {
             // unknown end of block
-            decltype(faces) triangles2;
+            decltype(md.faces) triangles2;
             auto d = data.end() - data.index();
             triangles2.resize(d / sizeof(face));
             for (auto &t : triangles2)
@@ -551,14 +574,17 @@ void block::loadPayload(const buffer &data)
         throw std::logic_error(s);
 }
 
-static auto linkFaces(const std::vector<vertex> &vertices, const std::vector<face> &faces)
+static processed_model_data linkFaces(const processed_model_data &d)
 {
     // reference implementation by Razum: https://pastebin.com/KewhggDj
 
-    std::vector<vertex> vertices2;
+    processed_model_data pmd = d;
+
+    /*std::vector<vertex> vertices2;
     vertices2.reserve(vertices.size());
-    std::unordered_map<short, short> repl;
-    repl.reserve(vertices.size());
+    std::unordered_map<short, short> vrepl, trepl;
+    vrepl.reserve(vertices.size());
+    trepl.reserve(vertices.size());
 
     auto sz = vertices.size();
     for (int i = 0; i < sz; i++)
@@ -570,10 +596,19 @@ static auto linkFaces(const std::vector<vertex> &vertices, const std::vector<fac
         if (it == vertices2.end())
         {
             vertices2.push_back(vertices[i]);
-            repl[i] = vertices2.size() - 1;
+            vrepl[i] = vertices2.size() - 1;
         }
         else
-            repl[i] = std::distance(vertices2.begin(), it);
+            vrepl[i] = std::distance(vertices2.begin(), it);
+    }
+
+    std::vector<uv> uvs2;
+    uvs2.reserve(uvs.size());
+    for (auto &f : uvs)
+    {
+        // remove duplicates
+        if (std::find(uvs2.begin(), uvs2.end(), f) == uvs2.end())
+            uvs2.push_back(f);
     }
 
     std::vector<face> faces2;
@@ -581,20 +616,18 @@ static auto linkFaces(const std::vector<vertex> &vertices, const std::vector<fac
     for (auto f : faces)
     {
         for (auto &v : f.vertex_list)
-            v = repl[v];
+            v = vrepl[v];
         // remove duplicates
         if (std::find(faces2.begin(), faces2.end(), f) == faces2.end())
             faces2.push_back(f);
-    }
+    }*/
 
-    return std::tuple{ vertices2, faces2 };
+    return pmd;
 }
 
 void block::linkFaces()
 {
-    auto [v, f] = ::linkFaces(vertices, faces);
-    vertices = v;
-    faces = f;
+    pmd = ::linkFaces(pmd);
 }
 
 bool block::isEngineFx() const
@@ -617,8 +650,13 @@ bool block::canPrint() const
         return false;
 
     // collision object
-    if (h.name.find("SHAPE") != h.name.npos)
+    if (h.name.find("SHAPE") != h.name.npos ||
+        h.name.find("shape") != h.name.npos
+        )
+    {
+        //std::cerr << "shape detected!\n";
         return false;
+    }
 
     // default
     return false;
@@ -627,7 +665,7 @@ bool block::canPrint() const
 block::block_info block::save(yaml &root) const
 {
     aim_vector4 min{ 1e6, 1e6, 1e6, 1e6 }, max{ -1e6, -1e6, -1e6, -1e6 };
-    for (auto &v : vertices)
+    for (auto &v : md.vertices)
     {
         auto mm = [&v](auto &m, auto f)
         {
@@ -704,7 +742,7 @@ void model::print(const std::string &fn, AxisSystem as) const
                 continue;
 
             o << b.printObj(n_vert, as) << "\n";
-            n_vert += b.vertices.size();
+            n_vert += b.md.vertices.size();
         }
     };
 
