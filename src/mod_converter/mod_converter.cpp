@@ -39,7 +39,7 @@ using namespace std;
 bool silent = false;
 bool printMaxPolygonBlock = false;
 
-cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files>"), cl::value_desc("file or directory"), cl::Required);
+cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files or .mod file saved from AIM2 SDK viewer>"), cl::value_desc("file or directory"), cl::Required);
 cl::opt<bool> all_formats("af", cl::desc("All formats (.obj, .fbx)"));
 cl::opt<bool> link_faces("lf", cl::desc("Link faces (default: true)"), cl::init(true));
 
@@ -79,7 +79,17 @@ auto read_model(const path &fn)
 {
     buffer b(read_file(fn));
     model m;
-    m.load(b);
+    if (fn.extension() == ".mod") // single block file from m2 sdk viewer
+    {
+        block bl;
+        bl.h.name = fn.stem().u8string();
+        bl.loadPayload(b);
+        m.blocks.push_back(bl);
+    }
+    else
+    {
+        m.load(b);
+    }
     if (link_faces)
         m.linkFaces();
 
