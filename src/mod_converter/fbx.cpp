@@ -252,6 +252,117 @@ void model::printFbx(const std::string &fn, AxisSystem as) const
     DestroySdkObjects(lSdkManager, true);
 }
 
+static FbxMesh *create_mesh(FbxScene *s, const block &b)
+{
+    auto m = FbxMesh::Create(s, b.h.name.c_str());
+
+    // vertexes
+    {
+        m->InitControlPoints(b.pmd.vertices.size());
+        auto cps = m->GetControlPoints();
+        for (const auto &[i, v] : enumerate(b.pmd.vertices))
+            cps[i] = FbxVector4(v.x, v.y, v.z);
+    }
+
+    // normals
+    {
+        auto normal = m->CreateElementNormal();
+        normal->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        normal->SetReferenceMode(FbxGeometryElement::eDirect);
+        for (const auto &v : b.pmd.normals)
+            normal->GetDirectArray().Add(FbxVector4(v.x, v.y, v.z));
+    }
+
+    // uvs
+    {
+        auto uv = m->CreateElementUV("uv", FbxLayerElement::eTextureDiffuse);
+        uv->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        uv->SetReferenceMode(FbxGeometryElement::eDirect);
+        for (const auto &[u,v] : b.pmd.uvs)
+            uv->GetDirectArray().Add(FbxVector2(u, v));
+        //float f;
+        //auto uc = modf(fabs(u), &f);
+        //auto vc = modf(fabs(v), &f);
+    }
+
+    // faces
+    for (auto &v : b.pmd.faces)
+    {
+        // Set the control point indices of the bottom side of the pyramid
+        m->BeginPolygon();
+        for (auto &i : v.points)
+            m->AddPolygon(i.vertex);
+        m->EndPolygon();
+    }
+
+    // add smoothing groups
+    {
+        FbxGeometryConverter lGeometryConverter(m->GetFbxManager());
+        lGeometryConverter.ComputeEdgeSmoothingFromNormals(m);
+        //convert soft/hard edge info to smoothing group info
+        lGeometryConverter.ComputePolygonSmoothingFromEdgeSmoothing(m);
+    }
+
+    return m;
+}
+
+static void set_material(FbxMesh *m, const block &b)
+{
+    m->GetNode()->RemoveAllMaterials();
+
+    auto mat = m->CreateElementMaterial();
+    // This allows us to control where the materials are mapped.  Using eAllSame
+    // means that all faces/polygons of the mesh will be assigned the same material.
+    mat->SetMappingMode(FbxLayerElement::eAllSame);
+    mat->SetReferenceMode(FbxLayerElement::eDirect);
+
+    auto lMaterial = FbxSurfacePhong::Create(m->GetNode(), b.h.name.c_str());
+
+    FbxDouble3 lAmbientColor(b.mat.ambient.r, b.mat.ambient.g, b.mat.ambient.b);
+    FbxDouble3 lSpecularColor(b.mat.specular.r, b.mat.specular.g, b.mat.specular.b);
+    FbxDouble3 lDiffuseColor(b.mat.diffuse.r, b.mat.diffuse.g, b.mat.diffuse.b);
+    FbxDouble3 lEmissiveColor(b.mat.emissive.r, b.mat.emissive.g, b.mat.emissive.b);
+
+    // Generate primary and secondary colors.
+    lMaterial->Emissive.Set(lEmissiveColor);
+    lMaterial->EmissiveFactor.Set(b.mat.emissive.r);
+
+    lMaterial->Ambient.Set(lAmbientColor);
+    lMaterial->AmbientFactor.Set(b.mat.ambient.r);
+
+    lMaterial->Diffuse.Set(lDiffuseColor);
+    lMaterial->DiffuseFactor.Set(b.mat.diffuse.r);
+
+    //lMaterial->TransparencyFactor.Set(0.4);
+    lMaterial->ShadingModel.Set("Phong");
+    //lMaterial->Shininess.Set(0.5);
+
+    lMaterial->Specular.Set(lSpecularColor);
+    lMaterial->SpecularFactor.Set(b.mat.power);
+
+    m->GetNode()->AddMaterial(lMaterial);
+}
+
+static void set_textures(FbxMesh *m, const block &b)
+{
+    auto add_tex = [m, &b](String name, String texname, auto &what)
+    {
+        auto lTexture = FbxFileTexture::Create(m->GetNode(), (name + " Texture").c_str());
+        lTexture->SetFileName((texname + texture_extension).c_str()); // Resource file is in current directory.
+        lTexture->SetTextureUse(FbxTexture::eStandard);
+        lTexture->SetMappingType(FbxTexture::eUV);
+        lTexture->SetMaterialUse(FbxFileTexture::eDefaultMaterial);
+        lTexture->UVSet.Set(m->GetElementUV()->GetName());
+
+        what.ConnectSrcObject(lTexture);
+    };
+
+    auto mat = (FbxSurfacePhong *)m->GetNode()->GetMaterial(0);
+    add_tex("Specular", b.h.spec.name, mat->Specular);
+    add_tex("Diffuse", b.h.mask.name, mat->Diffuse);
+    add_tex("Ambient", b.h.mask.name, mat->Ambient);
+}
+
 bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkManager, FbxScene* pScene)
 {
     static const char* gDiffuseElementName = "DiffuseUV";
@@ -322,166 +433,21 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
         //auto block_name = name + "/" + b.h.name;
         const auto block_name = b.h.name;
 
-        // mesh
-        auto m = FbxMesh::Create(pScene, block_name.c_str());
-
-        // node
+        // mesh node
         FbxNode *node = FbxNode::Create(pScene, block_name.c_str());
+        pScene->GetRootNode()->AddChild(node);
+        auto m = create_mesh(pScene, b);
         node->SetNodeAttribute(m);
-        node->SetShadingMode(FbxNode::eFullShading); // change?! was texture sh
-
-        // vertices
-        m->InitControlPoints(b.pmd.vertices.size());
-
-        // normals
-        auto normal = m->CreateElementNormal();
-        normal->SetMappingMode(FbxGeometryElement::eByControlPoint);
-        normal->SetReferenceMode(FbxGeometryElement::eDirect);
-
-        // uv
-        auto create_uv = [&m](auto &name)
-        {
-            auto uv1 = m->CreateElementUV(name);
-            uv1->SetMappingMode(FbxGeometryElement::eByControlPoint);
-            uv1->SetReferenceMode(FbxGeometryElement::eDirect);
-            return uv1;
-        };
-
-        auto d_uv = create_uv(gDiffuseElementName);
-        auto a_uv = create_uv(gAmbientElementName);
-        auto s_uv = create_uv(gSpecularElementName);
-
-        // add vertices, normals, uvs
-        SW_CHECK(b.pmd.vertices.size() == b.pmd.normals.size());
-        for (const auto &[i,v] : enumerate(b.pmd.vertices))
-        {
-            FbxVector4 cp(v.x * scale_mult(), v.y * scale_mult(), v.z * scale_mult(), v.w);
-            FbxVector4 n(b.pmd.normals[i].x, b.pmd.normals[i].y, b.pmd.normals[i].z);
-            m->SetControlPointAt(cp, n, i);
-        }
-
-        // uvs
-        for (const auto &[u,v] : b.pmd.uvs)
-        {
-            float f;
-            auto uc = modf(fabs(u), &f);
-            auto vc = modf(fabs(v), &f);
-            d_uv->GetDirectArray().Add(FbxVector2(uc, vc));
-            a_uv->GetDirectArray().Add(FbxVector2(uc, vc));
-            s_uv->GetDirectArray().Add(FbxVector2(uc, vc));
-        }
-
-        // faces
-        for (auto &v : b.pmd.faces)
-        {
-            // Set the control point indices of the bottom side of the pyramid
-            m->BeginPolygon();
-            for (auto &i : v.points)
-                m->AddPolygon(i.vertex);
-            m->EndPolygon();
-        }
-
-        m->BuildMeshEdgeArray();
-
-        //if (m->GenerateNormals(true))
-            //throw SW_RUNTIME_ERROR("Cannot generate normals");
-
-        // mats
-        auto lMaterial = node->GetSrcObject<FbxSurfacePhong>(0);
-        if (!lMaterial)
-        {
-            FbxString lMaterialName = block_name.c_str();
-            FbxString lShadingName = "Phong";
-            FbxDouble3 lAmbientColor(b.mat.ambient.r, b.mat.ambient.g, b.mat.ambient.b);
-            FbxDouble3 lSpecularColor(b.mat.specular.r, b.mat.specular.g, b.mat.specular.b);
-            FbxDouble3 lDiffuseColor(b.mat.diffuse.r, b.mat.diffuse.g, b.mat.diffuse.b);
-            FbxDouble3 lEmissiveColor(b.mat.emissive.r, b.mat.emissive.g, b.mat.emissive.b);
-
-            FbxLayer* lLayer = m->GetLayer(0);
-
-            // Create a layer element material to handle proper mapping.
-            FbxLayerElementMaterial* lLayerElementMaterial = FbxLayerElementMaterial::Create(m, lMaterialName.Buffer());
-
-            // This allows us to control where the materials are mapped.  Using eAllSame
-            // means that all faces/polygons of the mesh will be assigned the same material.
-            lLayerElementMaterial->SetMappingMode(FbxLayerElement::eAllSame);
-            lLayerElementMaterial->SetReferenceMode(FbxLayerElement::eDirect);
-
-            // Save the material on the layer
-            lLayer->SetMaterials(lLayerElementMaterial);
-
-            // Add an index to the lLayerElementMaterial.  Since we have only one, and are using eAllSame mapping mode,
-            // we only need to add one.
-            lLayerElementMaterial->GetIndexArray().Add(0);
-
-            lMaterial = FbxSurfacePhong::Create(pScene, lMaterialName.Buffer());
-
-            // Generate primary and secondary colors.
-            lMaterial->Emissive.Set(lEmissiveColor);
-            lMaterial->EmissiveFactor.Set(b.mat.emissive.r);
-
-            lMaterial->Ambient.Set(lAmbientColor);
-            lMaterial->AmbientFactor.Set(b.mat.ambient.r);
-
-            // Add texture for diffuse channel
-            lMaterial->Diffuse.Set(lDiffuseColor);
-            lMaterial->DiffuseFactor.Set(b.mat.diffuse.r);
-
-            //lMaterial->TransparencyFactor.Set(0.4);
-            lMaterial->ShadingModel.Set(lShadingName);
-            //lMaterial->Shininess.Set(0.5);
-
-            lMaterial->Specular.Set(lSpecularColor);
-            lMaterial->SpecularFactor.Set(b.mat.power);
-            node->AddMaterial(lMaterial);
-        }
-
+        set_material(m, b);
         if (b.mat_type != MaterialType::MaterialOnly)
-        {
-            FbxFileTexture* lTexture;
+            set_textures(m, b);
 
-            // Set texture properties.
-            lTexture = FbxFileTexture::Create(pScene, "Diffuse Texture");
-            lTexture->SetFileName((b.h.mask.name + texture_extension).c_str()); // Resource file is in current directory.
-            lTexture->SetTextureUse(FbxTexture::eStandard);
-            lTexture->SetMappingType(FbxTexture::eUV);
-            lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
-            lTexture->UVSet.Set(gDiffuseElementName);
-            if (lMaterial)
-                lMaterial->Diffuse.ConnectSrcObject(lTexture);
-
-            // Set texture properties.
-            lTexture = FbxFileTexture::Create(pScene, "Ambient Texture");
-            lTexture->SetFileName((b.h.mask.name + texture_extension).c_str()); // Resource file is in current directory.
-            lTexture->SetTextureUse(FbxTexture::eStandard);
-            lTexture->SetMappingType(FbxTexture::eUV);
-            lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
-            lTexture->UVSet.Set(gAmbientElementName);
-            if (lMaterial)
-                lMaterial->Ambient.ConnectSrcObject(lTexture);
-
-            // Set texture properties.
-            lTexture = FbxFileTexture::Create(pScene, "Specular Texture");
-            lTexture->SetFileName((b.h.spec.name + texture_extension).c_str()); // Resource file is in current directory.
-            lTexture->SetTextureUse(FbxTexture::eStandard);
-            lTexture->SetMappingType(FbxTexture::eUV);
-            lTexture->SetMaterialUse(FbxFileTexture::eModelMaterial);
-            lTexture->UVSet.Set(gSpecularElementName);
-            if (lMaterial)
-                lMaterial->Specular.ConnectSrcObject(lTexture);
-        }
-
-        // add smoothing groups
-        FbxGeometryConverter lGeometryConverter(pSdkManager);
-        lGeometryConverter.ComputeEdgeSmoothingFromNormals(m);
-        //convert soft/hard edge info to smoothing group info
-        lGeometryConverter.ComputePolygonSmoothingFromEdgeSmoothing(m);
+        //node->SetShadingMode(FbxNode::eFullShading); // change?! was texture sh
 
         // scale
-        //node->LclScaling.Set(FbxDouble3(scale_mult(), scale_mult(), scale_mult()));
+        node->LclScaling.Set(FbxDouble3(scale_mult(), scale_mult(), scale_mult()));
 
-        //
-        pScene->GetRootNode()->AddChild(node);
+        //m->BuildMeshEdgeArray();
     }
 
     return true;
