@@ -44,7 +44,7 @@ const std::map<std::string, int> code_pages
     { "et", 1257 },
 };
 
-int get_cp(const std::string &cp)
+static int get_cp(const std::string &cp)
 {
     auto i = code_pages.find(cp);
     if (i == code_pages.end())
@@ -68,7 +68,7 @@ using AimKVResolved = std::unordered_map<std::string, polygon4::detail::IdType>;
 AimKVResolved kv_resolved;
 
 template <class T>
-int levenshtein_distance(const T &s1, const T &s2)
+static int levenshtein_distance(const T &s1, const T &s2)
 {
     // To change the type this function manipulates and returns, change
     // the return type and the types of the two variables below.
@@ -99,7 +99,7 @@ int levenshtein_distance(const T &s1, const T &s2)
     return result;
 }
 
-auto open(const path &p)
+static auto open(const path &p)
 {
     db db;
     if (fs::exists(p / "quest.dat"))
@@ -107,7 +107,7 @@ auto open(const path &p)
     return db;
 };
 
-AimKV get_kv(const db &db, int cp)
+static AimKV get_kv(const db &db, int cp)
 {
     auto iter_tbl = std::find_if(db.t.tables.begin(), db.t.tables.end(), [](auto &t) {
         return t.second.name == "INFORMATION";
@@ -141,7 +141,7 @@ AimKV get_kv(const db &db, int cp)
     return kv;
 }
 
-AimKVResolved get_kv_resolved(const path &d, const polygon4::Storage &storage)
+static AimKVResolved get_kv_resolved(const path &d, const polygon4::Storage &storage)
 {
     static const auto fn = "kv.resolved";
 
@@ -207,7 +207,7 @@ AimKVResolved get_kv_resolved(const path &d, const polygon4::Storage &storage)
     return mres;
 }
 
-void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4::LocalizedString::*field)
+static void process_lang(polygon4::Storage &s, const path &p, polygon4::String polygon4::LocalizedString::*field)
 {
     auto db1 = open(p);
     auto db2 = open(p / "aim1");
