@@ -589,10 +589,12 @@ static processed_model_data linkFaces(const processed_model_data &d)
     pmd.vertices.reserve(d.vertices.size());
     pmd.normals.reserve(d.normals.size());
     pmd.uvs.reserve(d.uvs.size());
-    std::unordered_map<short, short> vrepl, trepl;
+    std::unordered_map<short, short> vrepl, nrepl, trepl;
     vrepl.reserve(d.vertices.size());
-    trepl.reserve(d.vertices.size());
+    nrepl.reserve(d.normals.size());
+    trepl.reserve(d.uvs.size());
 
+    //
     auto sz = d.vertices.size();
     for (int i = 0; i < sz; i++)
     {
@@ -600,7 +602,6 @@ static processed_model_data linkFaces(const processed_model_data &d)
         if (it == pmd.vertices.end())
         {
             pmd.vertices.push_back(d.vertices[i]);
-            pmd.normals.push_back(d.normals[i]); // as is for now
             pmd.uvs.push_back(d.uvs[i]); // as is for now
             vrepl[i] = pmd.vertices.size() - 1;
         }
@@ -608,13 +609,33 @@ static processed_model_data linkFaces(const processed_model_data &d)
             vrepl[i] = std::distance(pmd.vertices.begin(), it);
     }
 
-    /*uvs2.reserve(uvs.size());
-    for (auto &f : uvs)
+    //
+    sz = d.normals.size();
+    for (int i = 0; i < sz; i++)
     {
-        // remove duplicates
-        if (std::find(uvs2.begin(), uvs2.end(), f) == uvs2.end())
-            uvs2.push_back(f);
-    }*/
+        auto it = std::find(pmd.normals.begin(), pmd.normals.end(), d.normals[i]);
+        if (it == pmd.normals.end())
+        {
+            pmd.normals.push_back(d.normals[i]);
+            nrepl[i] = pmd.normals.size() - 1;
+        }
+        else
+            nrepl[i] = std::distance(pmd.normals.begin(), it);
+    }
+
+    //
+    sz = d.uvs.size();
+    for (int i = 0; i < sz; i++)
+    {
+        auto it = std::find(pmd.uvs.begin(), pmd.uvs.end(), d.uvs[i]);
+        if (it == pmd.uvs.end())
+        {
+            pmd.uvs.push_back(d.uvs[i]);
+            trepl[i] = pmd.uvs.size() - 1;
+        }
+        else
+            trepl[i] = std::distance(pmd.uvs.begin(), it);
+    }
 
     pmd.faces.reserve(d.faces.size());
     for (auto f : d.faces)
@@ -622,8 +643,8 @@ static processed_model_data linkFaces(const processed_model_data &d)
         for (auto &v : f.points)
         {
             v.vertex = vrepl[v.vertex];
-            v.normal = vrepl[v.normal];
-            v.uv = vrepl[v.uv];
+            v.normal = nrepl[v.normal];
+            v.uv = trepl[v.uv];
         }
         // remove duplicates
         if (std::find(pmd.faces.begin(), pmd.faces.end(), f) == pmd.faces.end())

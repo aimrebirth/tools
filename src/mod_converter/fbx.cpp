@@ -277,6 +277,7 @@ static FbxMesh *create_mesh(FbxScene *s, const block &b)
     {
         auto uv = m->CreateElementUV("uv", FbxLayerElement::eTextureDiffuse);
         uv->SetMappingMode(FbxGeometryElement::eByControlPoint);
+        //uv->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
         uv->SetReferenceMode(FbxGeometryElement::eDirect); // not needed?
         for (const auto &[u,v] : b.pmd.uvs)
             uv->GetDirectArray().Add(FbxVector2(u, v));
@@ -291,7 +292,7 @@ static FbxMesh *create_mesh(FbxScene *s, const block &b)
         // Set the control point indices of the bottom side of the pyramid
         m->BeginPolygon();
         for (auto &i : v.points)
-            m->AddPolygon(i.vertex);
+            m->AddPolygon(i.vertex/*, i.uv*/);
         m->EndPolygon();
     }
 
