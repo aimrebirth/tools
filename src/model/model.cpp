@@ -324,17 +324,23 @@ static std::string printTex(const uv &texture_coordinates)
 std::string processed_model_data::print(int group_offset, AxisSystem as) const
 {
     std::string s;
+
+    //
     s += "# " + std::to_string(vertices.size()) + " vertices\n";
     for (auto &v : vertices)
         s += printVertex(v, as) + "\n";
     s += "\n";
-    s += "# " + std::to_string(normals.size()) + " vertex normals\n";
-    for (auto &n : normals)
-        s += printNormal(n, as) + "\n";
-    s += "\n";
+
+    //
     s += "# " + std::to_string(uvs.size()) + " texture coords\n";
     for (auto &v : uvs)
         s += printTex(v) + "\n";
+    s += "\n";
+
+    //
+    s += "# " + std::to_string(normals.size()) + " vertex normals\n";
+    for (auto &n : normals)
+        s += printNormal(n, as) + "\n";
     s += "\n";
 
     s += "# " + std::to_string(vertices.size()) + " faces\n";
@@ -578,49 +584,51 @@ static processed_model_data linkFaces(const processed_model_data &d)
 {
     // reference implementation by Razum: https://pastebin.com/KewhggDj
 
-    processed_model_data pmd = d;
+    processed_model_data pmd;
 
-    /*std::vector<vertex> vertices2;
-    vertices2.reserve(vertices.size());
+    pmd.vertices.reserve(d.vertices.size());
+    pmd.normals.reserve(d.normals.size());
+    pmd.uvs.reserve(d.uvs.size());
     std::unordered_map<short, short> vrepl, trepl;
-    vrepl.reserve(vertices.size());
-    trepl.reserve(vertices.size());
+    vrepl.reserve(d.vertices.size());
+    trepl.reserve(d.vertices.size());
 
-    auto sz = vertices.size();
+    auto sz = d.vertices.size();
     for (int i = 0; i < sz; i++)
     {
-        auto it = std::find_if(vertices2.begin(), vertices2.end(), [&vertices, i](auto &v1)
+        auto it = std::find(pmd.vertices.begin(), pmd.vertices.end(), d.vertices[i]);
+        if (it == pmd.vertices.end())
         {
-            return (aim_vector3f&)vertices[i].coordinates == (aim_vector3f&)v1.coordinates;
-        });
-        if (it == vertices2.end())
-        {
-            vertices2.push_back(vertices[i]);
-            vrepl[i] = vertices2.size() - 1;
+            pmd.vertices.push_back(d.vertices[i]);
+            pmd.normals.push_back(d.normals[i]); // as is for now
+            pmd.uvs.push_back(d.uvs[i]); // as is for now
+            vrepl[i] = pmd.vertices.size() - 1;
         }
         else
-            vrepl[i] = std::distance(vertices2.begin(), it);
+            vrepl[i] = std::distance(pmd.vertices.begin(), it);
     }
 
-    std::vector<uv> uvs2;
-    uvs2.reserve(uvs.size());
+    /*uvs2.reserve(uvs.size());
     for (auto &f : uvs)
     {
         // remove duplicates
         if (std::find(uvs2.begin(), uvs2.end(), f) == uvs2.end())
             uvs2.push_back(f);
-    }
-
-    std::vector<face> faces2;
-    faces2.reserve(faces.size());
-    for (auto f : faces)
-    {
-        for (auto &v : f.vertex_list)
-            v = vrepl[v];
-        // remove duplicates
-        if (std::find(faces2.begin(), faces2.end(), f) == faces2.end())
-            faces2.push_back(f);
     }*/
+
+    pmd.faces.reserve(d.faces.size());
+    for (auto f : d.faces)
+    {
+        for (auto &v : f.points)
+        {
+            v.vertex = vrepl[v.vertex];
+            v.normal = vrepl[v.normal];
+            v.uv = vrepl[v.uv];
+        }
+        // remove duplicates
+        if (std::find(pmd.faces.begin(), pmd.faces.end(), f) == pmd.faces.end())
+            pmd.faces.push_back(f);
+    }
 
     return pmd;
 }

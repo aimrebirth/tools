@@ -41,7 +41,8 @@ bool printMaxPolygonBlock = false;
 
 cl::opt<path> p(cl::Positional, cl::desc("<MOD_ file or directory with MOD_ files or .mod file saved from AIM2 SDK viewer>"), cl::value_desc("file or directory"), cl::Required);
 cl::opt<bool> all_formats("af", cl::desc("All formats (.obj, .fbx)"));
-cl::opt<bool> link_faces("lf", cl::desc("Link faces (default: true)"), cl::init(true));
+// link_faces is not currently complete, after processing we have bad uvs
+cl::opt<bool> link_faces("lf", cl::desc("Link faces (default: true)")/*, cl::init(true)*/);
 
 yaml root;
 cl::opt<bool> stats("i", cl::desc("Gather information from (models)"));

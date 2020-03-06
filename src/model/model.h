@@ -175,6 +175,8 @@ struct processed_model_data
         };
 
         point points[3];
+
+        bool operator==(const face &rhs) const { return points == rhs.points; }
     };
 
     std::vector<aim_vector4> vertices;

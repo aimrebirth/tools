@@ -277,7 +277,7 @@ static FbxMesh *create_mesh(FbxScene *s, const block &b)
     {
         auto uv = m->CreateElementUV("uv", FbxLayerElement::eTextureDiffuse);
         uv->SetMappingMode(FbxGeometryElement::eByControlPoint);
-        uv->SetReferenceMode(FbxGeometryElement::eDirect);
+        uv->SetReferenceMode(FbxGeometryElement::eDirect); // not needed?
         for (const auto &[u,v] : b.pmd.uvs)
             uv->GetDirectArray().Add(FbxVector2(u, v));
         //float f;
