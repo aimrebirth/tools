@@ -33,8 +33,6 @@
 #include <stdint.h>
 #include <string>
 
-using namespace std;
-
 // options
 bool silent = false;
 bool printMaxPolygonBlock = false;
@@ -96,8 +94,8 @@ auto read_model(const path &fn)
 
     if (!b.eof())
     {
-        stringstream ss;
-        ss << hex << b.index() << " != " << hex << b.size();
+        std::stringstream ss;
+        ss << std::hex << b.index() << " != " << std::hex << b.size();
         throw std::logic_error(ss.str());
     }
 
