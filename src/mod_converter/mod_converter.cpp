@@ -33,6 +33,12 @@
 #include <stdint.h>
 #include <string>
 
+/*
+TODO:
+    - ue4 .obj import not working (model looks ugly)
+    - .fbx export with link faces not working
+*/
+
 // options
 bool silent = false;
 bool printMaxPolygonBlock = false;
