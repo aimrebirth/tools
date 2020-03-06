@@ -321,7 +321,7 @@ static std::string printTex(const uv &texture_coordinates)
     return s;
 }
 
-std::string processed_model_data::print(int group_offset, AxisSystem as) const
+std::string processed_model_data::print(int v_offset, int n_offset, int uv_offset, AxisSystem as) const
 {
     std::string s;
 
@@ -352,11 +352,11 @@ std::string processed_model_data::print(int group_offset, AxisSystem as) const
         for (auto &v : t.points)
         {
             std::string x;
-            x += std::to_string(v.vertex + 1 + group_offset);
+            x += std::to_string(v.vertex + 1 + v_offset);
             x += "/";
-            x += std::to_string(v.uv + 1 + group_offset); // uv goes second in .obj
+            x += std::to_string(v.uv + 1 + uv_offset); // uv goes second in .obj
             x += "/";
-            x += std::to_string(v.normal + 1 + group_offset);
+            x += std::to_string(v.normal + 1 + n_offset);
             s += x + " ";
         }
         s += "\n";
@@ -392,7 +392,7 @@ static processed_model_data process_block(const model_data &d)
     return pmd;
 }
 
-std::string block::printObj(int group_offset, AxisSystem as) const
+std::string block::printObj(int v_offset, int n_offset, int uv_offset, AxisSystem as) const
 {
     std::string s;
     s += "usemtl " + h.name + "\n";
@@ -401,7 +401,7 @@ std::string block::printObj(int group_offset, AxisSystem as) const
     s += "s 1\n"; // still unk how to use
     s += "\n";
 
-    s += pmd.print(group_offset, as);
+    s += pmd.print(v_offset, n_offset, uv_offset, as);
     return s;
 }
 
@@ -764,14 +764,18 @@ void model::print(const std::string &fn, AxisSystem as) const
         title(o);
         o << "mtllib " + fn + ".mtl\n\n";
         o << "o " << fn << "\n\n";
-        int n_vert = 0;
+        int v_offset = 0;
+        int n_offset = 0;
+        int uv_offset = 0;
         for (auto &b : blocks)
         {
             if (!b.canPrint())
                 continue;
 
-            o << b.printObj(n_vert, as) << "\n";
-            n_vert += b.md.vertices.size();
+            o << b.printObj(v_offset, n_offset, uv_offset, as) << "\n";
+            v_offset += b.pmd.vertices.size();
+            n_offset += b.pmd.normals.size();
+            uv_offset += b.pmd.uvs.size();
         }
     };
 

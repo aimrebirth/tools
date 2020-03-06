@@ -184,7 +184,7 @@ struct processed_model_data
     std::vector<uv> uvs;
     std::vector<face> faces;
 
-    std::string print(int group_offset, AxisSystem as) const;
+    std::string print(int v_offset, int n_offset, int uv_offset, AxisSystem as) const;
 };
 
 struct animation
@@ -346,7 +346,7 @@ struct block
     void linkFaces();
 
     std::string printMtl() const;
-    std::string printObj(int group_offset, AxisSystem as) const;
+    std::string printObj(int v_offset, int n_offset, int uv_offset, AxisSystem as) const;
     block_info save(yaml &root) const;
 
     bool canPrint() const;
