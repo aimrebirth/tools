@@ -292,6 +292,8 @@ int main(int argc, char *argv[])
 
     cl::ParseCommandLineOptions(argc, argv);
 
+    fs::current_path(dir_to_lang_dbs);
+
     auto storage = polygon4::initStorage(db_fn);
     storage->load();
     kv_resolved = get_kv_resolved(dir_to_lang_dbs, *storage.get());
