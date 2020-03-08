@@ -315,8 +315,10 @@ static std::string printTex(const uv &texture_coordinates)
 {
     std::string s;
     float i;
-    auto u = modf(fabs(texture_coordinates.u), &i);
-    auto v = modf(fabs(texture_coordinates.v), &i);
+    //auto u = modf(fabs(texture_coordinates.u), &i);
+    //auto v = modf(fabs(texture_coordinates.v), &i);
+    auto u = texture_coordinates.u;
+    auto v = texture_coordinates.v;
     s = "vt " + print_float(u) + " " + print_float(v);
     return s;
 }
