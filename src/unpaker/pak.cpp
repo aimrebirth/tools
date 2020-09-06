@@ -65,29 +65,29 @@ int record::read(pak *pak, void *output, int size)
     int segment = file_start_pos / pak->h.chunk_size;
     offset += size;
 
-    pak->header[segment].decompress(segment);
+    pak->segments[segment].decompress(segment);
 
     auto file_start_pos2 = file_start_pos - segment * pak->h.chunk_size;
     auto size3 = size;
     if (pak->h.chunk_size - file_start_pos2 < size)
         size3 = pak->h.chunk_size - file_start_pos2;
-    memcpy(output, pak->header[segment].decoded + file_start_pos2, size3);
+    memcpy(output, pak->segments[segment].decoded + file_start_pos2, size3);
 
     auto size_diff = size - size3;
     uint32_t diff = 0;
     for (char *out = (char *)output + size3; size_diff > 0; out += diff)
     {
         segment++;
-        pak->header[segment].decompress(segment);
+        pak->segments[segment].decompress(segment);
 
         diff = pak->h.chunk_size;
         if (diff >= size_diff)
             diff = size_diff;
-        memcpy(out, pak->header[segment].decoded, 4 * (diff >> 2));
+        memcpy(out, pak->segments[segment].decoded, 4 * (diff >> 2));
         size_diff -= diff;
         memcpy(
             out + 4 * (diff >> 2),
-            pak->header[segment].decoded + 4 * (diff >> 2),
+            pak->segments[segment].decoded + 4 * (diff >> 2),
             diff & 3);
     }
     return size;
@@ -189,6 +189,6 @@ void pak::load(FILE *f)
         t.file = f;
         t.encoded = encoded.data();
         t.decoded = decoded.data();
-        header.push_back(t);
+        segments.push_back(t);
     }
 }

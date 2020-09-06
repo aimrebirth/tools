@@ -84,7 +84,7 @@ struct segment
 struct pak
 {
     header h;
-    vector<segment> header;
+    vector<segment> segments;
     map<string, record> files;
 
     //
