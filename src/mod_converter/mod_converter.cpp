@@ -87,7 +87,7 @@ auto read_model(const path &fn)
     if (fn.extension() == ".mod") // single block file from m2 sdk viewer
     {
         block bl;
-        bl.h.name = fn.stem().u8string();
+        bl.h.name = to_printable_string(fn.stem());
         bl.loadPayload(b);
         m.blocks.push_back(bl);
     }
@@ -112,8 +112,8 @@ void convert_model(const model &m, const path &fn)
 {
     // write all
     if (all_formats)
-        m.print(fn.u8string(), AS);
-    m.printFbx(fn.u8string(), AS);
+        m.print(to_printable_string(fn), AS);
+    m.printFbx(to_printable_string(fn), AS);
 }
 
 void convert_model(const path &fn)
@@ -122,7 +122,7 @@ void convert_model(const path &fn)
 
     if (stats)
     {
-        m.save(root[fn.filename().u8string()]);
+        m.save(root[to_printable_string(fn.filename())]);
         return;
     }
 
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         }
     }
     else
-        throw std::runtime_error("No such file or directory: " + normalize_path(p));
+        throw std::runtime_error("No such file or directory: " + to_printable_string(normalize_path(p)));
 
     if (stats)
     {

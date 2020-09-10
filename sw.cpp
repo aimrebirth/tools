@@ -6,7 +6,7 @@ void build(Solution &s)
     tools += Git("https://github.com/aimrebirth/tools", "", "{v}");
 
     auto &common = tools.addStaticLibrary("common");
-    common.CPPVersion = CPPLanguageStandard::CPP17;
+    common += cpp20;
     common.setRootDirectory("src/common");
     common.Public += "pub.egorpugin.primitives.filesystem-master"_dep;
     common.Public += "pub.egorpugin.primitives.sw.main-master"_dep;
@@ -14,7 +14,7 @@ void build(Solution &s)
     auto add_exe = [&tools](const String &name) -> decltype(auto)
     {
         auto &t = tools.addExecutable(name);
-        t.CPPVersion = CPPLanguageStandard::CPP17;
+        t += cpp20;
         t.setRootDirectory("src/" + name);
         return t;
     };
@@ -47,14 +47,14 @@ void build(Solution &s)
 
     // not so simple targets
     auto &script2txt = tools.addStaticLibrary("script2txt");
-    script2txt.CPPVersion = CPPLanguageStandard::CPP17;
+    script2txt += cpp20;
     script2txt.setRootDirectory("src/script2txt");
     script2txt += "pub.lzwdgc.Polygon4.DataManager.schema-master"_dep;
     gen_flex_bison_pair("org.sw.demo.lexxmark.winflexbison"_dep, script2txt, "LALR1_CPP_VARIANT_PARSER", "script2txt");
     script2txt.CompileOptions.push_back("/Zc:__cplusplus");
 
     auto &model = tools.addStaticLibrary("model");
-    model.CPPVersion = CPPLanguageStandard::CPP17;
+    model += cpp20;
     model.setRootDirectory("src/model");
     model.Public += common,
         "org.sw.demo.unicode.icu.i18n"_dep,

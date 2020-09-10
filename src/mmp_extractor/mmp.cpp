@@ -393,7 +393,7 @@ void mmp::writeHeightMap()
         fclose(f);
     };
 
-    cv::imwrite((path(filename) += ".heightmap16.png").u8string(), toCvMat(heightmap));
+    cv::imwrite((const char *)to_path_string(path(filename) += ".heightmap16.png").c_str(), toCvMat(heightmap));
 
     //write_hm(".heightmap16.r16", heightmap, sizeof(decltype(heightmap)::type));
     write_hm(".heightmap32.r32", heightmap32, sizeof(decltype(heightmap32)::type));
@@ -471,7 +471,7 @@ void mmp::writeSplitColormap() const
         for (auto &pixel : m)
             pixel = pixel == color ? 0x0000FF00 : 0;
         std::cout << "\r[" << i << "/" << colors.size() << "] Processing color " << ss.str();
-        cv::imwrite(fn.u8string(), toCvMat(m));
+        cv::imwrite((const char *)to_path_string(fn).c_str(), toCvMat(m));
     }
 }
 

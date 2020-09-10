@@ -219,7 +219,7 @@ static void process_lang(polygon4::Storage &s, const path &p, polygon4::String p
         AimKV kv1;
         if (db.number_of_values)
         {
-            kv1 = ::get_kv(db, get_cp(p.filename().u8string()));
+            kv1 = ::get_kv(db, get_cp(to_printable_string(p.filename())));
             kvm.insert(kv1.begin(), kv1.end());
         }
     };
@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
 #undef ADD_LANGUAGE
         else
         {
-            std::cerr << "No such lang: " << p.filename().u8string() << "\n";
+            std::cerr << "No such lang: " << to_printable_string(p.filename()) << "\n";
             continue;
         }
     }
