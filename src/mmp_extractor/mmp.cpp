@@ -395,7 +395,7 @@ void mmp::writeHeightMap()
 
     cv::imwrite((const char *)to_path_string(path(filename) += ".heightmap16.png").c_str(), toCvMat(heightmap));
 
-    //write_hm(".heightmap16.r16", heightmap, sizeof(decltype(heightmap)::type));
+    write_hm(".heightmap16.r16", heightmap, sizeof(decltype(heightmap)::type));
     write_hm(".heightmap32.r32", heightmap32, sizeof(decltype(heightmap32)::type));
 }
 
