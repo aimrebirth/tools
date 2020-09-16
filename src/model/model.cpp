@@ -178,7 +178,7 @@ void model_data::load(const buffer &b, uint32_t flags)
     READ(b, n_vertex);
     vertices.resize(n_vertex);
     READ(b, n_faces);
-    faces.resize(n_faces / 3);
+        faces.resize(n_faces / 3);
     for (auto &v : vertices)
         v.load(b, flags);
     for (auto &t : faces)
@@ -501,9 +501,9 @@ void block::loadPayload(const buffer &data)
     }
 
     // unk
-    // seen: 2,3,4,8,9,516
+    // seen: 0,2,3,4,8,9,516
     READ(data, unk7);
-    // seen: 0.0222222, 0.0444444, 0.0555556, 0.03125, 0.0375, 0.0625, 0.1, 0.125, 100, inf
+    // seen: 0.0, 0.0222222, 0.0444444, 0.0555556, 0.03125, 0.0375, 0.0625, 0.1, 0.125, 100, inf
     READ(data, unk9); // scale? probably no
     READ(data, unk10);
     READ(data, auto_animation);
@@ -546,10 +546,16 @@ void block::loadPayload(const buffer &data)
 
     // maybe two winds anims?
     // small wind and big wind?
+    // or left wind and right wind?
     if (triangles_mult_7 && !unk11 &&
         ((flags & F_WIND_TRANSFORM) || flags == 0x112)
         )
     {
+        read_more_faces();
+    }
+    if (triangles_mult_7 && flags == 0x116)
+    {
+        read_more_faces();
         read_more_faces();
     }
 
