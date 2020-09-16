@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
         auto files = enumerate_files_like(p, ".*\\.TM", false);
         for (auto &f : files)
         {
-            std::cout << "processing: " << f << "\n";
+            std::cout << "processing: " << to_printable_string(f) << "\n";
             convert(f);
         }
     }
