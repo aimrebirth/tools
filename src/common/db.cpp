@@ -149,9 +149,9 @@ void db::open(const path &p)
 
 polygon4::tools::db::processed_db db::process() const
 {
-    auto process_string = [](const auto &s)
+    auto process_string = [](const std::string &s)
     {
-        return str2utf8(s);
+        return str2utf8(s.c_str());
     };
 
     polygon4::tools::db::processed_db pdb;
@@ -170,7 +170,7 @@ polygon4::tools::db::processed_db db::process() const
             switch (fld->second.type)
             {
             case FieldType::String:
-                r[name] = process_string(f.s.c_str());
+                r[name] = process_string(f.s);
                 break;
             case FieldType::Integer:
                 r[name] = f.i;
