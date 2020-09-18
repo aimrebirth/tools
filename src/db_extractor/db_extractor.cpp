@@ -27,7 +27,7 @@
 
 #include <fstream>
 
-void create_sql(path p, const db &db)
+void create_sql(path p, const polygon4::tools::db::processed_db &db)
 {
     std::ofstream ofile(p += ".sql");
     if (!ofile)
@@ -41,87 +41,83 @@ void create_sql(path p, const db &db)
     ofile << "drop table if exists " << master_table_name << ";\n";
     ofile << "create table \"" << master_table_name << "\"\n";
     ofile << "(\n";
-    ofile << "  \"" + str2utf8(id) + "\" INTEGER,\n";
-    ofile << "  \"" + str2utf8(row_type) + "\" TEXT\n";
+    ofile << "  \"" + id + "\" INTEGER,\n";
+    ofile << "  \"" + row_type + "\" TEXT\n";
     ofile << ");\n";
     ofile << "\n";
 
-    // db tables
-    for (auto &table : db.t.tables)
+    for (auto &[name,table] : db)
     {
-        auto &t = table.second;
-        std::string name = str2utf8(t.name);
+        static int idx = 1;
+        ofile << "insert into \"" << master_table_name << "\" values (";
+        ofile << "'" << idx++ << "', ";
+        ofile << "'" << name << "'";
+        ofile << ");\n";
+    }
+    ofile << "\n";
+
+    // db tables
+    for (auto &[name, t] : db)
+    {
         ofile << "drop table if exists " << name << ";\n";
         ofile << "create table \"" << name << "\"\n";
         ofile << "(\n";
         std::string s;
-        s += "  \"" + str2utf8(id) + "\" INTEGER,\n";
-        s += "  \"" + str2utf8(row_type) + "\" TEXT,\n";
-        for (auto &f : db.t.fields)
+        s += "  \"" + id + "\" INTEGER,\n";
+        s += "  \"" + row_type + "\" TEXT,\n";
+        std::map<std::string, FieldType> fields;
+        for (auto &[_, f] : t)
         {
-            if (f.second.table_id != t.id)
-                continue;
-            s += "  \"" + str2utf8(f.second.name) + "\" " + getSqlType(f.second.type) + ",\n";
+            for (auto &[n, v] : f)
+                fields[n] = (FieldType)v.index();
         }
+        for (auto &[n, t] : fields)
+            s += "  \"" + n + "\" " + getSqlType(t) + ",\n";
         s.resize(s.size() - 2);
         ofile << s << "\n";
         ofile << ");\n";
         ofile << "\n";
     }
 
-    // db master table
-    for (auto &table : db.t.tables)
-    {
-        static int idx = 1;
-        ofile << "insert into \"" << master_table_name << "\" values (";
-        ofile << "'" << idx++ << "', ";
-        ofile << "'" << str2utf8(table.second.name) << "'";
-        ofile << ");\n";
-    }
-
     // db tables
-    std::map<int,int> idx;
-    for (auto &v : db.values)
+    std::map<std::string,int> idx;
+    for (auto &[tn, t] : db)
     {
-        auto tbl = db.t.tables.find(v.table_id);
-        if (tbl == db.t.tables.end())
-            continue;
-        ofile << "insert into \"" << str2utf8(tbl->second.name) << "\" (";
-        std::string s;
-        s += "'" + str2utf8(id) + "', ";
-        s += "'" + str2utf8(row_type) + "', ";
-        for (auto &f : v.fields)
+        for (auto &[rn, row] : t)
         {
-            auto fld = db.t.fields.find(f.field_id);
-            s += "'" + str2utf8(fld->second.name) + "', ";
-        }
-        s.resize(s.size() - 2);
-        ofile << s << ") values (";
-        s.clear();
-        s += "'" + std::to_string(idx[v.table_id]++) + "', ";
-        s += "'" + str2utf8(v.name) + "', ";
-        for (auto &f : v.fields)
-        {
-            s += "'";
-            auto fld = db.t.fields.find(f.field_id);
-            switch (fld->second.type)
+            ofile << "insert into \"" << tn << "\" (";
+            std::string s;
+            s += "'" + id + "', ";
+            s += "'" + row_type + "', ";
+            for (auto &[n, v] : row)
+                s += "'" + n + "', ";
+            s.resize(s.size() - 2);
+            ofile << s << ") values (";
+            s.clear();
+            s += "'" + std::to_string(++idx[tn]) + "', ";
+            s += "'" + rn + "', ";
+            for (auto &[n, v] : row)
             {
+                s += "'";
+                switch ((FieldType)v.index())
+                {
                 case FieldType::String:
-                    s += str2utf8(f.s.c_str());
+                    s += std::get<std::string>(v);
                     break;
                 case FieldType::Integer:
-                    s += std::to_string(f.i);
+                    s += std::to_string(std::get<int>(v));
                     break;
                 case FieldType::Float:
-                    s += std::to_string(f.f);
+                    s += std::to_string(std::get<float>(v));
                     break;
                 default:
-                    assert(false);
+                    SW_UNIMPLEMENTED;
+                }
+                s += "', ";
             }
-            s += "', ";
+            s.resize(s.size() - 2);
+            ofile << s << ");\n";
         }
-        s.resize(s.size() - 2);
-        ofile << s << ");\n";
     }
 }
 
@@ -133,6 +129,6 @@ int main(int argc, char *argv[])
 
     db db;
     db.open(db_fn);
-    create_sql(db_fn, db);
+    create_sql(db_fn, db.process());
     return 0;
 }
