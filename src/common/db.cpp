@@ -18,7 +18,8 @@
 
 #include "db.h"
 
-#include <buffer.h>
+#include "buffer.h"
+#include "common.h"
 
 std::string getSqlType(FieldType type)
 {
@@ -91,7 +92,7 @@ void value::load_fields(const tab &tab, buffer &b)
     while (!data.eof())
     {
         field_value fv;
-            READ(data, fv.field_id);
+        READ(data, fv.field_id);
         READ(data, fv.size);
         auto i = tab.fields.find(fv.field_id);
         if (i == tab.fields.end())
@@ -145,4 +146,46 @@ void db::open(const path &p)
     buffer b(read_file(path(p) += ".dat"));
     for (auto &v : values)
         v.load_fields(t, b);
+}
+
+polygon4::tools::db::processed_db db::process() const
+{
+    auto process_string = [](const auto &s)
+    {
+        return str2utf8(s);
+    };
+
+    polygon4::tools::db::processed_db pdb;
+    for (auto &v : values)
+    {
+        auto tbl = t.tables.find(v.table_id);
+        if (tbl == t.tables.end())
+            continue;
+        polygon4::tools::db::record r;
+        for (auto &f : v.fields)
+        {
+            auto fld = t.fields.find(f.field_id);
+            if (fld == t.fields.end())
+                continue;
+            auto name = process_string(fld->second.name);
+            switch (fld->second.type)
+            {
+            case FieldType::String:
+                r[name] = process_string(f.s.c_str());
+                break;
+            case FieldType::Integer:
+                r[name] = f.i;
+                break;
+            case FieldType::Float:
+                r[name] = f.f;
+                break;
+            default:
+                assert(false);
+            }
+        }
+        auto table_name = process_string(tbl->second.name);
+        auto row_name = process_string(v.name);
+        pdb[table_name][row_name] = r;
+    }
+    return pdb;
 }

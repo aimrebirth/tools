@@ -90,6 +90,14 @@ struct value
     void load_fields(const tab &tab, buffer &b);
 };
 
+namespace polygon4::tools::db
+{
+    using value = std::variant<std::string, int, float>;
+    using record = std::map<std::string, value>;
+    using table = std::map<std::string, record>;
+    using processed_db = std::map<std::string, table>;
+};
+
 struct db
 {
     uint32_t number_of_values = 0;
@@ -99,4 +107,5 @@ struct db
 
     void load(const buffer &b);
     void open(const path &basename);
+    polygon4::tools::db::processed_db process() const;
 };
