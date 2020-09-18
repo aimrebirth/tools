@@ -20,13 +20,15 @@
 
 #include <primitives/filesystem.h>
 
-#include <assert.h>
 #include <iostream>
 #include <map>
+#include <string>
+#include <variant>
+#include <vector>
+
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string>
-#include <vector>
 
 enum class FieldType : uint32_t
 {
