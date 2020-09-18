@@ -9,13 +9,13 @@ void build(Solution &s)
     common += cpp20;
     common.setRootDirectory("src/common");
     common.Public += "pub.egorpugin.primitives.filesystem-master"_dep;
-    common.Public += "pub.egorpugin.primitives.sw.main-master"_dep;
 
     auto add_exe = [&tools](const String &name) -> decltype(auto)
     {
         auto &t = tools.addExecutable(name);
         t += cpp20;
         t.setRootDirectory("src/" + name);
+        t += "pub.egorpugin.primitives.sw.main-master"_dep;
         return t;
     };
 
@@ -58,7 +58,9 @@ void build(Solution &s)
     model.setRootDirectory("src/model");
     model.Public += common,
         "org.sw.demo.unicode.icu.i18n"_dep,
-        "org.sw.demo.eigen"_dep
+        "org.sw.demo.eigen"_dep,
+        "pub.egorpugin.primitives.yaml-master"_dep,
+        "pub.egorpugin.primitives.sw.settings-master"_dep
         ;
 
     add_exe("mod_reader") += model;
