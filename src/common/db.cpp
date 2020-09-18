@@ -105,8 +105,6 @@ void value::load_fields(const tab &tab, buffer &b)
         case FieldType::String:
             fv.s.resize(fv.size);
             READ_N(data2, fv.s[0], fv.s.size());
-            while (!fv.s.empty() && fv.s.back() == '\0')
-                fv.s.resize(fv.s.size() - 1);
             break;
         case FieldType::Integer:
             if (sizeof(fv.i) <= fv.size)
