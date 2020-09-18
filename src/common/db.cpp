@@ -91,35 +91,32 @@ void value::load_fields(const tab &tab, buffer &b)
     while (!data.eof())
     {
         field_value fv;
-        try
-        {
             READ(data, fv.field_id);
-        }
-        catch (std::exception &)
-        {
-            break;
-        }
         READ(data, fv.size);
         auto i = tab.fields.find(fv.field_id);
         if (i == tab.fields.end())
             continue;
+
+        buffer data2(data, fv.size);
         switch (i->second.type)
         {
         case FieldType::String:
             fv.s.resize(fv.size);
-            READ_N(data, fv.s[0], fv.s.size());
+            READ_N(data2, fv.s[0], fv.s.size());
             while (!fv.s.empty() && fv.s.back() == '\0')
                 fv.s.resize(fv.s.size() - 1);
             break;
         case FieldType::Integer:
-            READ(data, fv.i);
-            if (fv.size > sizeof(fv.i))
-                data.skip(fv.size - sizeof(fv.i));
+            if (sizeof(fv.i) <= fv.size)
+                READ(data2, fv.i);
+            else
+                std::cout << "small int field: " << fv.size << "\n";
             break;
         case FieldType::Float:
-            READ(data, fv.f);
-            if (fv.size > sizeof(fv.i))
-                data.skip(fv.size - sizeof(fv.i));
+            if (sizeof(fv.f) <= fv.size)
+                READ(data2, fv.f);
+            else
+                std::cout << "small float field: " << fv.size << "\n";
             break;
         default:
             assert(false);
