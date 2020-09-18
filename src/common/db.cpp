@@ -21,6 +21,8 @@
 #include "buffer.h"
 #include "common.h"
 
+#include <primitives/exceptions.h>
+
 std::string getSqlType(FieldType type)
 {
     switch (type)
@@ -32,9 +34,8 @@ std::string getSqlType(FieldType type)
     case FieldType::Float:
         return "REAL";
     default:
-        assert(false);
+        SW_UNIMPLEMENTED;
     }
-    return "";
 }
 
 void table::load(const buffer &b)
@@ -120,7 +121,7 @@ void value::load_fields(const tab &tab, buffer &b)
                 std::cout << "small float field: " << fv.size << "\n";
             break;
         default:
-            assert(false);
+            SW_UNIMPLEMENTED;
         }
         fields.push_back(fv);
     }
@@ -180,7 +181,7 @@ polygon4::tools::db::processed_db db::process() const
                 r[name] = f.f;
                 break;
             default:
-                assert(false);
+                SW_UNIMPLEMENTED;
             }
         }
         auto table_name = process_string(tbl->second.name);
