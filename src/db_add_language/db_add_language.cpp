@@ -32,8 +32,9 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <math.h>
 #include <numeric>
+
+#include <math.h>
 
 // MultiByteToWideChar: https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
 // code pages: https://msdn.microsoft.com/en-us/library/windows/desktop/dd317756(v=vs.85).aspx

@@ -18,7 +18,7 @@
 
 #include "buffer.h"
 
-#include "common.h"
+#include <stdexcept>
 
 #include <stdio.h>
 
