@@ -98,5 +98,5 @@ struct db
     std::vector<value> values;
 
     void load(const buffer &b);
-    void open(const path &p);
+    void open(const path &basename);
 };
