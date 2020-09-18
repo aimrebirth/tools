@@ -110,13 +110,13 @@ void value::load_fields(const tab &tab, buffer &b)
             if (sizeof(fv.i) <= fv.size)
                 READ(data2, fv.i);
             else
-                std::cout << "small int field: " << fv.size << "\n";
+                std::cerr << "small int field: " << fv.size << "\n";
             break;
         case FieldType::Float:
             if (sizeof(fv.f) <= fv.size)
                 READ(data2, fv.f);
             else
-                std::cout << "small float field: " << fv.size << "\n";
+                std::cerr << "small float field: " << fv.size << "\n";
             break;
         default:
             SW_UNIMPLEMENTED;
