@@ -553,7 +553,7 @@ void block::loadPayload(const buffer &data)
     {
         read_more_faces();
     }
-    if (triangles_mult_7 && flags == 0x116)
+    if (triangles_mult_7 && (flags == 0x116 || flags == 0x112))
     {
         read_more_faces();
         read_more_faces();
