@@ -104,8 +104,8 @@ void ConvertScene(FbxScene* lScene, AxisSystem as)
     switch (as)
     {
     case AxisSystem::eMayaYUp:
-        // "By default the FbxScene uses a Y-Up axis system." (c)
-        // (from fbx doc)
+        // "By default the FbxScene uses a Y-Up axis system."
+        // https://help.autodesk.com/view/FBX/2020/ENU/?guid=FBX_Developer_Help_cpp_ref_class_fbx_axis_system_html
         break;
     case AxisSystem::eMayaZUp:
         FbxAxisSystem::MayaZUp.ConvertScene(lScene);
