@@ -165,7 +165,7 @@ void buffer::seek(uint32_t size) const
     skip(size);
 }
 
-bool buffer::check(int index) const
+bool buffer::check_pos(int index) const
 {
     return index_ == index;
 }
