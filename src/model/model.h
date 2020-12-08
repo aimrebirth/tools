@@ -100,7 +100,7 @@ enum class AxisSystem
     eWindows3DViewer,
 
     // special
-    Default = 0,
+    Default = eMayaYUp,
 };
 
 template <typename T>

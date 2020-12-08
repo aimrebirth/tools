@@ -103,6 +103,10 @@ void ConvertScene(FbxScene* lScene, AxisSystem as)
 {
     switch (as)
     {
+    case AxisSystem::eMayaYUp:
+        // "By default the FbxScene uses a Y-Up axis system." (c)
+        // (from fbx doc)
+        break;
     case AxisSystem::eMayaZUp:
         FbxAxisSystem::MayaZUp.ConvertScene(lScene);
         break;
@@ -114,6 +118,8 @@ void ConvertScene(FbxScene* lScene, AxisSystem as)
         // UpVector = ZAxis, FrontVector = ParityOdd, CoordSystem = RightHanded
         FbxAxisSystem(FbxAxisSystem::eZAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eRightHanded).ConvertScene(lScene);
         break;
+    default:
+        SW_UNIMPLEMENTED;
     }
 }
 
