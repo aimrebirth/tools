@@ -140,12 +140,8 @@ void vertex::load(const buffer &b, uint32_t flags)
 
 void face::load(const buffer &b)
 {
-    uint16_t lvertex_list[3];
-    READ(b, lvertex_list);
-
-    vertex_list[2] = lvertex_list[0];
-    vertex_list[1] = lvertex_list[1];
-    vertex_list[0] = lvertex_list[2];
+    READ(b, vertex_list);
+    std::swap(vertex_list[0], vertex_list[2]);
 }
 
 static String print_float(double v)
