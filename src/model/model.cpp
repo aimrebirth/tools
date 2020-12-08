@@ -97,7 +97,6 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     READ(b, v.y);
     READ(b, v.x);
     READ(b, v.z);
-    //v.y = -v.y;
 
     // after load we have eMayaYUp
 }
