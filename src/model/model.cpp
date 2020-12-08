@@ -97,7 +97,7 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     READ(b, v.y);
     READ(b, v.x);
     READ(b, v.z);
-    v.y = -v.y;
+    //v.y = -v.y;
 
     // after load we have eMayaYUp
 }
@@ -141,6 +141,7 @@ void vertex::load(const buffer &b, uint32_t flags)
 void face::load(const buffer &b)
 {
     READ(b, vertex_list);
+    std::swap(vertex_list[0], vertex_list[2]);
 }
 
 static String print_float(double v)
