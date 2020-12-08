@@ -347,7 +347,7 @@ struct block
 
     std::string printMtl() const;
     std::string printObj(int v_offset, int n_offset, int uv_offset, AxisSystem as) const;
-    block_info save(yaml &root) const;
+    block_info save(yaml root) const;
 
     bool canPrint() const;
     bool isEngineFx() const;
@@ -365,7 +365,7 @@ struct model
 
     void print(const std::string &fn, AxisSystem) const;
     void printFbx(const std::string &fn, AxisSystem) const;
-    void save(yaml &root) const;
+    void save(yaml root) const;
 };
 
 float scale_mult();

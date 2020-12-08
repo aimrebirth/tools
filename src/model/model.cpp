@@ -699,7 +699,7 @@ bool block::canPrint() const
     return false;
 }
 
-block::block_info block::save(yaml &root) const
+block::block_info block::save(yaml root) const
 {
     aim_vector4 min{ 1e6, 1e6, 1e6, 1e6 }, max{ -1e6, -1e6, -1e6, -1e6 };
     for (auto &v : md.vertices)
@@ -796,7 +796,7 @@ void model::print(const std::string &fn, AxisSystem as) const
     print_obj(fn + ".obj");
 }
 
-void model::save(yaml &root) const
+void model::save(yaml root) const
 {
     aim_vector4 min{ 1e6, 1e6, 1e6, 1e6 }, max{ -1e6, -1e6, -1e6, -1e6 };
 
