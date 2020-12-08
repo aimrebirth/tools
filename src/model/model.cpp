@@ -94,6 +94,20 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     This is Z UP, RH axis system - eMax (same as eMayaZUp) in fbx.
     */
 
+    /*
+    * update:
+    * AIM Coordinates (.mod file coord system):
+    *
+    *   1st number - up vector (+Y) - 100% sure.
+    *       Models stand straight with such interpretation.
+    *       Check on any glider or base.
+    *   2nd number - front vector (+X, ParityEven) - 100% sure.
+    *       Check on any glider. After ue4 fbx import glider will look along X axis.
+    *   3rd number - right vector (+ or - ? Z) - left handed or right handed?
+    *
+    * This is Y-UP (RH?) axis system - eMax (same as eMayaYUp) in fbx.
+    */
+
     READ(b, v.y);
     READ(b, v.x);
     READ(b, v.z);
