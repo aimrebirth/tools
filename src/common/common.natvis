@@ -7,4 +7,19 @@
         </DisplayString>
     </Type>
 
+    <Type Name="vertex_normal">
+        <DisplayString>
+            {*(vector3&lt;float&gt;*)this}
+        </DisplayString>
+    </Type>
+
+    <Type Name="aim_vector4">
+        <DisplayString Condition="w == 1">
+            {*(vector3&lt;float&gt;*)this}
+        </DisplayString>
+        <DisplayString>
+            {*(vector3&lt;float&gt;*)this} w={w}
+        </DisplayString>
+    </Type>
+
 </AutoVisualizer>
