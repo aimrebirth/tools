@@ -73,10 +73,10 @@ static int levenshtein_distance(const T &s1, const T &s2)
 {
     // To change the type this function manipulates and returns, change
     // the return type and the types of the two variables below.
-    int s1len = s1.size();
-    int s2len = s2.size();
+    auto s1len = s1.size();
+    auto s2len = s2.size();
 
-    auto column_start = (decltype(s1len))1;
+    decltype(s1len) column_start = 1;
 
     auto column = new decltype(s1len)[s1len + 1];
     std::iota(column + column_start, column + s1len + 1, column_start);
