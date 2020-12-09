@@ -131,6 +131,10 @@ void model::printFbx(const std::string &fn, AxisSystem as) const
     // Prepare the FBX SDK.
     InitializeSdkObjects(lSdkManager, lScene);
 
+    // convert scene to AIM coordinate system
+    //FbxAxisSystem aim_as(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityEven, FbxAxisSystem::eRightHanded);
+    //aim_as.ConvertScene(lScene);
+
     // Create the scene.
     CreateScene(*this, fn, lSdkManager, lScene);
 
