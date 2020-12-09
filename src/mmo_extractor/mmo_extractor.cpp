@@ -132,9 +132,9 @@ void write_mmo(Storage *storage, const mmo_storage &s, const std::string &mapnam
 
     auto calc_yaw = [](auto &v)
     {
-        auto yaw = atan2(v[1].x / v[2].z, v[0].x / v[2].z);
+        auto yaw = atan2(-v[0].y, -v[0].x);
         yaw = RAD2GRAD(yaw);
-        return -(yaw - 90);
+        return yaw;
     };
 
     int inserted = 0;
