@@ -307,8 +307,8 @@ static std::string printVertex(const aim_vector4 &coordinates, AxisSystem as)
     auto v = rotate(coordinates, as);
 
     std::string s;
-    s = "v " +
-        print_float(v.x * scale_mult())
+    s = "v"s
+        + " " + print_float(v.x * scale_mult())
         + " " + print_float(v.y * scale_mult())
         + " " + print_float(v.z * scale_mult())
         //+ " " + print_float(coordinates.w)
