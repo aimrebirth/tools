@@ -103,9 +103,9 @@ mmo_storage read_mmo(const path &fn)
     return s;
 }
 
-void write_mmo(Storage *storage, const mmo_storage &s)
+void write_mmo(Storage *storage, const mmo_storage &s, const std::string &mapname1)
 {
-    std::string map_name = to_printable_string(s.name.filename().stem());
+    std::string map_name = mapname1.empty() ? to_printable_string(s.name.filename().stem()) : mapname1;
     if (!prefix.empty())
         map_name = prefix + "." + map_name;
     std::transform(map_name.begin(), map_name.end(), map_name.begin(), ::tolower);
@@ -270,6 +270,7 @@ int main(int argc, char *argv[])
     cl::opt<bool> m2("m2", cl::desc("m2 .mmo file"));
     cl::opt<bool> print_mechanoids("print_mechanoids", cl::desc("print mechanoids"));
     cl::opt<path> db_path("db", cl::desc("database file"));
+    cl::opt<std::string> mapname("map", cl::desc("map name"));
     cl::alias db_pathA("d", cl::aliasopt(db_path));
     cl::opt<path> p(cl::Positional, cl::desc("<.mmo file or directory with .mmo files>"), cl::value_desc("file or directory"), cl::Required);
 
@@ -322,7 +323,7 @@ int main(int argc, char *argv[])
             storage->save();
         }
         storage->load();
-        action([&storage](const path &, const auto &m) {write_mmo(storage.get(), m); });
+        action([&storage, &mapname](const path &, const auto &m) {write_mmo(storage.get(), m, mapname); });
         if (inserted_all)
             storage->save();
     }
