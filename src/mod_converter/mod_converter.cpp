@@ -86,9 +86,10 @@ auto read_model(const path &fn)
     model m;
     if (fn.extension() == ".mod") // single block file from m2 sdk viewer
     {
-        block bl;
+        block bl = {};
+        bl.printable = true; // allow to output
         bl.h.name = to_printable_string(fn.stem());
-        bl.loadPayload(b);
+        bl.loadPayloadAndProcess(b);
         m.blocks.push_back(bl);
     }
     else

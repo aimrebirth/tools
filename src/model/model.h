@@ -343,6 +343,7 @@ struct block
 
     void load(const buffer &b);
     void loadPayload(const buffer &b);
+    void loadPayloadAndProcess(const buffer &b);
     void linkFaces();
 
     std::string printMtl() const;
@@ -354,6 +355,7 @@ struct block
 
     //
     processed_model_data pmd;
+    bool printable = false;
 };
 
 struct model

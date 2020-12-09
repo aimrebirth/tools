@@ -482,6 +482,12 @@ void block::load(const buffer &b)
     pmd = process_block(md);
 }
 
+void block::loadPayloadAndProcess(const buffer &b)
+{
+    loadPayload(b);
+    pmd = process_block(md);
+}
+
 void block::loadPayload(const buffer &data)
 {
     // anims
@@ -692,6 +698,9 @@ bool block::isEngineFx() const
 
 bool block::canPrint() const
 {
+    if (printable)
+        return true;
+
     // block all lods except 0
     if (!(h.all_lods == 15 || h.LODs.lod1))
         return false;
