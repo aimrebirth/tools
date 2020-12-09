@@ -329,6 +329,28 @@ struct block
         aim_vector4 max;
     };
 
+    struct animated_texture
+    {
+        uint16_t zeros0;
+        uint8_t multiplier_of_number_of_gradations;
+        uint8_t number_of_gradations;
+        float time_of_full_cycle;
+
+        float get_actual_number_of_gradations() const
+        {
+            if (!multiplier_of_number_of_gradations)
+                return multiplier_of_number_of_gradations * number_of_gradations;
+            return number_of_gradations * number_of_gradations;
+        }
+
+        float get_actual_time_of_full_cycle() const
+        {
+            return get_actual_number_of_gradations() * time_of_full_cycle;
+        }
+
+        bool is_present() const { return number_of_gradations; }
+    };
+
     header h;
 
     // data
@@ -349,10 +371,9 @@ struct block
     // animations
     std::vector<animation> animations;
     std::vector<damage_model> damage_models;
+    animated_texture atex;
 
     // unk
-    uint32_t unk7;
-    float unk9;
     uint32_t unk10;
     float unk8;
     uint32_t unk11;

@@ -535,11 +535,7 @@ void block::loadPayload(const buffer &data)
         break;
     }
 
-    // unk
-    // seen: 0,2,3,4,8,9,516
-    READ(data, unk7);
-    // seen: 0.0, 0.0222222, 0.0444444, 0.0555556, 0.03125, 0.0375, 0.0625, 0.1, 0.125, 100, inf
-    READ(data, unk9); // scale? probably no
+    READ(data, atex);
     READ(data, unk10);
     READ(data, auto_animation);
     READ(data, animation_cycle);
@@ -594,7 +590,7 @@ void block::loadPayload(const buffer &data)
         read_more_faces();
     }
 
-    if (unk7 != 0)
+    if (atex.is_present())
         return;
 
     std::string s = "extraction error: block: " + std::string(h.name);
