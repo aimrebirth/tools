@@ -202,6 +202,8 @@ static FbxMesh *create_mesh(FbxScene *s, const block &b)
         lGeometryConverter.ComputePolygonSmoothingFromEdgeSmoothing(m);
     }
 
+    //m->GetNode()->LclTranslation.GetCurve(myAnimLayer, KFCURVENODE_T_X, true);
+
     return m;
 }
 
@@ -267,6 +269,13 @@ bool CreateScene(const model &model, const std::string &name, FbxManager* pSdkMa
     static const char* gDiffuseElementName = "DiffuseUV";
     static const char* gAmbientElementName = "AmbientUV";
     static const char* gSpecularElementName = "SpecularUV";
+
+    // https://help.autodesk.com/view/FBX/2020/ENU/?guid=FBX_Developer_Help_animation_example_animating_a_node_html
+    // Create an animation stack
+    FbxAnimStack* myAnimStack = FbxAnimStack::Create(pScene, "My stack");
+    // Create the base layer (this is mandatory)
+    FbxAnimLayer* myAnimBaseLayer = FbxAnimLayer::Create(pScene, "Layer0");
+    myAnimStack->AddMember(myAnimBaseLayer);
 
     int engine_id = 0;
     int fx_id = 0;
