@@ -18,6 +18,8 @@
 
 #include "objects.h"
 
+#include <primitives/exceptions.h>
+
 Segment *Segment::create_segment(const buffer &b)
 {
     ObjectType segment_type;
@@ -69,8 +71,7 @@ Segment *Segment::create_segment(const buffer &b)
         segment = new SegmentObjects<Tank>;
         break;
     default:
-        assert(false);
-        break;
+        SW_UNIMPLEMENTED;
     }
     if (segment)
     {
