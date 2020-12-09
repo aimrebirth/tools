@@ -30,7 +30,14 @@
 #include <iostream>
 #include <sstream>
 
-cl::list<int> extend("e", cl::desc("try to extend map for ue4"), cl::value_desc("<quads per section> <sections per component>"), cl::multi_val(2));
+cl::list<int> extend("e",
+    cl::desc("Try to extend map for ue4. Use <63> <4> or <127> <1> values."),
+    cl::value_desc("<quads per section> <sections per component>"),
+    cl::multi_val(2)//,
+    // defaults
+    //cl::init(std::vector<int>{127,1})
+    //cl::init(std::vector<int>{63,4})
+);
 
 void water_segment::load(const buffer &b)
 {
@@ -114,13 +121,13 @@ void mmp::load(const buffer &b)
     for (auto &s : segments)
         s.load(b);
 
+    if (segments.empty())
+        return;
+
     // check whether all segments were read
-    if (segments.size())
-    {
-        auto len = b.index() + segments.size() * sizeof(segment::data);
-        if (len != b.size())
-            throw std::logic_error("Some segments were not read");
-    }
+    auto len = b.index() + segments.size() * sizeof(segment::data);
+    if (len != b.size())
+        throw std::logic_error("Some segments were not read");
 }
 
 void mmp::load(const path &fn)
@@ -188,6 +195,7 @@ void mmp::process()
         // defaults
         //extend.push_back(63);
         //extend.push_back(4);
+
         extend.push_back(127);
         extend.push_back(1);
     }
