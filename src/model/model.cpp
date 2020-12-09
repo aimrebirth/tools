@@ -95,7 +95,7 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     */
 
     /*
-    * update:
+    * update 1:
     * AIM Coordinates (.mod file coord system):
     *
     *   1st number - up vector (+Y) - 100% sure.
@@ -108,9 +108,20 @@ static void load_translated(aim_vector3<float> &v, const buffer &b)
     * This is Y-UP (RH?) axis system - eMax (same as eMayaYUp) in fbx.
     */
 
-    READ(b, v.y);
+    /*
+    update 2:
+        obj -> .mod -> mod_converted -> obj
+
+        +y - up vector
+        -z - forward vector (parity odd)
+        -x - side? rh or lh?
+    */
+
     READ(b, v.x);
     READ(b, v.z);
+    READ(b, v.y);
+    v.x = -v.x;
+    v.z = -v.z;
 
     // after load we have eMayaYUp
 }
