@@ -172,6 +172,8 @@ static aim_vector3<T> rotate(const aim_vector3<T> &in, AxisSystem rot_type)
     aim_vector3<T> v = in;
     switch (rot_type)
     {
+    case AxisSystem::eMayaYUp:
+        break;
     case AxisSystem::eMayaZUp:
         v.y = -v.y;
     case AxisSystem::eWindows3DViewer:
@@ -181,6 +183,8 @@ static aim_vector3<T> rotate(const aim_vector3<T> &in, AxisSystem rot_type)
     case AxisSystem::eDirectX:
         v.x = -v.x;
         break;
+    default:
+        SW_UNIMPLEMENTED;
     }
     return v;
 }
