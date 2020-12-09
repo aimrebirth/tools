@@ -151,7 +151,13 @@ struct face
 
     void load(const buffer &b);
 
-    bool operator==(const face &rhs) const { return vertex_list == rhs.vertex_list; }
+    bool operator==(const face &rhs) const
+    {
+        return std::equal(
+            std::begin(vertex_list), std::end(vertex_list),
+            std::begin(rhs.vertex_list), std::end(rhs.vertex_list)
+        );
+    }
 };
 
 struct model_data
@@ -172,11 +178,22 @@ struct processed_model_data
             uint16_t vertex;
             uint16_t normal;
             uint16_t uv;
+
+            bool operator==(const point &rhs) const
+            {
+                return std::tie(vertex, normal, uv) == std::tie(rhs.vertex, rhs.normal, rhs.uv);
+            }
         };
 
         point points[3];
 
-        bool operator==(const face &rhs) const { return points == rhs.points; }
+        bool operator==(const face &rhs) const
+        {
+            return std::equal(
+                std::begin(points), std::end(points),
+                std::begin(rhs.points), std::end(rhs.points)
+            );
+        }
     };
 
     std::vector<aim_vector4> vertices;
