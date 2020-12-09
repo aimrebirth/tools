@@ -141,11 +141,24 @@ void write_mmo(Storage *storage, const mmo_storage &s, const std::string &mapnam
     int exist = 0;
     for (auto &seg : s.objects.segments)
     {
-        if (seg->segment_type == ObjectType::BUILDING   ||
-            seg->segment_type == ObjectType::TOWER      ||
-            0)
+        auto setup_object = [&this_map, &calc_yaw](auto &mb, auto &object)
         {
-            SegmentObjects<::MapObject> *segment = (SegmentObjects<::MapObject> *)seg;
+            // protect against nans
+            object.m_rotate_z[2].z = ASSIGN(object.m_rotate_z[2].z, 1);
+
+            mb.text_id = object.name2;
+            mb.map = this_map;
+            mb.x = ASSIGN(object.position.x, 0);
+            mb.y = ASSIGN(object.position.y, 0);
+            mb.z = ASSIGN(object.position.z, 0);
+            mb.roll = 0;
+            mb.pitch = 0;
+            mb.yaw = calc_yaw(object.m_rotate_z);
+            mb.scale = ASSIGN(object.m_rotate_z[2].z, 1);
+        };
+
+        auto process_buildings = [&storage, &map_id, &inserted, &exist, &setup_object](auto *segment)
+        {
             std::set<std::string> objs;
             std::map<std::string, int> bld_ids;
             for (auto &object : segment->objects)
@@ -169,20 +182,9 @@ void write_mmo(Storage *storage, const mmo_storage &s, const std::string &mapnam
             }
             for (auto &object : segment->objects)
             {
-                // protect against nans
-                object.m_rotate_z[2].z = ASSIGN(object.m_rotate_z[2].z, 1);
-
                 MapBuilding mb;
-                mb.text_id = object.name2;
                 mb.building = storage->buildings[bld_ids[object.name1]];
-                mb.map = this_map;
-                mb.x = ASSIGN(object.position.x, 0);
-                mb.y = ASSIGN(object.position.y, 0);
-                mb.z = ASSIGN(object.position.z, 0);
-                mb.roll = 0;
-                mb.pitch = 0;
-                mb.yaw = calc_yaw(object.m_rotate_z);
-                mb.scale = ASSIGN(object.m_rotate_z[2].z, 1);
+                setup_object(mb, object);
                 auto i = find_if(storage->mapBuildings.begin(), storage->mapBuildings.end(), [&](const auto &p)
                 {
                     return *p.second == mb;
@@ -199,15 +201,20 @@ void write_mmo(Storage *storage, const mmo_storage &s, const std::string &mapnam
                     exist++;
                 }
             }
+        };
+
+        switch (seg->segment_type)
+        {
+        case ObjectType::BUILDING:
+            process_buildings(&dynamic_cast<SegmentObjects<::Building>&>(*seg));
+            break;
+        case ObjectType::TOWER:
+            process_buildings(&dynamic_cast<SegmentObjects<::Tower>&>(*seg));
+            break;
         }
 
-        if (seg->segment_type == ObjectType::TREE       ||
-            seg->segment_type == ObjectType::STONE      ||
-            seg->segment_type == ObjectType::LAMP       ||
-            seg->segment_type == ObjectType::BOUNDARY   ||
-            0)
+        auto process_objects = [&storage, &calc_yaw, &map_id, &inserted, &exist, &setup_object](auto *segment)
         {
-            SegmentObjects<::MapObject> *segment = (SegmentObjects<::MapObject> *)seg;
             std::set<std::string> objs;
             std::map<std::string, int> bld_ids;
             for (auto &object : segment->objects)
@@ -229,20 +236,9 @@ void write_mmo(Storage *storage, const mmo_storage &s, const std::string &mapnam
             }
             for (auto &object : segment->objects)
             {
-                // protect against nans
-                object.m_rotate_z[2].z = ASSIGN(object.m_rotate_z[2].z, 1);
-
                 polygon4::detail::MapObject mb;
-                mb.text_id = object.name2;
-                mb.map = this_map;
                 mb.object = storage->objects[bld_ids[object.name1]];
-                mb.x = ASSIGN(object.position.x, 0);
-                mb.y = ASSIGN(object.position.y, 0);
-                mb.z = ASSIGN(object.position.z, 0);
-                mb.roll = 0;
-                mb.pitch = 0;
-                mb.yaw = calc_yaw(object.m_rotate_z);
-                mb.scale = ASSIGN(object.m_rotate_z[2].z, 1);
+                setup_object(mb, object);
                 auto i = find_if(storage->mapObjects.begin(), storage->mapObjects.end(), [&](const auto &p)
                 {
                     return *p.second == mb;
@@ -259,6 +255,22 @@ void write_mmo(Storage *storage, const mmo_storage &s, const std::string &mapnam
                     exist++;
                 }
             }
+        };
+
+        switch (seg->segment_type)
+        {
+        case ObjectType::TREE:
+            process_objects(&dynamic_cast<SegmentObjects<::Tree>&>(*seg));
+            break;
+        case ObjectType::STONE:
+            process_objects(&dynamic_cast<SegmentObjects<::Stone>&>(*seg));
+            break;
+        case ObjectType::LAMP:
+            process_objects(&dynamic_cast<SegmentObjects<::Lamp>&>(*seg));
+            break;
+        case ObjectType::BOUNDARY:
+            process_objects(&dynamic_cast<SegmentObjects<::Boundary>&>(*seg));
+            break;
         }
     }
     inserted_all += inserted;
