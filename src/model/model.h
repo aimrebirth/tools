@@ -209,28 +209,45 @@ struct animation
     // +1 +0.5 -0.5 +1
     struct segment
     {
-        struct unk_float6
+        struct vertex_diff
         {
-            float unk[6];
+            vertex_normal translation;
+            float unk[3]; // rotation?
+
+            void load(const buffer &b);
         };
 
         uint32_t n;
         std::vector<uint16_t> model_polygons;
 
         // unk
-        uint32_t unk0;
-        uint32_t unk1;
-        std::vector<unk_float6> unk2;
+        uint32_t unk0; // time or diff or something
+        uint32_t unk1; // time or diff or something
+        std::vector<vertex_diff> polygon_diffs;
 
         void loadHeader(const buffer &b);
         void loadData(const buffer &b);
     };
 
-    uint32_t type;
+    enum animation_type : uint32_t
+    {
+        _2grad_1directions_linear,
+        _2grad_2directions,
+        _2grad_1directions,
+        _1grad_1directions,
+        b,
+        c,d,e,f,g,h,i,j,k,l
+    };
+
+    union
+    {
+        animation_type atype;
+        uint32_t itype;
+    } type;
     std::string name;
     segment segments[4];
 
-    virtual void load(const buffer &b);
+    void load(const buffer &b);
 };
 
 struct damage_model
@@ -357,9 +374,6 @@ struct block
     material mat;
     MaterialType mat_type;
 
-    //unk (anim + transform settings?)
-    uint32_t auto_animation;
-    float animation_cycle;
     uint32_t triangles_mult_7; // Tri-mesh. flags?
     //
 
@@ -369,7 +383,11 @@ struct block
     model_data md;
 
     // animations
+    uint32_t auto_animation;
+    float animation_cycle;
     std::vector<animation> animations;
+
+    //
     std::vector<damage_model> damage_models;
     animated_texture atex;
 

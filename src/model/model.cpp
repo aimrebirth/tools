@@ -261,14 +261,18 @@ void material::load(const buffer &b)
 
 void animation::load(const buffer &b)
 {
-    READ(b, type); // seen: 1, 3
+    READ(b, type);
     READ_STRING_N(b, name, 0xC);
     for (auto &s : segments)
         s.loadHeader(b);
-    if (segments[0].n == 0)
-        return;
     for (auto &s : segments)
         s.loadData(b);
+}
+
+void animation::segment::vertex_diff::load(const buffer &b)
+{
+    translation.load(b);
+    READ(b, unk);
 }
 
 void animation::segment::loadHeader(const buffer &b)
@@ -288,9 +292,9 @@ void animation::segment::loadData(const buffer &b)
         for (auto &t : model_polygons)
             READ(b, t);
     }
-    unk2.resize(n);
-    for (auto &unk : unk2)
-        READ(b, unk);
+    polygon_diffs.resize(n);
+    for (auto &pd : polygon_diffs)
+        pd.load(b);
 }
 
 std::string block::printMtl() const
