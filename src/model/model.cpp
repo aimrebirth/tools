@@ -552,12 +552,6 @@ void block::loadPayload(const buffer &data)
     READ(data, unk12);
     READ(data, triangles_mult_7); // particle system?
 
-    //if (unk7 != 0)
-        //std::cout << "nonzero unk7 = " << unk7 << " in block " << h.name << "\n";
-    //if (unk9 != 0)
-        //std::cout << "nonzero unk9 = " << unk9 << " in block " << h.name << "\n";
-    //
-
     READ(data, additional_params);
     uint32_t n_damage_models;
     READ(data, n_damage_models);
