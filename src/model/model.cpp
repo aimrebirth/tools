@@ -265,6 +265,10 @@ void animation::load(const buffer &b)
     READ_STRING_N(b, name, 0xC);
     for (auto &s : segments)
         s.loadHeader(b);
+    // do not remove!
+    // if first segment has n = 0, we do not read anything
+    if (segments[0].n == 0)
+        return;
     for (auto &s : segments)
         s.loadData(b);
 }
