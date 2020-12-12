@@ -278,13 +278,31 @@ void mmp::process()
     }
 
     alpha_maps.erase(0);
-    scale16 = 0xffff / (h_max - h_min);
-    // 51300 = -25600..25600? or 51200 = -25500..25600
-    // seems like 51300
-    const int unreal_koef = 51300;
-    const int aim_koef = 10;
-    const double diff = h_max - h_min;
-    scale = aim_koef * diff / unreal_koef;
+
+    // heightmap calculations
+
+    // https://docs.unrealengine.com/en-US/BuildingWorlds/Landscape/TechnicalGuide/index.html
+    // "Unreal Engine 4 calculates your heightmap's height by using values between -256 to 255.992 and stored with 16 bit precision."
+
+    const auto _2pow15 = 1 << 15;
+    const auto ue4_zero_level = _2pow15 - 1;
+
+    static const auto min_ue4_heightmap_height_units = 256;
+    static const auto ue4_height_per_i16_tick = float(min_ue4_heightmap_height_units) / _2pow15;
+    static const auto ue4_max_plus_height_level_units = _2pow15 * ue4_height_per_i16_tick;
+    static const auto ue4_max_minus_height_level_units = (_2pow15 - 1) * ue4_height_per_i16_tick;
+
+    bool calc_by_plus = std::fabs(h_max) > std::fabs(h_min);
+    const auto number_of_height_levels = calc_by_plus ? _2pow15 - 1 : _2pow15;
+    const auto ue4_max_height_level_units = calc_by_plus ? ue4_max_plus_height_level_units : ue4_max_minus_height_level_units;
+
+    const auto absmaxheight = std::max(std::fabs(h_max), std::fabs(h_min));
+    this->ue4_z_scale = absmaxheight / ue4_max_height_level_units;
+
+    auto aim_height_to_ue4_heightmap = [&number_of_height_levels](float h, float hmax)
+    {
+        return h * number_of_height_levels / hmax;
+    };
 
     // make heightmap
     for (auto &s : segments)
@@ -303,11 +321,9 @@ void mmp::process()
             for (int x = 0; x1 < x2; x1++, x++)
             {
                 auto height = s.d.Heightmap[y * dx + x];
-                heightmap32(y1, x1) = height; // dunno what is right
-                heightmap32(y1, x1) = height - h_min; // dunno what is right
-                auto val = (height - h_min) * scale16 * scale;
-                auto &old_height = heightmap(y1, x1);
-                old_height = val;
+                //heightmap32(y1, x1) = height; // dunno what is right
+                //heightmap32(y1, x1) = height - h_min; // dunno what is right
+                heightmap(y1, x1) = ue4_zero_level + aim_height_to_ue4_heightmap(height, absmaxheight);
             }
         }
     }
@@ -326,8 +342,7 @@ void mmp::writeFileInfo()
     ofile << "h_min: " << h_min << "\n";
     ofile << "h_max: " << h_max << "\n";
     ofile << "h_diff: " << h_max - h_min << "\n";
-    ofile << "scale16: " << scale16 << "\n";
-    ofile << "scale: " << scale * 100 << "\n";
+    ofile << "ue4_z_scale: " << std::setprecision(10) <<  ue4_z_scale << "\n";
 }
 
 void mmp::writeTexturesList()
@@ -402,7 +417,7 @@ void mmp::writeHeightMap()
     cv::imwrite((const char *)to_path_string(path(filename) += ".heightmap16.png").c_str(), toCvMat(heightmap));
 
     write_hm(".heightmap16.r16", heightmap, sizeof(decltype(heightmap)::type));
-    write_hm(".heightmap32.r32", heightmap32, sizeof(decltype(heightmap32)::type));
+    //write_hm(".heightmap32.r32", heightmap32, sizeof(decltype(heightmap32)::type));
 }
 
 void mmp::writeHeightMapSegmented()

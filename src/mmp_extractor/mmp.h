@@ -178,8 +178,7 @@ struct mmp
     std::map<int, std::string> textures_names;
     Height h_min = 0;
     Height h_max = 0;
-    double scale16 = 0;
-    double scale = 0;
+    double ue4_z_scale = 0;
     mat<uint16_t> heightmap;
     mat<float> heightmap32;
     //mat<uint16_t> heightmap_segmented;
