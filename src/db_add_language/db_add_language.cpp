@@ -19,6 +19,7 @@
 #include <common.h>
 #include <db.h>
 
+#include <Polygon4/DataManager/Database.h>
 #include <Polygon4/DataManager/Localization.h>
 #include <Polygon4/DataManager/Storage.h>
 #include <Polygon4/DataManager/Types.h>
@@ -295,8 +296,9 @@ int main(int argc, char *argv[])
 
     fs::current_path(dir_to_lang_dbs);
 
-    auto storage = polygon4::initStorage(db_fn);
-    storage->load();
+    auto storage = polygon4::initStorage();
+    auto database = std::make_unique<polygon4::Database>(db_fn);
+    storage->load(*database, {});
     kv_resolved = get_kv_resolved(dir_to_lang_dbs, *storage.get());
 
     // to check correctness

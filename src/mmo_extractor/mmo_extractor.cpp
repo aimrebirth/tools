@@ -30,6 +30,7 @@
 #include <objects.h>
 #include "other.h"
 
+#include <Polygon4/DataManager/Database.h>
 #include <Polygon4/DataManager/Storage.h>
 #include <Polygon4/DataManager/Types.h>
 #include <primitives/filesystem.h>
@@ -328,16 +329,17 @@ int main(int argc, char *argv[])
     else
     {
         bool e = fs::exists(db_path);
-        auto storage = initStorage(db_path.u8string());
+        auto storage = initStorage();
+        auto database = std::make_unique<polygon4::Database>(db_path);
         if (!e)
         {
-            storage->create();
-            storage->save();
+            storage->create(*database);
+            storage->save(*database, {});
         }
-        storage->load();
+        storage->load(*database, {});
         action([&storage, &mapname](const path &, const auto &m) {write_mmo(storage.get(), m, mapname); });
         if (inserted_all)
-            storage->save();
+            storage->save(*database, {});
     }
 
     return 0;
