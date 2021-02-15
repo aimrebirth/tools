@@ -21,6 +21,7 @@
 #include <stdexcept>
 
 #include <stdio.h>
+#include <string.h>
 
 const int build_version = 0
 //#include <version.h.in>

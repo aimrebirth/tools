@@ -51,7 +51,8 @@ void build(Solution &s)
     script2txt.setRootDirectory("src/script2txt");
     script2txt += "pub.lzwdgc.Polygon4.DataManager.schema-master"_dep;
     gen_flex_bison_pair("org.sw.demo.lexxmark.winflexbison"_dep, script2txt, "LALR1_CPP_VARIANT_PARSER", "script2txt");
-    script2txt.CompileOptions.push_back("/Zc:__cplusplus");
+    if (script2txt.getCompilerType() == CompilerType::MSVC)
+        script2txt.CompileOptions.push_back("/Zc:__cplusplus");
 
     auto &model = tools.addStaticLibrary("model");
     model += cpp20;
@@ -67,7 +68,7 @@ void build(Solution &s)
 
     auto &mod_converter = add_exe("mod_converter");
     mod_converter += model;
-    path sdk = "d:/arh/apps/Autodesk/FBX/FBX SDK/2019.0";
+    path sdk = "d:/arh/apps/Autodesk/FBX/FBX SDK/2020.2";
     mod_converter += IncludeDirectory(sdk / "include");
     String cfg = "release";
     if (mod_converter.getBuildSettings().Native.ConfigurationType == ConfigurationType::Debug)

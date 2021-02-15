@@ -18,12 +18,14 @@
 
 #include "mpj.h"
 
+#include <primitives/filesystem.h>
+
 #include <algorithm>
 #include <assert.h>
 #include <fstream>
 #include <iomanip>
 
-#include <primitives/filesystem.h>
+#include <string.h>
 
 segment *segment::create_segment(const buffer &b)
 {

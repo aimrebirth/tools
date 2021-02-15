@@ -29,6 +29,13 @@
 
 #include <variant>
 
+// if we move this inside MechGroup, compilation error - default ctor is deleted
+struct MechGroup_unk_type01
+{
+    uint32_t unk0 = 0;
+    float unk1 = 0;
+};
+
 struct MechGroup
 {
     std::string name;
@@ -39,13 +46,7 @@ struct MechGroup
     // probably an old field
     std::string org_ru;
 
-    struct unk_type01
-    {
-        uint32_t unk0 = 0;
-        float unk1 = 0;
-    };
-
-    std::variant<unk_type01, std::vector<uint32_t>, uint32_t> type_data;
+    std::variant<MechGroup_unk_type01, std::vector<uint32_t>, uint32_t> type_data;
 
     bool hidden;
 
@@ -64,7 +65,7 @@ struct MechGroup
         case 0:
         case 1:
         {
-            unk_type01 t;
+            MechGroup_unk_type01 t;
             READ(b, t.unk0);
             READ(b, t.unk1);
             type_data = t;

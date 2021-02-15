@@ -23,9 +23,11 @@
 
 #include <primitives/filesystem.h>
 
-#include <assert.h>
 #include <deque>
 #include <vector>
+
+#include <assert.h>
+#include <limits.h>
 
 template <class T>
 class mat

@@ -18,6 +18,8 @@
 
 #include "types.h"
 
+#include <string.h>
+
 void weather::load(const buffer &b)
 {
     READ_STRING(b, name);
