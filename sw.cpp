@@ -69,7 +69,7 @@ void build(Solution &s)
 
     auto &mod_converter = add_exe("mod_converter");
     mod_converter += model;
-    //mod_converter += "org.sw.demo.xmlsoft.libxml2"_dep; // fbx 2020 sdk requires libxml2
+    mod_converter += "org.sw.demo.xmlsoft.libxml2"_dep; // fbx 2020 sdk requires libxml2
     path sdk = "d:/arh/apps/Autodesk/FBX/FBX SDK/2019.0";
     mod_converter += IncludeDirectory(sdk / "include");
     String cfg = "release";
