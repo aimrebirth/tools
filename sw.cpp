@@ -47,23 +47,26 @@ void build(Solution &s)
         unpaker.HeaderOnly = true;
 
     // not so simple targets
-    auto &script2txt = tools.addStaticLibrary("script2txt");
-    script2txt += cpp20;
-    script2txt.setRootDirectory("src/script2txt");
-    script2txt += "pub.lzwdgc.Polygon4.DataManager.schema-master"_dep;
-    gen_flex_bison_pair("org.sw.demo.lexxmark.winflexbison"_dep, script2txt, "LALR1_CPP_VARIANT_PARSER", "script2txt");
-    if (script2txt.getCompilerType() == CompilerType::MSVC)
-        script2txt.CompileOptions.push_back("/Zc:__cplusplus");
+    auto &script2txt = add_exe_with_common("script2txt");
+    {
+        script2txt += ".*"_rr;
+        script2txt += "pub.lzwdgc.Polygon4.DataManager.schema-master"_dep;
+        gen_flex_bison_pair("org.sw.demo.lexxmark.winflexbison"_dep, script2txt, "LALR1_CPP_VARIANT_PARSER", "script2txt");
+        if (script2txt.getCompilerType() == CompilerType::MSVC)
+            script2txt.CompileOptions.push_back("/Zc:__cplusplus");
+    }
 
     auto &model = tools.addStaticLibrary("model");
-    model += cpp20;
-    model.setRootDirectory("src/model");
-    model.Public += common,
-        "org.sw.demo.unicode.icu.i18n"_dep,
-        "org.sw.demo.eigen"_dep,
-        "pub.egorpugin.primitives.yaml"_dep,
-        "pub.egorpugin.primitives.sw.settings"_dep
-        ;
+    {
+        model += cpp20;
+        model.setRootDirectory("src/model");
+        model.Public += common,
+            "org.sw.demo.unicode.icu.i18n"_dep,
+            "org.sw.demo.eigen"_dep,
+            "pub.egorpugin.primitives.yaml"_dep,
+            "pub.egorpugin.primitives.sw.settings"_dep
+            ;
+    }
 
     add_exe("mod_reader") += model;
 
