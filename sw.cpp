@@ -13,6 +13,7 @@ void build(Solution &s)
     auto add_exe = [&tools](const String &name) -> decltype(auto)
     {
         auto &t = tools.addExecutable(name);
+        t.PackageDefinitions = true;
         t += cpp20;
         t.setRootDirectory("src/" + name);
         t += "pub.egorpugin.primitives.sw.main"_dep;
