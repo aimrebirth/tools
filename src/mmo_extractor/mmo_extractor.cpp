@@ -338,8 +338,10 @@ int main(int argc, char *argv[])
         }
         storage->load(*database, {});
         action([&storage, &mapname](const path &, const auto &m) {write_mmo(storage.get(), m, mapname); });
-        if (inserted_all)
+        if (inserted_all) {
             storage->save(*database, {});
+            database->save();
+        }
     }
 
     return 0;
