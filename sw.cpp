@@ -5,29 +5,31 @@ void build(Solution &s)
     auto &tools = s.addProject("Polygon4.Tools", "master");
     tools += Git("https://github.com/aimrebirth/tools", "", "{v}");
 
+    auto cppstd = cpp23;
+
     auto &common = tools.addStaticLibrary("common");
-    common += cpp20;
+    common += cppstd;
     common.setRootDirectory("src/common");
     common.Public += "pub.egorpugin.primitives.filesystem"_dep;
 
-    auto add_exe = [&tools](const String &name) -> decltype(auto)
+    auto add_exe = [&](const String &name) -> decltype(auto)
     {
         auto &t = tools.addExecutable(name);
         t.PackageDefinitions = true;
-        t += cpp20;
+        t += cppstd;
         t.setRootDirectory("src/" + name);
         t += "pub.egorpugin.primitives.sw.main"_dep;
         return t;
     };
 
-    auto add_exe_with_common = [&add_exe, &common](const String &name) -> decltype(auto)
+    auto add_exe_with_common = [&](const String &name) -> decltype(auto)
     {
         auto &t = add_exe(name);
         t.Public += common;
         return t;
     };
 
-    auto add_exe_with_data_manager = [&add_exe_with_common](const String &name) -> decltype(auto)
+    auto add_exe_with_data_manager = [&](const String &name) -> decltype(auto)
     {
         auto &t = add_exe_with_common(name);
         t.Public += "pub.lzwdgc.Polygon4.DataManager-master"_dep;
@@ -59,7 +61,7 @@ void build(Solution &s)
 
     auto &model = tools.addStaticLibrary("model");
     {
-        model += cpp20;
+        model += cppstd;
         model.setRootDirectory("src/model");
         model.Public += common,
             "org.sw.demo.unicode.icu.i18n"_dep,
@@ -71,19 +73,21 @@ void build(Solution &s)
 
     add_exe("mod_reader") += model;
 
-    auto &mod_converter = add_exe("mod_converter");
-    mod_converter += model;
-    mod_converter += "org.sw.demo.xmlsoft.libxml2"_dep; // fbx 2020 sdk requires libxml2
     path sdk = "d:/arh/apps/Autodesk/FBX/FBX SDK/2019.0";
-    mod_converter += IncludeDirectory(sdk / "include");
-    String cfg = "release";
-    if (mod_converter.getBuildSettings().Native.ConfigurationType == ConfigurationType::Debug)
-        cfg = "debug";
-    String arch = "x64";
-    if (mod_converter.getBuildSettings().TargetOS.Arch == ArchType::x86)
-        arch = "x86";
-    String md = "md";
-    if (mod_converter.getBuildSettings().Native.MT)
-        md = "mt";
-    mod_converter += LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-" + md + ".lib"));
+    if (fs::exists(sdk)) {
+        auto &mod_converter = add_exe("mod_converter");
+        mod_converter += model;
+        mod_converter += "org.sw.demo.xmlsoft.libxml2"_dep; // fbx 2020 sdk requires libxml2
+        mod_converter += IncludeDirectory(sdk / "include");
+        String cfg = "release";
+        if (mod_converter.getBuildSettings().Native.ConfigurationType == ConfigurationType::Debug)
+            cfg = "debug";
+        String arch = "x64";
+        if (mod_converter.getBuildSettings().TargetOS.Arch == ArchType::x86)
+            arch = "x86";
+        String md = "md";
+        if (mod_converter.getBuildSettings().Native.MT)
+            md = "mt";
+        mod_converter += LinkLibrary(sdk / ("lib/vs2015/" + arch + "/" + cfg + "/libfbxsdk-" + md + ".lib"));
+    }
 }
