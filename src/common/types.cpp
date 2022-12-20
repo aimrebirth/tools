@@ -73,15 +73,6 @@ void weather::load(const buffer &b)
     }
 }
 
-void weather_group::load(const buffer &b)
-{
-    READ(b, n_segs);
-    segments.resize(n_segs);
-    READ_STRING_N(b, name, 0xA0);
-    for (auto &s : segments)
-        s.load(b);
-}
-
 void water::load(const buffer &b)
 {
     READ(b, unk0);

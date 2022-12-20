@@ -475,6 +475,11 @@ void block::header::load(const buffer &b)
     else
         READ(b, unk2[2]); // unk4_0 - related to unk4 - some vector3f
     READ(b, unk4);
+    if (gameType == GameType::AimR) {
+        // not always?
+        float unk;
+        READ(b, unk);
+    }
 }
 
 void block::load(const buffer &b)

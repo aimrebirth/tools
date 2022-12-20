@@ -135,11 +135,21 @@ struct weather
 
 struct weather_group
 {
+    uint32_t unk0; // racing
     uint32_t n_segs;
     std::string name;
     std::vector<weather> segments;
 
-    void load(const buffer &b);
+    void load(const buffer &b, bool aim_racing = false) {
+        if (aim_racing) {
+            READ(b, unk0);
+        }
+        READ(b, n_segs);
+        segments.resize(n_segs);
+        READ_STRING_N(b, name, 0xA0);
+        for (auto &s : segments)
+            s.load(b);
+    }
 };
 
 struct water

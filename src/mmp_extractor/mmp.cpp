@@ -42,19 +42,16 @@ void water_segment::load(const buffer &b)
     wg.load(b);
 }
 
-void weather_segment::load(const buffer &b)
-{
-    wg.load(b);
-}
-
 header_segment *header::create_segment(const buffer &b)
 {
     HeaderSegmentType type;
     READ(b, type);
 
     header_segment *segment = 0;
-    switch (type)
-    {
+    switch (type) {
+    /*case HeaderSegmentType::unk0:
+        segment = new unk_segment;
+        break;*/
     case HeaderSegmentType::water:
         segment = new water_segment;
         break;
@@ -76,7 +73,7 @@ header_segment *header::create_segment(const buffer &b)
 
 void header::load(const buffer &b)
 {
-    READ(b, unk0);
+    READ(b, version);
     READ_WSTRING(b, name1);
     READ_WSTRING(b, name2);
     READ(b, width);
@@ -84,6 +81,10 @@ void header::load(const buffer &b)
     READ(b, n_header_segs);
     segments.resize(n_header_segs);
     READ_STRING_N(b, name, 0xA0);
+    if (version == ver::aim_racing) {
+        uint32_t unk0[4];
+        READ(b, unk0);
+    }
     for (auto &s : segments)
     {
         s = create_segment(b);

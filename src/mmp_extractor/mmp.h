@@ -34,6 +34,7 @@ using Height = float;
 
 enum class HeaderSegmentType : uint32_t
 {
+    //unk0        =   0,
     water       =   1,
     weather     =   2,
 };
@@ -41,29 +42,47 @@ enum class HeaderSegmentType : uint32_t
 struct header_segment
 {
     HeaderSegmentType type;
-    uint32_t unk0;
+    uint32_t unk0; // version?
     uint32_t len;
 
     virtual void load(const buffer &b) = 0;
+};
+
+struct unk_segment : public header_segment {
+    std::string name;
+
+    void load(const buffer &b) override {
+        uint32_t unk0[6];
+
+        READ(b, unk0);
+        READ_STRING_N(b, name, 0xA0);
+    }
 };
 
 struct water_segment : public header_segment
 {
     water_group wg;
 
-    virtual void load(const buffer &b) override;
+    void load(const buffer &b) override;
 };
 
 struct weather_segment : public header_segment
 {
     weather_group wg;
 
-    virtual void load(const buffer &b) override;
+    void load(const buffer &b) override {
+        wg.load(b);
+    }
 };
 
 struct header
 {
-    uint32_t unk0;
+    enum class ver : uint32_t {
+        aim12   = 0x100,
+        aim_racing   = 0x101,
+    };
+
+    ver version;
     std::wstring name1;
     std::wstring name2;
     uint32_t width;
