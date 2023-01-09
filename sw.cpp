@@ -11,13 +11,19 @@ void build(Solution &s)
     common += cppstd;
     common.setRootDirectory("src/common");
     common.Public += "pub.egorpugin.primitives.filesystem"_dep;
+    common.Public += "pub.egorpugin.primitives.templates2"_dep;
 
-    auto add_exe = [&](const String &name) -> decltype(auto)
+    auto add_exe_base = [&](const String &name) -> decltype(auto)
     {
         auto &t = tools.addExecutable(name);
         t.PackageDefinitions = true;
         t += cppstd;
         t.setRootDirectory("src/" + name);
+        return t;
+    };
+    auto add_exe = [&](const String &name) -> decltype(auto)
+    {
+        auto &t = add_exe_base(name);
         t += "pub.egorpugin.primitives.sw.main"_dep;
         return t;
     };
@@ -45,9 +51,10 @@ void build(Solution &s)
     add_exe_with_common("tm_converter");
     add_exe("name_generator");
     add_exe_with_common("save_loader");
-    auto &unpaker = add_exe("unpaker"); // 32-bit only
+    auto &unpaker = add_exe_base("unpaker"); // 32-bit only
     if (unpaker.getBuildSettings().TargetOS.Arch != ArchType::x86)
         unpaker.HeaderOnly = true;
+    add_exe_with_common("unpaker2") += "org.sw.demo.libarchive.libarchive"_dep;
 
     // not so simple targets
     auto &script2txt = add_exe_with_common("script2txt");
