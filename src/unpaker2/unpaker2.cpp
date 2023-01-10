@@ -83,38 +83,6 @@ struct stream {
     }
 };
 
-
-void decode_rle(const short *input, const int size, short *&output) {
-    if (size < 2)
-        return;
-
-    // input ptr, also rle_indicator
-    const auto rle_indicator = input++;
-    while (1) {
-        auto c = *input++;
-        if ((c & 0xFF00) != (*rle_indicator << 8))
-            *output++ = c;
-        else {
-            uint32_t count = (uint8_t)c;
-            if (count == (*rle_indicator << 8) + 255)
-                *output++ = c; // insert indicator byte itself
-            else {
-                count += 3;
-                for (int i = 0; i < count / 2; i++) {
-                    *output++ = *input;
-                    *output++ = *input;
-                }
-                for (int i = 0; i < ((count / 2) & 1); i++) {
-                    *output++ = *input;
-                }
-            }
-        }
-
-        if (input >= rle_indicator + size)
-            return;
-    }
-}
-
 void unpack_file(path fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn};
     stream s{f};
@@ -143,51 +111,24 @@ void unpack_file(path fn) {
             break;
         }
         case segment::decode_algorithm::rlew: {
-            /*short *pps = (short*)pp;
-            decode_rle((short*)s.p, len, pps);
-            pp = (uint8_t*)pps;
-            break;*/
             auto base = s.p;
             uint16_t flag = s;
             while (s.p < base + len) {
                 uint16_t w = s;
                 if ((w & 0xFF00) == (flag << 8)) {
                     uint16_t count = (uint8_t)w;
-                    if (count == 0xff) {
+                    if (count == 0xFF) {
                         uint16_t w2 = s;
                         *(decltype(w2) *)pp = w2;
                         pp += sizeof(w2);
                         continue;
                     }
-                    if (count == (flag << 8) + 255) {
-                        throw std::runtime_error{"untested branch"};
-                        *(decltype(w) *)pp = w;
-                        pp += sizeof(w);
-                        continue;
-                    }
-
-
                     uint16_t w2 = s;
                     count += 3;
-
                     while (count--) {
                         *(decltype(w2)*)pp = w2;
                         pp += sizeof(w2);
                     }
-
-                    /*
-                    *
-                    for (int i = 0; i < count / 2; i++) {
-                        *(decltype(w) *)pp = w2;
-                        pp += sizeof(w2);
-
-                        *(decltype(w) *)pp = w2;
-                        pp += sizeof(w2);
-                    }
-                    for (int i = 0; i < ((count / 2) & 1); i++) {
-                        *(decltype(w) *)pp = w2;
-                        pp += sizeof(w2);
-                    }*/
                 } else {
                     *(decltype(w)*)pp = w;
                     pp += sizeof(w);
