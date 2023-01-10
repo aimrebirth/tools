@@ -117,23 +117,31 @@ void unpack_file(path fn) {
             break;
         }
         case segment::decode_algorithm::rlew: {
-            s.p -= 4;
-            uint16_t finalLength = s;
+            auto finalLength = len;
+            //uint16_t flag = 0xfefe;
+            //uint8_t flag = 0xfe;
+            uint16_t flag = s;
+            flag <<= 8;
+            flag |= 0xfe;
             uint32_t outlen = 0;
             while (outlen < finalLength) {
-                uint16_t w = s;
-                if (w == 0xfefe) {
-                    uint16_t w1 = s;
-                    uint16_t w2 = s;
+                if (pp-bbb.data() == 0x1cc38) {
+                    int a = 5;
+                    a++;
+                }
+                decltype(flag) w = s;
+                if (w == flag) {
+                    decltype(flag) w1 = s;
+                    decltype(flag) w2 = s;
                     while (w1--) {
-                        *(uint16_t *)pp = w2;
-                        pp += 2;
-                        outlen += 2;
+                        *(decltype(flag) *)pp = w2;
+                        pp += sizeof(flag);
+                        outlen += sizeof(flag);
                     }
                 } else {
-                    *(uint16_t*)pp = w;
-                    pp += 2;
-                    outlen += 2;
+                    *(decltype(flag)*)pp = w;
+                    pp += sizeof(flag);
+                    outlen += sizeof(flag);
                 }
             }
             break;
