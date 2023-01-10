@@ -54,7 +54,7 @@ void build(Solution &s)
     auto &unpaker = add_exe_base("unpaker"); // 32-bit only
     if (unpaker.getBuildSettings().TargetOS.Arch != ArchType::x86)
         unpaker.HeaderOnly = true;
-    add_exe_with_common("unpaker2") += "org.sw.demo.libarchive.libarchive"_dep;
+    add_exe_with_common("unpaker2") += "org.sw.demo.oberhumer.lzo.lzo"_dep;
 
     // not so simple targets
     auto &script2txt = add_exe_with_common("script2txt");

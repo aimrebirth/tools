@@ -32,8 +32,6 @@
 #include <stdint.h>
 #include <string>
 
-//#include <archive.h>
-#include <lzma.h>
 #include <lzo/lzo1x.h>
 
 using namespace std;
@@ -108,7 +106,7 @@ void unpack_file(path fn) {
             break;
         }
         case segment::decode_algorithm::lzo: {
-            size_t outsz = supported_block_size;
+            size_t outsz;
             auto r2 = lzo1x_decompress(s.p, len, pp, &outsz, 0);
             if (r2 != LZO_E_OK) {
                 throw std::runtime_error{"lzo error"};
@@ -117,31 +115,22 @@ void unpack_file(path fn) {
             break;
         }
         case segment::decode_algorithm::rlew: {
-            auto finalLength = len;
-            //uint16_t flag = 0xfefe;
-            //uint8_t flag = 0xfe;
+            auto base = s.p;
             uint16_t flag = s;
-            flag <<= 8;
-            flag |= 0xfe;
             uint32_t outlen = 0;
-            while (outlen < finalLength) {
-                if (pp-bbb.data() == 0x1cc38) {
-                    int a = 5;
-                    a++;
-                }
-                decltype(flag) w = s;
-                if (w == flag) {
-                    decltype(flag) w1 = s;
-                    decltype(flag) w2 = s;
-                    while (w1--) {
-                        *(decltype(flag) *)pp = w2;
-                        pp += sizeof(flag);
-                        outlen += sizeof(flag);
+            while (s.p < base + len) {
+                uint8_t w = s;
+                if (w == 0xfe && (*(uint8_t*)s.p) == flag) {
+                    uint8_t w1 = s;
+                    auto cntr = 0x20e;
+                    uint8_t w2 = s;
+                    while (cntr--) {
+                        *(decltype(w2)*)pp = w2;
+                        pp += sizeof(w2);
                     }
                 } else {
-                    *(decltype(flag)*)pp = w;
-                    pp += sizeof(flag);
-                    outlen += sizeof(flag);
+                    *(decltype(w)*)pp = w;
+                    pp += sizeof(w);
                 }
             }
             break;
@@ -151,6 +140,7 @@ void unpack_file(path fn) {
             throw std::runtime_error{"compression unsupported: "s + std::to_string(seg.algorithm)};
         }
     }
+    exi:
     pp = bbb.data();
 
     auto dir = fn += ".dir2";
