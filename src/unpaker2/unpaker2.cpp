@@ -22,7 +22,7 @@
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>
 #include <primitives/sw/cl.h>
-#include <primitives/templates2/mmap.h>
+#include <primitives/templates2/mmap2.h>
 
 #include <algorithm>
 #include <fstream>
