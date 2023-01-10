@@ -86,175 +86,6 @@ struct stream {
     }
 };
 
-
-/// Type of a function to do some kind of coding work (filters, Stream,
-/// Block encoders/decoders etc.). Some special coders use don't use both
-/// input and output buffers, but for simplicity they still use this same
-/// function prototype.
-typedef lzma_ret (*lzma_code_function)(void *coder, const lzma_allocator *allocator, const uint8_t *in, size_t *in_pos,
-                                       size_t in_size, uint8_t *out, size_t *out_pos, size_t out_size,
-                                       lzma_action action);
-
-/// Type of a function to free the memory allocated for the coder
-typedef void (*lzma_end_function)(void *coder, const lzma_allocator *allocator);
-
-/// Hold data and function pointers of the next filter in the chain.
-struct lzma_next_coder_s {
-    /// Pointer to coder-specific data
-    void *coder;
-
-    /// Filter ID. This is LZMA_VLI_UNKNOWN when this structure doesn't
-    /// point to a filter coder.
-    lzma_vli id;
-
-    /// "Pointer" to init function. This is never called here.
-    /// We need only to detect if we are initializing a coder
-    /// that was allocated earlier. See lzma_next_coder_init and
-    /// lzma_next_strm_init macros in this file.
-    uintptr_t init;
-
-    /// Pointer to function to do the actual coding
-    lzma_code_function code;
-
-    /// Pointer to function to free lzma_next_coder.coder. This can
-    /// be NULL; in that case, lzma_free is called to free
-    /// lzma_next_coder.coder.
-    lzma_end_function end;
-
-    /// Pointer to a function to get progress information. If this is NULL,
-    /// lzma_stream.total_in and .total_out are used instead.
-    void (*get_progress)(void *coder, uint64_t *progress_in, uint64_t *progress_out);
-
-    /// Pointer to function to return the type of the integrity check.
-    /// Most coders won't support this.
-    lzma_check (*get_check)(const void *coder);
-
-    /// Pointer to function to get and/or change the memory usage limit.
-    /// If new_memlimit == 0, the limit is not changed.
-    lzma_ret (*memconfig)(void *coder, uint64_t *memusage, uint64_t *old_memlimit, uint64_t new_memlimit);
-
-    /// Update the filter-specific options or the whole filter chain
-    /// in the encoder.
-    lzma_ret (*update)(void *coder, const lzma_allocator *allocator, const lzma_filter *filters,
-                       const lzma_filter *reversed_filters);
-
-    /// Set how many bytes of output this coder may produce at maximum.
-    /// On success LZMA_OK must be returned.
-    /// If the filter chain as a whole cannot support this feature,
-    /// this must return LZMA_OPTIONS_ERROR.
-    /// If no input has been given to the coder and the requested limit
-    /// is too small, this must return LZMA_BUF_ERROR. If input has been
-    /// seen, LZMA_OK is allowed too.
-    lzma_ret (*set_out_limit)(void *coder, uint64_t *uncomp_size, uint64_t out_limit);
-};
-typedef struct lzma_next_coder_s lzma_next_coder;
-
-/// Largest valid lzma_action value as unsigned integer.
-#define LZMA_ACTION_MAX ((unsigned int)(LZMA_FULL_BARRIER))
-
-/// Internal data for lzma_strm_init, lzma_code, and lzma_end. A pointer to
-/// this is stored in lzma_stream.
-struct lzma_internal_s {
-    /// The actual coder that should do something useful
-    lzma_next_coder next;
-
-    /// Track the state of the coder. This is used to validate arguments
-    /// so that the actual coders can rely on e.g. that LZMA_SYNC_FLUSH
-    /// is used on every call to lzma_code until next.code has returned
-    /// LZMA_STREAM_END.
-    enum {
-        ISEQ_RUN,
-        ISEQ_SYNC_FLUSH,
-        ISEQ_FULL_FLUSH,
-        ISEQ_FINISH,
-        ISEQ_FULL_BARRIER,
-        ISEQ_END,
-        ISEQ_ERROR,
-    } sequence;
-
-    /// A copy of lzma_stream avail_in. This is used to verify that the
-    /// amount of input doesn't change once e.g. LZMA_FINISH has been
-    /// used.
-    size_t avail_in;
-
-    /// Indicates which lzma_action values are allowed by next.code.
-    bool supported_actions[LZMA_ACTION_MAX + 1];
-
-    /// If true, lzma_code will return LZMA_BUF_ERROR if no progress was
-    /// made (no input consumed and no output produced by next.code).
-    bool allow_buf_error;
-};
-typedef struct lzma_internal_s lzma_internal;
-
-
-typedef struct {
-    enum {
-        SEQ_STREAM_HEADER,
-        SEQ_BLOCK_HEADER,
-        SEQ_BLOCK_INIT,
-        SEQ_BLOCK_RUN,
-        SEQ_INDEX,
-        SEQ_STREAM_FOOTER,
-        SEQ_STREAM_PADDING,
-    } sequence;
-
-    /// Block decoder
-    lzma_next_coder block_decoder;
-
-    /// Block options decoded by the Block Header decoder and used by
-    /// the Block decoder.
-    lzma_block block_options;
-
-    /// Stream Flags from Stream Header
-    lzma_stream_flags stream_flags;
-
-    /// Index is hashed so that it can be compared to the sizes of Blocks
-    /// with O(1) memory usage.
-    lzma_index_hash *index_hash;
-
-    /// Memory usage limit
-    uint64_t memlimit;
-
-    /// Amount of memory actually needed (only an estimate)
-    uint64_t memusage;
-
-    /// If true, LZMA_NO_CHECK is returned if the Stream has
-    /// no integrity check.
-    bool tell_no_check;
-
-    /// If true, LZMA_UNSUPPORTED_CHECK is returned if the Stream has
-    /// an integrity check that isn't supported by this liblzma build.
-    bool tell_unsupported_check;
-
-    /// If true, LZMA_GET_CHECK is returned after decoding Stream Header.
-    bool tell_any_check;
-
-    /// If true, we will tell the Block decoder to skip calculating
-    /// and verifying the integrity check.
-    bool ignore_check;
-
-    /// If true, we will decode concatenated Streams that possibly have
-    /// Stream Padding between or after them. LZMA_STREAM_END is returned
-    /// once the application isn't giving us any new input (LZMA_FINISH),
-    /// and we aren't in the middle of a Stream, and possible
-    /// Stream Padding is a multiple of four bytes.
-    bool concatenated;
-
-    /// When decoding concatenated Streams, this is true as long as we
-    /// are decoding the first Stream. This is needed to avoid misleading
-    /// LZMA_FORMAT_ERROR in case the later Streams don't have valid magic
-    /// bytes.
-    bool first_stream;
-
-    /// Write position in buffer[] and position in Stream Padding
-    size_t pos;
-
-    /// Buffer to hold Stream Header, Block Header, and Stream Footer.
-    /// Block Header has biggest maximum size.
-    uint8_t buffer[LZMA_BLOCK_HEADER_SIZE_MAX];
-} lzma_stream_coder;
-
-
 void unpack_file(path fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn};
     stream s{f};
@@ -277,10 +108,6 @@ void unpack_file(path fn) {
             break;
         }
         case segment::decode_algorithm::lzo: {
-            if (seg.algorithm == segment::decode_algorithm::lzma) {
-                int a = 5;
-                a++;
-            }
             size_t outsz = supported_block_size;
             auto r2 = lzo1x_decompress(s.p, len, pp, &outsz, 0);
             if (r2 != LZO_E_OK) {
@@ -290,31 +117,28 @@ void unpack_file(path fn) {
             break;
         }
         case segment::decode_algorithm::rlew: {
+            s.p -= 4;
+            uint16_t finalLength = s;
+            uint32_t outlen = 0;
+            while (outlen < finalLength) {
+                uint16_t w = s;
+                if (w == 0xfefe) {
+                    uint16_t w1 = s;
+                    uint16_t w2 = s;
+                    while (w1--) {
+                        *(uint16_t *)pp = w2;
+                        pp += 2;
+                        outlen += 2;
+                    }
+                } else {
+                    *(uint16_t*)pp = w;
+                    pp += 2;
+                    outlen += 2;
+                }
+            }
             break;
         }
-        case segment::decode_algorithm::lzma: {
-            uint64_t memlimit = 0;
-            size_t in_pos = 0;
-            size_t out_pos = 0;
-            auto r2 = lzma_stream_buffer_decode(&memlimit, 0, 0, s.p, &in_pos, len, pp, &out_pos, bbb.size() - (pp - bbb.data()));
-            lzma_stream strm{};
-            strm.next_in = s.p;
-            strm.avail_in = len;
-            strm.total_in = len;
-            strm.next_out = pp;
-            //strm.avail_out =
-            auto r3 = lzma_stream_decoder(&strm, 1'000'000, 0);
-            ((lzma_stream_coder*)strm.internal->next.coder)->sequence = lzma_stream_coder::SEQ_BLOCK_RUN;
-            auto r4 = lzma_code(&strm, LZMA_RUN);
-            auto r = lzma_microlzma_decoder(&strm, len, 0, false, 1'000'000);
-            if (r != LZMA_OK) {
-                throw std::runtime_error{"lzma error"};
-            }
-            r = lzma_code(&strm, lzma_action::LZMA_RUN);
-
-            int a = 5;
-            a++;
-        }
+        case segment::decode_algorithm::lzma:
         default:
             throw std::runtime_error{"compression unsupported: "s + std::to_string(seg.algorithm)};
         }
