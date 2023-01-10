@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <string>
 
+#include <lzma.h>
 #include <lzo/lzo1x.h>
 
 using namespace std;
@@ -135,12 +136,30 @@ void unpack_file(path fn) {
             }
             break;
         }
-        case segment::decode_algorithm::lzma:
+        case segment::decode_algorithm::lzma: {
+            uint8_t flags = s;
+
+            lzma_stream strm{};
+            strm.next_in = s.p;
+            strm.avail_in = len;
+            strm.next_out = pp;
+            strm.avail_out = 1'000'000;
+
+            auto r = lzma_auto_decoder(&strm, 1'000'000'000, flags);
+            if (r != LZMA_OK) {
+                throw std::runtime_error{"lzma error"};
+            }
+            r = lzma_code(&strm, LZMA_RUN);
+            if (r != LZMA_STREAM_END) {
+                throw std::runtime_error{"lzma error"};
+            }
+            pp += strm.total_out;
+            break;
+        }
         default:
             throw std::runtime_error{"compression unsupported: "s + std::to_string(seg.algorithm)};
         }
     }
-    exi:
     pp = bbb.data();
 
     auto dir = fn += ".dir2";
