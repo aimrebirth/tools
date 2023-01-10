@@ -1,6 +1,6 @@
 /*
- * AIM mod_converter
- * Copyright (C) 2015 lzwdgc
+ * AIM unpaker2
+ * Copyright (C) 2023 lzwdgc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,14 +69,12 @@ struct stream {
     primitives::templates2::mmap_file<uint8_t> &m;
     uint8_t *p{m.p};
 
-    template <typename T>
-    operator T&() {
+    template <typename T> operator T&() {
         auto &r = *(T*)p;
         p += sizeof(T);
         return r;
     }
-    template <typename T>
-    auto span(size_t len) {
+    template <typename T> auto span(size_t len) {
         auto s = std::span<T>((T*)p, len);
         p += sizeof(T) * len;
         return s;
@@ -89,10 +87,15 @@ void unpack_file(path fn) {
     pak p = s;
     auto descs = s.span<file_description>(p.n_files);
     auto segments = s.span<segment>(p.n_blocks);
-    std::vector<uint8_t> bbb;
-    bbb.resize((segments.size() + 1) * p.block_size * 4);
-    auto pp = bbb.data();
-    for (auto &&seg : segments) {
+    std::vector<uint8_t> decoded;
+    decoded.resize((segments.size() + 1) * p.block_size * 4);
+    auto pp = decoded.data();
+    int displaylen = 50;
+    int seglen = segments.size() / displaylen == 0 ? 1 : segments.size() / displaylen;
+    for (int i = 0; auto &&seg : segments) {
+        if (i++ % seglen == 0) {
+            std::cout << "#";
+        }
         s.p = f.p + seg.offset;
         uint32_t len = s;
         switch (seg.algorithm) {
@@ -160,8 +163,7 @@ void unpack_file(path fn) {
             throw std::runtime_error{"compression unsupported: "s + std::to_string(seg.algorithm)};
         }
     }
-    pp = bbb.data();
-
+    std::cout << "\n";
     auto dir = fn += ".dir2";
     fs::create_directories(dir);
     for (auto &&d : descs) {
@@ -170,7 +172,7 @@ void unpack_file(path fn) {
         std::cout << "unpacking " << fn << "\n";
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         f.alloc_raw(d.size);
-        memcpy(f.p, pp + d.offset, d.size);
+        memcpy(f.p, decoded.data() + d.offset, d.size);
     }
 }
 
