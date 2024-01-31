@@ -17,12 +17,12 @@
  */
 
 #include <buffer.h>
+#include <mmap.h>
 
 #include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>
 #include <primitives/sw/cl.h>
-#include <primitives/templates2/mmap2.h>
 
 #include <algorithm>
 #include <fstream>
@@ -56,30 +56,15 @@ struct segment {
         none = 0x0,
         lzo = 0x1,
         lzma = 0x2,
-        rlew = 0x4,
+        rlew = 0x4, // https://moddingwiki.shikadi.net/wiki/Id_Software_RLEW_compression
     };
 
-    uint32_t unk1; // some file offset? trash?
+    // some file offset? trash? crc? m1 has zlib crc table (png)?
+    uint32_t unk1;
     decode_algorithm algorithm;
     uint32_t offset;
 };
 #pragma pack(pop)
-
-struct stream {
-    primitives::templates2::mmap_file<uint8_t> &m;
-    uint8_t *p{m.p};
-
-    template <typename T> operator T&() {
-        auto &r = *(T*)p;
-        p += sizeof(T);
-        return r;
-    }
-    template <typename T> auto span(size_t len) {
-        auto s = std::span<T>((T*)p, len);
-        p += sizeof(T) * len;
-        return s;
-    }
-};
 
 void unpack_file(path fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn};

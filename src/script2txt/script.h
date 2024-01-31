@@ -45,7 +45,7 @@ inline bool replace_all(std::string &str, const std::string &from, const std::st
 struct script
 {
     uint32_t file_size;
-    uint32_t unk0;
+    uint32_t unk0; // stack size? always 16000? section bits? magic? max size?
     uint32_t raw_text_size;
     uint32_t unk1;
     std::vector<uint8_t> raw_text;
