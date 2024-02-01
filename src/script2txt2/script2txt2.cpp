@@ -22,6 +22,8 @@
 #include <primitives/sw/settings.h>
 #include <primitives/sw/cl.h>
 
+#include <fstream>
+
 #pragma pack(push, 1)
 struct script {
     uint32_t file_size;
@@ -36,42 +38,66 @@ int main(int argc, char *argv[]) {
 
     cl::ParseCommandLineOptions(argc, argv);
 
-    auto func = [](auto &&fn) {
-        primitives::templates2::mmap_file<uint8_t> f{fn};
+    auto func = [](auto filename) {
+        primitives::templates2::mmap_file<uint8_t> f{filename};
         stream s{f};
         script scr = s;
-        auto text = s.span<uint8_t>(scr.raw_text_size);
-        uint32_t max_nlines = s;
-        auto rest = s.span<uint32_t>(max_nlines);
         std::vector<std::string_view> lines;
-        lines.reserve(scr.nlines);
+        int sz{};
         for (int i = 0; i < scr.nlines; ++i) {
-            lines.emplace_back((const char *)f.p + sizeof(script) + rest[i]);
+            sz += lines.emplace_back((const char *)f.p + sizeof(script) + sz).size() + 1;
         }
-        int a = 5;
-        a++;
 
         // write script
-        /*{
-            filename += ".txt";
-            std::ofstream ofile(filename);
-            if (ofile)
-                ofile << ctx.getText();
-        }
-
-        // write function calls
         {
-            std::ofstream functions("functions.txt", std::ios::app);
-            if (functions)
-            {
-                for (auto &f : driver.functions)
-                {
-                    std::string f2(f.size(), 0);
-                    std::transform(f.begin(), f.end(), f2.begin(), tolower);
-                    functions << f2 << "\n";
+            filename += ".txt";
+            if (std::ofstream ofile(filename); ofile) {
+                std::string indent, space = "  "s;
+                auto inc = [&]() {
+                    indent += space;
+                };
+                auto dec = [&]() {
+                    if (!indent.empty()) {
+                        indent.resize(indent.size() - space.size());
+                        return true;
+                    }
+                    return false;
+                };
+                int procs{};
+                for (auto &&l : lines) {
+                    auto proc = l.starts_with("PROC"sv);
+                    auto end = l == "END"sv;
+                    auto lbrace = l == "{"sv;
+                    auto rbrace = l == "}"sv;
+
+                    if (rbrace) {
+                        if (!dec()) {
+                            ofile << "// script2txt2 comment: unbalanced!\n";
+                        }
+                    }
+                    if (end && procs) {
+                        if (!dec()) {
+                            ofile << "// script2txt2 comment: unbalanced!\n";
+                        }
+                    }
+
+                    ofile << indent << l << "\n";
+
+                    if (end && indent.empty()) {
+                        //ofile << "\n";
+                    }
+                    if (end && procs) {
+                        procs = 0;
+                    }
+                    if (lbrace || proc) {
+                        indent += space;
+                    }
+                    if (proc) {
+                        procs = 1;
+                    }
                 }
             }
-        }*/
+        }
     };
 
     if (fs::is_regular_file(p)) {
