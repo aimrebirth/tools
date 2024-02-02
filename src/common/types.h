@@ -327,27 +327,25 @@ struct ModificatorMask
 
 #pragma pack(push, 1)
 struct pak {
+    static constexpr uint32_t default_block_size = 0x4000;
+
+    struct segment {
+        // some file offset? trash? crc? m1 has zlib crc table (png)?
+        uint32_t unk1;
+        uint32_t algorithm;
+        uint32_t offset;
+    };
+    struct file_description {
+        char name[0x50];
+        uint32_t offset;
+        uint32_t size;
+    };
+
     uint32_t magic;
     uint16_t unk0;
     uint32_t n_files;
     uint32_t n_blocks;
     uint32_t block_size;
     uint32_t unk1;
-};
-struct file_description {
-    const char name[0x50];
-    uint32_t offset;
-    uint32_t size;
-};
-struct segment {
-    enum decode_algorithm : uint32_t {
-        none = 0x0,
-        // none = 0x1, // ?
-    };
-
-    // some file offset? trash? crc? m1 has zlib crc table (png)?
-    uint32_t unk1;
-    decode_algorithm algorithm;
-    uint32_t offset;
 };
 #pragma pack(pop)

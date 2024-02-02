@@ -44,8 +44,8 @@ void unpack_file(path fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn};
     stream s{f};
     pak p = s;
-    auto descs = s.span<file_description>(p.n_files);
-    auto segments = s.span<segment>(p.n_blocks);
+    auto descs = s.span<pak::file_description>(p.n_files);
+    auto segments = s.span<pak::segment>(p.n_blocks);
     std::vector<uint8_t> decoded;
     decoded.resize((segments.size() + 1) * p.block_size * 4);
     auto pp = decoded.data();

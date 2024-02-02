@@ -19,4 +19,12 @@ struct stream {
         p += sizeof(T) * len;
         return s;
     }
+    template <typename T>
+    void operator=(const T &v) {
+        memcpy(p, (uint8_t*)&v, sizeof(v));
+        p += sizeof(v);
+    }
+    void skip(size_t len) {
+        p += len;
+    }
 };
