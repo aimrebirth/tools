@@ -48,13 +48,12 @@ void build(Solution &s)
     add_exe_with_data_manager("mmo_extractor");
     add_exe_with_common("mmp_extractor") += "org.sw.demo.intel.opencv.highgui"_dep;
     add_exe_with_common("mpj_loader");
+    add_exe_with_common("paker");
     add_exe_with_common("script2txt2");
     add_exe_with_common("tm_converter");
     add_exe("name_generator");
     add_exe_with_common("save_loader");
-    auto &unpaker = add_exe_base("unpaker"); // 32-bit only
-    if (unpaker.getBuildSettings().TargetOS.Arch != ArchType::x86)
-        unpaker.HeaderOnly = true;
+    add_exe("unpaker");
     add_exe_with_common("unpaker2") +=
         "org.sw.demo.oberhumer.lzo.lzo"_dep,
         "org.sw.demo.xz_utils.lzma"_dep

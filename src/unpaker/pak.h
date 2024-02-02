@@ -60,12 +60,12 @@ struct segment
         None = 0x0,
         RLE_2_bytes = 0x1,
         RLE_1_byte  = 0x2,
-        DA_1 = 0x4,
+        DA_1 = 0x4, // not used
         DA_2 = 0x8,
     };
 
     uint32_t unk1; // some file offset? trash?
-    decode_algorithm algorithm;
+    decode_algorithm algorithms;
     uint32_t offset;
 
     uint32_t size1;

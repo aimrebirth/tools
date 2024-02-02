@@ -35,6 +35,8 @@
 #include <lzma.h>
 #include <lzo/lzo1x.h>
 
+#include "../unpaker/decode.h"
+
 using namespace std;
 
 #pragma pack(push, 1)
@@ -52,19 +54,27 @@ struct file_description {
     uint32_t size;
 };
 struct segment {
-    enum decode_algorithm : uint32_t {
-        none = 0x0,
-        lzo = 0x1,
-        lzma = 0x2,
-        rlew = 0x4, // https://moddingwiki.shikadi.net/wiki/Id_Software_RLEW_compression
-    };
-
     // some file offset? trash? crc? m1 has zlib crc table (png)?
     uint32_t unk1;
-    decode_algorithm algorithm;
+    uint32_t algorithm;
     uint32_t offset;
 };
 #pragma pack(pop)
+
+struct progress_bar {
+    const size_t max_elements;
+    const int displaylen;
+    int displaycur{};
+    int i{};
+
+    void step() {
+        auto progress_bar_pos = std::round((double)++i / max_elements * displaylen);
+        for (int i = displaycur; i < progress_bar_pos; ++i) {
+            std::cout << "#";
+        }
+        displaycur = progress_bar_pos;
+    }
+};
 
 void unpack_file(path fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn};
@@ -75,82 +85,122 @@ void unpack_file(path fn) {
     std::vector<uint8_t> decoded;
     decoded.resize((segments.size() + 1) * p.block_size * 4);
     auto pp = decoded.data();
-    int displaylen = 50;
-    int seglen = segments.size() / displaylen == 0 ? 1 : segments.size() / displaylen;
-    for (int i = 0; auto &&seg : segments) {
-        if (i++ % seglen == 0) {
-            std::cout << "#";
-        }
+    progress_bar pb{segments.size(), 50};
+    for (auto &&seg : segments) {
         s.p = f.p + seg.offset;
         uint32_t len = s;
-        switch (seg.algorithm) {
-        case segment::decode_algorithm::none: {
-            memcpy(pp, s.p, len);
-            pp += len;
-            break;
-        }
-        case segment::decode_algorithm::lzo: {
-            size_t outsz;
-            // use lzo1x_decompress_safe?
-            auto r2 = lzo1x_decompress(s.p, len, pp, &outsz, 0);
-            if (r2 != LZO_E_OK) {
-                throw std::runtime_error{"lzo error"};
+        auto m2 = [&]() {
+            enum decode_algorithm : uint32_t {
+                none = 0x0,
+                lzo = 0x1,
+                lzma = 0x2,
+                rlew = 0x4, // https://moddingwiki.shikadi.net/wiki/Id_Software_RLEW_compression
+            };
+            switch (seg.algorithm) {
+            case decode_algorithm::none: {
+                memcpy(pp, s.p, len);
+                pp += len;
+                break;
             }
-            pp += outsz;
-            break;
-        }
-        case segment::decode_algorithm::rlew: {
-            auto base = s.p;
-            uint16_t flag = s;
-            while (s.p < base + len) {
-                uint16_t w = s;
-                if ((w & 0xFF00) == (flag << 8)) {
-                    uint16_t count = (uint8_t)w;
-                    if (count == 0xFF) {
-                        uint16_t w2 = s;
-                        *(decltype(w2) *)pp = w2;
-                        pp += sizeof(w2);
-                        continue;
-                    }
-                    uint16_t w2 = s;
-                    count += 3;
-                    while (count--) {
-                        *(decltype(w2)*)pp = w2;
-                        pp += sizeof(w2);
-                    }
-                } else {
-                    *(decltype(w)*)pp = w;
-                    pp += sizeof(w);
+            case decode_algorithm::lzo: {
+                size_t outsz;
+                // use lzo1x_decompress_safe?
+                auto r2 = lzo1x_decompress(s.p, len, pp, &outsz, 0);
+                if (r2 != LZO_E_OK) {
+                    throw std::runtime_error{"lzo error"};
                 }
+                pp += outsz;
+                break;
             }
-            break;
-        }
-        case segment::decode_algorithm::lzma: {
-            uint8_t flags = s;
+            case decode_algorithm::rlew: {
+                auto base = s.p;
+                uint16_t flag = s;
+                while (s.p < base + len) {
+                    uint16_t w = s;
+                    if ((w & 0xFF00) == (flag << 8)) {
+                        uint16_t count = (uint8_t)w;
+                        if (count == 0xFF) {
+                            uint16_t w2 = s;
+                            *(decltype(w2) *)pp = w2;
+                            pp += sizeof(w2);
+                            continue;
+                        }
+                        uint16_t w2 = s;
+                        count += 3;
+                        while (count--) {
+                            *(decltype(w2)*)pp = w2;
+                            pp += sizeof(w2);
+                        }
+                    } else {
+                        *(decltype(w)*)pp = w;
+                        pp += sizeof(w);
+                    }
+                }
+                break;
+            }
+            case decode_algorithm::lzma: {
+                uint8_t flags = s;
 
-            lzma_stream strm{};
-            strm.next_in = s.p;
-            strm.avail_in = len;
-            strm.next_out = pp;
-            strm.avail_out = p.block_size;
+                lzma_stream strm{};
+                strm.next_in = s.p;
+                strm.avail_in = len;
+                strm.next_out = pp;
+                strm.avail_out = p.block_size;
 
-            auto r = lzma_lzip_decoder(&strm, 10'000'000, flags);
-            if (r != LZMA_OK) {
-                throw std::runtime_error{"lzma error"};
+                auto r = lzma_lzip_decoder(&strm, 10'000'000, flags);
+                if (r != LZMA_OK) {
+                    throw std::runtime_error{"lzma error"};
+                }
+                r = lzma_code(&strm, LZMA_RUN);
+                if (r != LZMA_STREAM_END) {
+                    throw std::runtime_error{"lzma error"};
+                }
+                pp += strm.total_out;
+                break;
             }
-            r = lzma_code(&strm, LZMA_RUN);
-            if (r != LZMA_STREAM_END) {
-                throw std::runtime_error{"lzma error"};
+            default:
+                throw std::runtime_error{"compression unsupported: "s + std::to_string(seg.algorithm)};
             }
-            pp += strm.total_out;
-            break;
+        };
+        auto m1 = [&]() {
+            enum decode_algorithm : uint32_t {
+                None = 0x0,
+                RLE_2_bytes = 0x1,
+                RLE_1_byte = 0x2,
+                decode_algorithm_1 = 0x4, // not used
+                decode_algorithm_2 = 0x8,
+            };
+            auto in = s.p;
+            auto size1 = len;
+            std::vector<uint8_t> vec;
+            if (seg.algorithm & decode_algorithm_1) {
+                // if you see this, check in git history decode_f1()
+                throw std::runtime_error{"compression unsupported: "s + std::to_string(seg.algorithm)};
+            }
+            if (seg.algorithm & decode_algorithm_2) {
+                uint32_t size2 = s;
+                vec.resize(std::max(size2 * 4, p.block_size));
+                decode_f2((char *)s.p, size2, (char *)vec.data());
+                in = vec.data();
+            }
+            if (seg.algorithm & RLE_2_bytes) {
+                pp = decode_rle((uint16_t *)in, size1, (uint16_t *)pp);
+            } else if (seg.algorithm & RLE_1_byte) {
+                pp = decode_rle((uint8_t *)in, size1, (uint8_t *)pp);
+            }
+            if (seg.algorithm == None) {
+                //decoded = encoded;
+            }
+        };
+        if (p.magic == 0) {
+            m1();
+        } else {
+            m2();
         }
-        default:
-            throw std::runtime_error{"compression unsupported: "s + std::to_string(seg.algorithm)};
-        }
+        pb.step();
     }
     std::cout << "\n";
-    auto dir = fn += ".dir2";
+    auto dir = fn += ".dir";
     fs::create_directories(dir);
     for (auto &&d : descs) {
         auto fn = dir / d.name;

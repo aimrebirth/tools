@@ -96,7 +96,7 @@ int record::read(pak *pak, void *output, int size)
 void segment::load_header(FILE *f)
 {
     FREAD(unk1);
-    FREAD(algorithm);
+    FREAD(algorithms);
     FREAD(offset);
 }
 
@@ -105,7 +105,7 @@ void segment::load_segment()
     auto f = file;
 
     fseek(f, offset, SEEK_SET);
-    /*if (algorithm == 0)
+    /*if (algorithms == 0)
     {
         std::cerr << "Something is wrong. Maybe you trying to open aim2 files?\n";
         std::cerr << "They can be opened with SDK extractor.\n";
@@ -114,7 +114,7 @@ void segment::load_segment()
 
     FREAD(size1);
     size2 = size1;
-    if ((algorithm & 0x3) && (algorithm & 0xC))
+    if (algorithms & DA_2)
     {
         FREAD(size2);
         fread(&decoded[0], 1, size2, f);
@@ -129,50 +129,24 @@ void segment::decompress(int segment_id)
 {
     load_segment();
 
-    if ((algorithm & DA_1) || (algorithm & DA_2))
-    {
-        if (algorithm & DA_1)
-            // never called
-            decode_f1((char*)decoded, size2, (char*)encoded);
-        else
-            decode_f2((char*)decoded, size2, (char*)encoded);
+    if (algorithms & DA_2) {
+        decode_f2((char*)decoded, size2, (char*)encoded);
     }
-    if ((algorithm & RLE_1_byte) || (algorithm & RLE_2_bytes))
-    {
-        if (algorithm & RLE_2_bytes)
-        {
-            decode_f3((char*)encoded, size1, (char*)decoded);
-
-            /*static std::vector<uint8_t> buf(4194432);
-            decode_f3((char*)encoded, size1, (char*)buf.data());
-            decode_rle((short*)encoded, size1, (short*)decoded);
-            auto sz = 0;
-            while (sz++ < size1 - 1 && decoded[sz] == buf[sz]);
-            std::cout << "len = " << sz << "\n";
-            assert(memcmp(decoded, buf.data(), size1) == 0);*/
-        }
-        else
-        {
-            //decode_f4((char*)encoded, size1, (char*)decoded);
-
-            /*static std::vector<uint8_t> buf(4194432);
-            const int header_size = 0xC;
-            decode_f4((char*)encoded, size1, (char*)buf.data(), segment_id * header_size);
-            decode_rle((char*)encoded, size1, (char*)decoded);
-            assert(memcmp(decoded, buf.data(), size1) == 0);*/
-
-            decode_rle((char*)encoded, size1, (char*)decoded);
-        }
+    if (algorithms & RLE_2_bytes) {
+        decode_rle((uint16_t *)encoded, size1, (uint16_t *)decoded);
+    } else if (algorithms & RLE_1_byte) {
+        decode_rle((uint8_t *)encoded, size1, (uint8_t *)decoded);
     }
-    if (algorithm == None)
+    if (algorithms == None) {
         decoded = encoded;
+    }
 }
 
 void pak::load(FILE *f)
 {
     h.load(f);
-    encoded.resize(h.chunk_size * 256 + 128);
-    decoded.resize(h.chunk_size * 256 + 128);
+    encoded.resize(h.chunk_size * 4);
+    decoded.resize(h.chunk_size * 4);
 
     int n = h.number_of_files;
     while (n--)

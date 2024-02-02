@@ -16,9 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <filesystem>
 #include <iostream>
 
 #include "pak.h"
+
+namespace fs = std::filesystem;
 
 void unpak(string fn)
 {
@@ -45,9 +48,25 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        cerr << "Usage: " << argv[0] << " archive.pak" << "\n";
+        cerr << "Usage: " << argv[0] << " <archive.pak or dir>" << "\n";
         return 1;
     }
-    unpak(argv[1]);
+    fs::path p = argv[1];
+    if (fs::is_regular_file(p)) {
+        unpak(p.string());
+    } else if (fs::is_directory(p)) {
+        for (auto &&d : fs::directory_iterator{p}) {
+            if (d.path().extension() == ".pak") {
+                std::cout << "processing: " << d.path() << "\n";
+                try {
+                    unpak(d.path().string());
+                } catch (std::exception &e) {
+                    std::cerr << e.what() << "\n";
+                }
+            }
+        }
+    } else {
+        throw std::runtime_error("Bad fs object");
+    }
     return 0;
 }
