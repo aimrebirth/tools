@@ -1,5 +1,5 @@
 /*
- * AIM unpaker2
+ * AIM unpaker2 (for AIM2 only at the moment)
  * Copyright (C) 2023 lzwdgc
  *
  * This program is free software: you can redistribute it and/or modify
@@ -91,6 +91,7 @@ void unpack_file(path fn) {
         }
         case segment::decode_algorithm::lzo: {
             size_t outsz;
+            // use lzo1x_decompress_safe?
             auto r2 = lzo1x_decompress(s.p, len, pp, &outsz, 0);
             if (r2 != LZO_E_OK) {
                 throw std::runtime_error{"lzo error"};
