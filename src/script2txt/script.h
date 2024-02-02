@@ -47,10 +47,10 @@ struct script
     uint32_t file_size;
     uint32_t unk0; // stack size? always 16000? section bits? magic? max size?
     uint32_t raw_text_size;
-    uint32_t unk1;
+    uint32_t nlines;
     std::vector<uint8_t> raw_text;
-    uint32_t array_len;
-    std::vector<uint32_t> unk2;
+    uint32_t line_start_pos_len; // always 800
+    std::vector<uint32_t> line_start_pos;
 
     //
     std::vector<std::string> lines;
@@ -60,13 +60,13 @@ struct script
         READ(b, file_size);
         READ(b, unk0);
         READ(b, raw_text_size);
-        READ(b, unk1);
+        READ(b, nlines);
         raw_text.resize(raw_text_size);
         if (raw_text_size)
             READ_N(b, raw_text[0], raw_text.size());
-        READ(b, array_len);
-        unk2.resize(array_len);
-        READ_N(b, unk2[0], unk2.size());
+        READ(b, line_start_pos_len);
+        line_start_pos.resize(line_start_pos_len);
+        READ_N(b, line_start_pos[0], line_start_pos.size());
 
         if (!b.eof())
         {
