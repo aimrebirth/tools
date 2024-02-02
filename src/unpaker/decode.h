@@ -2,8 +2,7 @@
 
 #define LOBYTE(x) (*((uint8_t *)&(x)))
 
-char decode_f2(char *input, int size, char *output)
-{
+char decode_f2(char *input, int size, char *output) {
     int c;     // eax@1
     char v4;   // bl@1
     char *v5;  // edx@1
@@ -17,20 +16,16 @@ char decode_f2(char *input, int size, char *output)
     LOBYTE(c) = size;
     v4 = *input;
     v5 = input + 1;
-    if (input + 1 < &input[size])
-    {
+    if (input + 1 < &input[size]) {
         v6 = output;
-        do
-        {
+        do {
             LOBYTE(c) = *v5;
-            if (*v5 == v4)
-            {
+            if (*v5 == v4) {
                 c = (uint8_t)v5[1];
                 v7 = v5 + 1;
                 c_1 = (uint8_t)v7[1];
                 v5 = v7 + 2;
-                if (c != 255 || c_1 != 255)
-                {
+                if (c != 255 || c_1 != 255) {
                     c_2 = ((c & 0xF) << 8) + c_1;
                     c = (c >> 4) + 4;
                     v10 = &v6[-c_2];
@@ -40,14 +35,10 @@ char decode_f2(char *input, int size, char *output)
                         *v6++ = *v10++;
                         --c_3;
                     } while (c_3);
-                }
-                else
-                {
+                } else {
                     *v6++ = v4;
                 }
-            }
-            else
-            {
+            } else {
                 *v6++ = c;
                 ++v5;
             }
