@@ -324,3 +324,30 @@ struct ModificatorMask
 
     uint16_t : 16;
 };
+
+#pragma pack(push, 1)
+struct pak {
+    uint32_t magic;
+    uint16_t unk0;
+    uint32_t n_files;
+    uint32_t n_blocks;
+    uint32_t block_size;
+    uint32_t unk1;
+};
+struct file_description {
+    const char name[0x50];
+    uint32_t offset;
+    uint32_t size;
+};
+struct segment {
+    enum decode_algorithm : uint32_t {
+        none = 0x0,
+        // none = 0x1, // ?
+    };
+
+    // some file offset? trash? crc? m1 has zlib crc table (png)?
+    uint32_t unk1;
+    decode_algorithm algorithm;
+    uint32_t offset;
+};
+#pragma pack(pop)

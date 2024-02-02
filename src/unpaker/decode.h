@@ -57,7 +57,7 @@ char decode_f2(char *input, int size, char *output)
 }
 
 template <typename T>
-auto decode_rle(const T *input, int size, T *output, auto f_cmp_indicator) {
+auto decode_rle(const T *input, int size, T *output) {
     if (size < 2) {
         return (uint8_t *)output;
     }
@@ -65,7 +65,8 @@ auto decode_rle(const T *input, int size, T *output, auto f_cmp_indicator) {
     const auto rle_indicator = (uint8_t)*input++;
     while (1) {
         auto c = *input++;
-        if (f_cmp_indicator(c) != rle_indicator) {
+        //msvc bad warn. workaround vvvvvvvv
+        if ((sizeof(T) == 1 ? c : ((uint16_t)c >> 8)) != rle_indicator) {
             *output++ = c;
         } else {
             uint32_t count = sizeof(T) == 1 ? *input++ : (c & 0xFF);
@@ -82,12 +83,4 @@ auto decode_rle(const T *input, int size, T *output, auto f_cmp_indicator) {
             return (uint8_t *)output;
         }
     }
-}
-
-auto decode_rle(const uint16_t *input, int size, uint16_t *output) {
-    return decode_rle(input, size, output, [](auto c){return c >> 8;});
-}
-
-auto decode_rle(const uint8_t *input, const int size, uint8_t *output) {
-    return decode_rle(input, size, output, [](auto c){return c;});
 }

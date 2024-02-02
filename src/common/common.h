@@ -18,7 +18,23 @@
 
 #pragma once
 
-#include <primitives/filesystem.h>
+#include <string>
+#include <iostream>
 
 std::string str2utf8(const std::string &codepage_str, int cp = 0);
 std::wstring str2utf16(const std::string &codepage_str, int cp = 0);
+
+struct progress_bar {
+    const size_t max_elements;
+    const int displaylen;
+    int displaycur{};
+    int i{};
+
+    void step() {
+        auto progress_bar_pos = std::round((double)++i / max_elements * displaylen);
+        for (int i = displaycur; i < progress_bar_pos; ++i) {
+            std::cout << "#";
+        }
+        displaycur = progress_bar_pos;
+    }
+};
