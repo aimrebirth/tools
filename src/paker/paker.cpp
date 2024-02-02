@@ -34,6 +34,9 @@
 
 using namespace std;
 
+// Currently we pack everything as single segment for simplicity.
+// And without any compression.
+
 int main(int argc, char *argv[]) {
     cl::opt<path> name(cl::Positional, cl::desc("<pack name>"), cl::Required);
     cl::list<String> in_files(cl::Positional, cl::desc("<files to pack>"), cl::Required, cl::OneOrMore);
@@ -58,8 +61,22 @@ int main(int argc, char *argv[]) {
             path p{s};
             String alias;
             // some heuristics
+            // also consider Scripts (source code): `/Script`
             if (p.extension() == ".qst" || p.extension() == ".scr") {
                 alias = "script\\bin\\" + s;
+            }
+            if (p.extension() == ".mmp" || p.extension() == ".mmo" || p.extension() == ".mmm") {
+                alias = p.filename().string();
+            }
+            if (p.extension() == ".ogg") {
+                alias = "data\\sound\\" + s;
+            }
+            if (p.extension() == ".tm") {
+                alias = "data\\tm\\" + s;
+            }
+            // models do not have exts
+            if (p.extension() == ""s) {
+                alias = "data\\models\\" + s;
             }
             files.emplace(v[0], alias);
         } else if (v.size() == 2) {
@@ -73,6 +90,7 @@ int main(int argc, char *argv[]) {
     }
     uint32_t block_size = pak::default_block_size;
     uint32_t block_size_len = sizeof(block_size);
+    // NOTE: make it single segment;
     block_size = total + block_size_len;
     uint32_t block_size_minus_len = block_size - block_size_len; // minus block len
     auto get_nsegs = [&](auto sz) {
@@ -114,17 +132,13 @@ int main(int argc, char *argv[]) {
         seg.offset = sizeof(pak) + files.size() * sizeof(pak::file_description) + nsegs * sizeof(pak::segment) + i * block_size;
         s = seg;
     }
-    //uint32_t current_seg_len = 0;
     s = block_size_minus_len; // for single seg
     for (auto &[name,_] : files) {
         std::cout << "processing: " << name << "\n";
         primitives::templates2::mmap_file<uint8_t> f{name};
-        auto sz = f.sz;
-        uint32_t sz_to_copy = sz;//sz > block_size_minus_len ? block_size_minus_len : sz;
-        //s = block_size_minus_len;
+        uint32_t sz_to_copy = f.sz;
         memcpy(s.p, f.p, sz_to_copy);
         s.skip(sz_to_copy);
-        //current_seg_len += block_size_len + sz_to_copy;
     }
     f.close();
     fs::resize_file(name, total);
