@@ -132,6 +132,7 @@ void segment::decompress(int segment_id)
     if ((algorithm & DA_1) || (algorithm & DA_2))
     {
         if (algorithm & DA_1)
+            // never called
             decode_f1((char*)decoded, size2, (char*)encoded);
         else
             decode_f2((char*)decoded, size2, (char*)encoded);
