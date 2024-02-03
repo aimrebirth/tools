@@ -54,9 +54,6 @@ void build(Solution &s)
     add_exe_with_common("tm_converter");
     add_exe("name_generator");
     add_exe_with_common("save_loader");
-    add_exe_with_common("aim1_mod_maker") +=
-        "pub.egorpugin.primitives.command"_dep
-        ;
     add_exe_with_common("unpaker") +=
         "org.sw.demo.oberhumer.lzo.lzo"_dep,
         "org.sw.demo.xz_utils.lzma"_dep
@@ -73,6 +70,18 @@ void build(Solution &s)
             "pub.egorpugin.primitives.yaml"_dep,
             "pub.egorpugin.primitives.sw.settings"_dep
             ;
+    }
+
+    auto &aim1_mod_maker = tools.addStaticLibrary("aim1_mod_maker");
+    {
+        auto &t = aim1_mod_maker;
+        auto name = "aim1_mod_maker";
+        t.PackageDefinitions = true;
+        t += cppstd;
+        t.setRootDirectory("src/"s + name);
+        //t.Public += "pub.egorpugin.primitives.sw.main"_dep;
+        t.Public += "pub.egorpugin.primitives.command"_dep;
+        t.Public += common;
     }
 
     add_exe("mod_reader") += model;
