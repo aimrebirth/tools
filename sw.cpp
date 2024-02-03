@@ -54,6 +54,9 @@ void build(Solution &s)
     add_exe_with_common("tm_converter");
     add_exe("name_generator");
     add_exe_with_common("save_loader");
+    add_exe_with_common("aim1_mod_maker") +=
+        "pub.egorpugin.primitives.command"_dep
+        ;
     add_exe_with_common("unpaker") +=
         "org.sw.demo.oberhumer.lzo.lzo"_dep,
         "org.sw.demo.xz_utils.lzma"_dep

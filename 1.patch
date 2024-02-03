@@ -1,0 +1,175 @@
+diff --git a/src/common/types.cpp b/src/common/types.cpp
+index 81d3b92..27ac4bc 100644
+--- a/src/common/types.cpp
++++ b/src/common/types.cpp
+@@ -73,15 +73,6 @@ void weather::load(const buffer &b)
+     }
+ }
+ 
+-void weather_group::load(const buffer &b)
+-{
+-    READ(b, n_segs);
+-    segments.resize(n_segs);
+-    READ_STRING_N(b, name, 0xA0);
+-    for (auto &s : segments)
+-        s.load(b);
+-}
+-
+ void water::load(const buffer &b)
+ {
+     READ(b, unk0);
+diff --git a/src/common/types.h b/src/common/types.h
+index d525607..cea88c4 100644
+--- a/src/common/types.h
++++ b/src/common/types.h
+@@ -135,11 +135,21 @@ struct weather
+ 
+ struct weather_group
+ {
++    uint32_t unk0; // racing
+     uint32_t n_segs;
+     std::string name;
+     std::vector<weather> segments;
+ 
+-    void load(const buffer &b);
++    void load(const buffer &b, bool aim_racing = false) {
++        if (aim_racing) {
++            READ(b, unk0);
++        }
++        READ(b, n_segs);
++        segments.resize(n_segs);
++        READ_STRING_N(b, name, 0xA0);
++        for (auto &s : segments)
++            s.load(b);
++    }
+ };
+ 
+ struct water
+diff --git a/src/mmp_extractor/mmp.cpp b/src/mmp_extractor/mmp.cpp
+index 1a251c2..3da1598 100644
+--- a/src/mmp_extractor/mmp.cpp
++++ b/src/mmp_extractor/mmp.cpp
+@@ -42,19 +42,16 @@ void water_segment::load(const buffer &b)
+     wg.load(b);
+ }
+ 
+-void weather_segment::load(const buffer &b)
+-{
+-    wg.load(b);
+-}
+-
+ header_segment *header::create_segment(const buffer &b)
+ {
+     HeaderSegmentType type;
+     READ(b, type);
+ 
+     header_segment *segment = 0;
+-    switch (type)
+-    {
++    switch (type) {
++    /*case HeaderSegmentType::unk0:
++        segment = new unk_segment;
++        break;*/
+     case HeaderSegmentType::water:
+         segment = new water_segment;
+         break;
+@@ -76,7 +73,7 @@ header_segment *header::create_segment(const buffer &b)
+ 
+ void header::load(const buffer &b)
+ {
+-    READ(b, unk0);
++    READ(b, version);
+     READ_WSTRING(b, name1);
+     READ_WSTRING(b, name2);
+     READ(b, width);
+@@ -84,6 +81,10 @@ void header::load(const buffer &b)
+     READ(b, n_header_segs);
+     segments.resize(n_header_segs);
+     READ_STRING_N(b, name, 0xA0);
++    if (version == ver::aim_racing) {
++        uint32_t unk0[4];
++        READ(b, unk0);
++    }
+     for (auto &s : segments)
+     {
+         s = create_segment(b);
+diff --git a/src/mmp_extractor/mmp.h b/src/mmp_extractor/mmp.h
+index c444c2b..c152656 100644
+--- a/src/mmp_extractor/mmp.h
++++ b/src/mmp_extractor/mmp.h
+@@ -34,6 +34,7 @@ using Height = float;
+ 
+ enum class HeaderSegmentType : uint32_t
+ {
++    //unk0        =   0,
+     water       =   1,
+     weather     =   2,
+ };
+@@ -41,29 +42,47 @@ enum class HeaderSegmentType : uint32_t
+ struct header_segment
+ {
+     HeaderSegmentType type;
+-    uint32_t unk0;
++    uint32_t unk0; // version?
+     uint32_t len;
+ 
+     virtual void load(const buffer &b) = 0;
+ };
+ 
++struct unk_segment : public header_segment {
++    std::string name;
++
++    void load(const buffer &b) override {
++        uint32_t unk0[6];
++
++        READ(b, unk0);
++        READ_STRING_N(b, name, 0xA0);
++    }
++};
++
+ struct water_segment : public header_segment
+ {
+     water_group wg;
+ 
+-    virtual void load(const buffer &b) override;
++    void load(const buffer &b) override;
+ };
+ 
+ struct weather_segment : public header_segment
+ {
+     weather_group wg;
+ 
+-    virtual void load(const buffer &b) override;
++    void load(const buffer &b) override {
++        wg.load(b);
++    }
+ };
+ 
+ struct header
+ {
+-    uint32_t unk0;
++    enum class ver : uint32_t {
++        aim12   = 0x100,
++        aim_racing   = 0x101,
++    };
++
++    ver version;
+     std::wstring name1;
+     std::wstring name2;
+     uint32_t width;
+diff --git a/src/model/model.cpp b/src/model/model.cpp
+index f113c7d..f63cdcc 100644
+--- a/src/model/model.cpp
++++ b/src/model/model.cpp
+@@ -475,6 +475,11 @@ void block::header::load(const buffer &b)
+     else
+         READ(b, unk2[2]); // unk4_0 - related to unk4 - some vector3f
+     READ(b, unk4);
++    if (gameType == GameType::AimR) {
++        // not always?
++        float unk;
++        READ(b, unk);
++    }
+ }
+ 
+ void block::load(const buffer &b)
