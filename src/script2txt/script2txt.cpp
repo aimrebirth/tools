@@ -1,6 +1,6 @@
 /*
- * AIM script2txt
- * Copyright (C) 2015 lzwdgc
+ * AIM script2txt2 (simpler version)
+ * Copyright (C) 2024 lzwdgc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,81 +16,103 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "script.h"
+#include <mmap.h>
+#include <types.h>
 
-#include <script2txt_parser.h>
-
-#include <primitives/filesystem.h>
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>
 #include <primitives/sw/cl.h>
 
 #include <fstream>
-#include <iostream>
-#include <stdint.h>
 
-using std::cout;
-using std::string;
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     cl::opt<path> p(cl::Positional, cl::desc("<script.scr or scripts dir>"), cl::Required);
 
     cl::ParseCommandLineOptions(argc, argv);
 
-    auto func = [](auto filename)
-    {
-        // read
-        buffer b(read_file(filename));
-        script s;
-        s.load(b);
-        auto str = s.get_text();
-
-        Script2txtParserDriver driver;
-        if (driver.parse(str))
-        {
-            throw std::runtime_error("error during parsing input file");
+    auto func = [](auto filename) {
+        primitives::templates2::mmap_file<uint8_t> f{filename};
+        stream s{f};
+        script scr = s;
+        std::vector<std::string_view> lines;
+        int sz{};
+        for (int i = 0; i < scr.nlines; ++i) {
+            sz += lines.emplace_back((const char *)f.p + sizeof(script) + sz).size() + 1;
         }
-        auto &ctx = driver.getContext();
 
         // write script
         {
             filename += ".txt";
-            std::ofstream ofile(filename);
-            if (ofile)
-                ofile << ctx.getText();
-        }
+            if (std::ofstream ofile(filename, std::ios::binary); ofile) {
+                std::string indent, space = "    "s;
+                auto inc = [&]() {
+                    indent += space;
+                };
+                auto dec = [&]() {
+                    if (!indent.empty()) {
+                        indent.resize(indent.size() - space.size());
+                        return true;
+                    }
+                    return false;
+                };
+                int procs{};
+                bool prev_newline{};
+                for (auto &&l : lines) {
+                    auto else_ = l == "ELSE"sv;
+                    auto proc = l.starts_with("PROC"sv);
+                    auto end = l == "END"sv;
+                    auto lbrace = l == "{"sv;
+                    auto rbrace = l == "}"sv;
 
-        // write function calls
-        {
-            std::ofstream functions("functions.txt", std::ios::app);
-            if (functions)
-            {
-                for (auto &f : driver.functions)
-                {
-                    std::string f2(f.size(), 0);
-                    std::transform(f.begin(), f.end(), f2.begin(), tolower);
-                    functions << f2 << "\n";
+                    if (else_ && prev_newline) {
+                        ofile.seekp(-1, std::ios::cur);
+                    }
+                    prev_newline = false;
+
+                    if (rbrace) {
+                        if (!dec()) {
+                            ofile << "// script2txt2 comment: unbalanced!\n";
+                        }
+                    }
+                    if (end && procs) {
+                        if (!dec()) {
+                            ofile << "// script2txt2 comment: unbalanced!\n";
+                        }
+                    }
+
+                    ofile << indent << l << "\n";
+
+                    if ((end || rbrace) && indent.empty()) {
+                        ofile << "\n";
+                        prev_newline = true;
+                    }
+                    if (end && procs) {
+                        procs = 0;
+                    }
+                    if (lbrace || proc) {
+                        indent += space;
+                    }
+                    if (proc) {
+                        procs = 1;
+                    }
                 }
             }
         }
     };
 
-    if (fs::is_regular_file(p))
+    if (fs::is_regular_file(p)) {
         func(p.string());
-    else if (fs::is_directory(p))
-    {
+    } else if (fs::is_directory(p)) {
         auto files = enumerate_files_like(p, ".*\\.scr", false);
         auto files2 = enumerate_files_like(p, ".*\\.QST", false);
         files.insert(files2.begin(), files2.end());
-        for (auto &f : files)
-        {
+        for (auto &f : files) {
             std::cout << "processing: " << f << "\n";
             func(f.string());
         }
-    }
-    else
+    } else {
         throw std::runtime_error("Bad fs object");
+    }
 
     return 0;
 }
