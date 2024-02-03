@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
         // write script
         {
             filename += ".txt";
-            if (std::ofstream ofile(filename); ofile) {
+            if (std::ofstream ofile(filename, std::ios::binary); ofile) {
                 std::string indent, space = "    "s;
                 auto inc = [&]() {
                     indent += space;
@@ -56,11 +56,18 @@ int main(int argc, char *argv[]) {
                     return false;
                 };
                 int procs{};
+                bool prev_newline{};
                 for (auto &&l : lines) {
+                    auto else_ = l == "ELSE"sv;
                     auto proc = l.starts_with("PROC"sv);
                     auto end = l == "END"sv;
                     auto lbrace = l == "{"sv;
                     auto rbrace = l == "}"sv;
+
+                    if (else_ && prev_newline) {
+                        ofile.seekp(-1, std::ios::cur);
+                    }
+                    prev_newline = false;
 
                     if (rbrace) {
                         if (!dec()) {
@@ -75,8 +82,9 @@ int main(int argc, char *argv[]) {
 
                     ofile << indent << l << "\n";
 
-                    if (end && indent.empty()) {
-                        //ofile << "\n";
+                    if ((end || rbrace) && indent.empty()) {
+                        ofile << "\n";
+                        prev_newline = true;
                     }
                     if (end && procs) {
                         procs = 0;
