@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
         for (auto &&line : lines) {
             boost::to_upper(line); // can be bad?
             boost::trim(line);
-            boost::replace_all(line, " ", ""); // can be bad?
+            //boost::replace_all(line, " ", ""); // causes crashes!
             memcpy((char *)s.p, line.c_str(), line.size() + 1);
             s.skip(line.size() + 1);
         }
