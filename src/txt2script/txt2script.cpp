@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
             s = offset;
             offset += line.size() + 1;
         }
-        s = offset;
+        s = unk;
     };
 
     if (fs::is_regular_file(p)) {
