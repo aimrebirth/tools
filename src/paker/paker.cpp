@@ -63,20 +63,20 @@ int main(int argc, char *argv[]) {
             // some heuristics
             // also consider Scripts (source code): `/Script`
             if (p.extension() == ".qst" || p.extension() == ".scr") {
-                alias = "script\\bin\\" + s;
+                alias = "script\\bin\\" + p.filename().string();
             }
             if (p.extension() == ".mmp" || p.extension() == ".mmo" || p.extension() == ".mmm") {
                 alias = p.filename().string();
             }
             if (p.extension() == ".ogg") {
-                alias = "data\\sound\\" + s;
+                alias = "data\\sound\\" + p.filename().string();
             }
             if (p.extension() == ".tm") {
-                alias = "data\\tm\\" + s;
+                alias = "data\\tm\\" + p.filename().string();
             }
             // models do not have exts
             if (p.extension() == ""s) {
-                alias = "data\\models\\" + s;
+                alias = "data\\models\\" + p.filename().string();
             }
             files.emplace(v[0], alias);
         } else if (v.size() == 2) {
