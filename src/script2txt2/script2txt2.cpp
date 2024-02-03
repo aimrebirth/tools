@@ -17,21 +17,13 @@
  */
 
 #include <mmap.h>
+#include <types.h>
 
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>
 #include <primitives/sw/cl.h>
 
 #include <fstream>
-
-#pragma pack(push, 1)
-struct script {
-    uint32_t file_size;
-    uint32_t unk0; // stack size? always 16000? // section bits?
-    uint32_t raw_text_size;
-    uint32_t nlines;
-};
-#pragma pack(pop)
 
 int main(int argc, char *argv[]) {
     cl::opt<path> p(cl::Positional, cl::desc("<script.scr or scripts dir>"), cl::Required);
@@ -52,7 +44,7 @@ int main(int argc, char *argv[]) {
         {
             filename += ".txt";
             if (std::ofstream ofile(filename); ofile) {
-                std::string indent, space = "  "s;
+                std::string indent, space = "    "s;
                 auto inc = [&]() {
                     indent += space;
                 };

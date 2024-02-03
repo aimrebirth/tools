@@ -349,3 +349,14 @@ struct pak {
     uint32_t unk1;
 };
 #pragma pack(pop)
+
+#pragma pack(push, 1)
+struct script {
+    static constexpr uint32_t default_block_size = 16000;
+
+    uint32_t file_size;
+    uint32_t unk0{default_block_size}; // stack size? always 16000? // section bits?
+    uint32_t raw_text_size;
+    uint32_t nlines;
+};
+#pragma pack(pop)
