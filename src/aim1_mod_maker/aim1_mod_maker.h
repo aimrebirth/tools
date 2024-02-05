@@ -161,7 +161,13 @@ private:
         *(uint32_t *)(&arr[insn.size()]) = addr;
         return arr;
     }
+    static auto make_nops(uint32_t len) {
+        byte_array arr(len, 0x90);
+        return arr;
+    }
     void prepare_injections() {
+        enable_free_camera(); // for now
+
         create_backup_exe_file();
         primitives::templates2::mmap_file<uint8_t> f{find_real_filename(aim_exe), primitives::templates2::mmap_file<uint8_t>::rw{}};
         constexpr uint32_t trampoline_base      = 0x00025100;
@@ -170,33 +176,60 @@ private:
         constexpr uint32_t data_base            = 0x00540000;
         constexpr uint32_t free_data_base       = 0x006929C0;
         //constexpr uint32_t our_data  = 0x00550FD0;
-        constexpr uint32_t our_data  = 0x005207F0;
+        const uint32_t our_data_start  = 0x005207F0;
+        uint32_t our_data  = 0x005207F0;
         //constexpr uint32_t free_data_base_real  = 0x140000 + our_data - 0x00540000;
 
         auto ptr = f.p + trampoline_target;
         //strcpy((char *)f.p + free_data_base_real, "aim_fixes-0.0.1.dll");
         strcpy((char *)ptr, "aim_fixes-0.0.1.dll");
+        auto push_dll_name = make_insn_with_address("68"_bin, our_data); // push
         ptr += 0x20;
+        our_data += 0x20;
+        strcpy((char *)ptr, "dispatcher");
+        auto dispatcher_func_name = make_insn_with_address("68"_bin, our_data); // push
+        ptr += 0x20;
+        our_data += 0x20;
         const auto jumppad = "68 30 B8 51 00"_bin; // push    offset SEH_425100
         uint32_t jump_offset = ptr - f.p - trampoline_base - jumppad.size() * 2;
-        auto [oldaddr, oldcode] = memreplace(f.p, f.sz, jumppad, make_insn_with_address("e9"_bin, jump_offset));
+        memreplace(f.p, f.sz, jumppad, make_insn_with_address("e9"_bin, jump_offset));
         memcpy(ptr, jumppad); // put our removed insn
         memcpy(ptr, R"(
-60                  ; pusha
+60                      ; pusha
 )"_bin);
-        auto push_dll_name = make_insn_with_address("68"_bin, our_data);
-        memcpy(ptr, push_dll_name); //
+        memcpy(ptr, push_dll_name);
         memcpy(ptr, R"(
 8B 3D D8 10 52 00       ;  mov     edi, ds:LoadLibraryA - not working ; but do not remove, it does not work without it
-bf 30 0f 91 75          ;  mov    edi, 0x75910f30 - load direct adress
+;bf 30 0f 91 75          ;  mov    edi, 0x75910f30 - load direct adress
 ; edi has wrong address after prev. insn, so we fix it manually
-81 EF 00 BD 00 00       ;  sub     edi, 0BD00h
+;81 EF 00 BD 00 00       ;  sub     edi, 0BD00h
 )"_bin);
         memcpy(ptr, R"(
-FF D7               ; call    edi
-61                  ; popa
+FF D7                   ; call    edi
+)"_bin);
+        memcpy(ptr, dispatcher_func_name);
+        // get proc addr
+        memcpy(ptr, R"(
+8B 3D D4 10 52 00       ;  mov     edi, ds:GetProcAddr - not working ; but do not remove, it does not work without it
+;bf 2C 0f 91 75          ;  mov    edi, 0x75910f30 - load direct adress
+; edi has wrong address after prev. insn, so we fix it manually
+;81 EF FC BC 00 00       ;  sub     edi, 0BC00h
+50                      ; push eax
+)"_bin);
+        memcpy(ptr, R"(
+FF D7                   ; call    edi
+)"_bin);
+        memcpy(ptr, R"(
+61                      ; popa
 )"_bin);
         memcpy(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - trampoline_base - jumppad.size())));
+
+        // E8 C5  87 25 00
+        uint32_t start_addr = 0x0043A1F6;
+        uint32_t len = 10;
+        ptr = f.p + start_addr - our_data_start + trampoline_target;
+        memcpy(ptr, make_insn_with_address("e8"_bin, free_data_base - (start_addr + 5)));
+        memcpy(ptr, make_nops(len - 5));
     }
     path find_real_filename(path fn) const {
         auto s = fn.wstring();
