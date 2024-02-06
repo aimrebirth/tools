@@ -40,7 +40,7 @@
 
 using namespace std;
 
-void unpack_file(path fn) {
+void unpack_file(path fn, const Files &files_to_extract) {
     primitives::templates2::mmap_file<uint8_t> f{fn};
     stream s{f};
     pak p = s;
@@ -167,6 +167,9 @@ void unpack_file(path fn) {
     auto dir = fn += ".dir";
     fs::create_directories(dir);
     for (auto &&d : descs) {
+        if (!files_to_extract.empty() && !files_to_extract.contains(d.name)) {
+            continue;
+        }
         auto fn = dir / d.name;
         fs::create_directories(fn.parent_path());
         std::cout << "unpacking " << fn << "\n";
@@ -178,17 +181,23 @@ void unpack_file(path fn) {
 
 int main(int argc, char *argv[]) {
     cl::opt<path> p(cl::Positional, cl::desc("<pack file or dir>"), cl::Required);
+    cl::opt<path> cl_files_to_extract(cl::Positional, cl::desc("<specific files to unpack>"), cl::ZeroOrMore);
 
     cl::ParseCommandLineOptions(argc, argv);
 
+    Files files_to_extract;
+    for (auto &&f : cl_files_to_extract) {
+        files_to_extract.insert(f);
+    }
+
     if (fs::is_regular_file(p)) {
-        unpack_file(p);
+        unpack_file(p, files_to_extract);
     } else if (fs::is_directory(p)) {
         auto files = enumerate_files_like(p, ".*\\.pak", false);
         for (auto &f : files) {
             std::cout << "processing: " << f << "\n";
             try {
-                unpack_file(f);
+                unpack_file(f, files_to_extract);
             } catch (std::exception &e) {
                 std::cerr << e.what() << "\n";
             }
