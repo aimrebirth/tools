@@ -5,7 +5,9 @@
 #include <primitives/command.h>
 #include <primitives/filesystem.h>
 
+#include <fstream>
 #include <set>
+#include <source_location>
 #include <print>
 
 constexpr auto aim_exe = "aim.exe"sv;
@@ -65,18 +67,17 @@ struct mod_maker {
     };
 
     std::string name;
+    std::string version;
     path game_dir;
-    std::set<path> files_to_mod;
+    std::set<path> files_to_pak;
+    std::set<path> files_to_distribute;
+    std::source_location loc;
 
-    mod_maker(const std::string &name) : name{name} {
-        detect_game_dir(fs::current_path());
-        detect_tools();
-        prepare_injections();
+    mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
+        init(fs::current_path());
     }
-    mod_maker(const std::string &name, const path &dir) : name{name} {
-        detect_game_dir(dir);
-        detect_tools();
-        prepare_injections();
+    mod_maker(const path &dir, std::source_location loc = std::source_location::current()) : loc{loc} {
+        init(dir);
     }
 
     void replace(const path &fn, const std::string &from, const std::string &to) {
@@ -88,9 +89,12 @@ struct mod_maker {
             if (!fs::exists(txt)) {
                 run_p4_tool("script2txt", p);
             }
+            auto dst_txt = get_mod_dir() / txt.filename();
+            fs::copy_file(txt, dst_txt, fs::copy_options::overwrite_existing);
+            txt = dst_txt;
             replace_in_file_raw(txt, from, to);
             run_p4_tool("txt2script", txt);
-            files_to_mod.insert(get_mod_dir() / txt.stem());
+            files_to_pak.insert(get_mod_dir() / txt.stem());
             break;
         }
         default:
@@ -99,27 +103,64 @@ struct mod_maker {
     }
     void apply() {
         std::vector<std::string> files;
-        for (auto &&p : files_to_mod) {
+        for (auto &&p : files_to_pak) {
             if (p.filename() == aim_exe) {
                 continue;
             }
             files.push_back(p.string());
         }
-        auto fn = get_mod_dir() / name += ".pak"s;
+        auto fn = get_mod_dir() / get_full_mod_name() += ".pak"s;
         run_p4_tool("paker", fn, files);
         fs::copy_file(fn, get_data_dir() / fn.filename(), fs::copy_options::overwrite_existing);
+        files_to_distribute.insert(path{"data"} / fn.filename());
+        // make patch notes
+        auto patchnotes_fn = path{game_dir / get_full_mod_name()} += ".README.txt";
+        files_to_distribute.insert(patchnotes_fn.filename());
+        std::ofstream ofile{patchnotes_fn};
+        ofile << name;
+        if (!version.empty()) {
+            ofile << " (version: " << version << ")";
+        }
+        ofile << "\n\n";
+        ofile << std::format("Release Date\n{:%d.%m.%Y %X}\n\n", std::chrono::system_clock::now());
+        for (auto &&line : read_lines(loc.file_name())) {
+            auto anchor = "patch note:"sv;
+            auto pos = line.find(anchor);
+            if (pos != -1) {
+                auto s = line.substr(pos + anchor.size());
+                boost::trim(s);
+                if (!s.empty() && (s[0] >= 'a' && s[0] <= 'z' || s[0] >= '0' && s[0] <= '9')) {
+                    s = "* " + s;
+                }
+                ofile << s << "\n";
+            }
+        }
+        ofile.close();
+
+        // we do not check for presence of 7z command here
+        if (has_in_path("7z")) {
+            primitives::Command c;
+            c.working_directory = game_dir;
+            c.push_back("7z");
+            c.push_back("a");
+            c.push_back(get_full_mod_name() + ".zip"); // we use zip as more common
+            for (auto &&f : files_to_distribute) {
+                c.push_back(f);
+            }
+            run_command(c);
+        }
     }
     template <typename T>
     void patch(path fn, uint32_t offset, T val) {
         fn = find_real_filename(fn);
-        files_to_mod.insert(fn);
+        files_to_pak.insert(fn);
         patch_raw(fn, offset, val);
     }
     // this one checks for old value as well, so incorrect positions (files) won't be patched
     template <typename T>
     bool patch(path fn, uint32_t offset, T oldval, T val) {
         fn = find_real_filename(fn);
-        files_to_mod.insert(fn);
+        files_to_pak.insert(fn);
         return patch_raw(fn, offset, oldval, val);
     }
 
@@ -131,6 +172,30 @@ struct mod_maker {
 #undef ENABLE_DISABLE_FUNC
 
 private:
+    void init(const path &dir) {
+        read_name();
+        detect_game_dir(dir);
+        fs::create_directories(get_mod_dir());
+        files_to_distribute.insert(loc.file_name());
+        detect_tools();
+        prepare_injections();
+    }
+    void read_name() {
+        name = path{loc.file_name()}.stem().string();
+        // use regex?
+        auto p = name.find('-');
+        if (p != -1) {
+            version = name.substr(p + 1);
+            name = name.substr(0, p);
+        }
+    }
+    decltype(name) get_full_mod_name() const {
+        auto s = name;
+        if (!version.empty()) {
+            s += "-" + version;
+        }
+        return s;
+    }
     static void memcpy(auto &ptr, const byte_array &data) {
         ::memcpy(ptr, data.data(), data.size());
         ptr += data.size();
@@ -165,10 +230,54 @@ private:
         byte_array arr(len, 0x90);
         return arr;
     }
-    void prepare_injections() {
-        enable_free_camera(); // for now
+    void make_injected_dll() {
+        path fn = loc.file_name();
+        fs::copy_file(fn, get_mod_dir() / fn.filename(), fs::copy_options::overwrite_existing);
+        std::string contents;
+        contents += "void build(Solution &s) {\n";
+        contents += "auto &t = s.addSharedLibrary(\"" + name + "\"";
+        if (!version.empty()) {
+            contents += ", \"" + version + "\"";
+        }
+        contents += ");\n";
+        contents += "t += cpp23;\n";
+        contents += "t += \"" + fn.filename().string() + "\";\n";
+        contents += "t += \"INJECTED_DLL\"_def;\n";
+        contents += "}\n";
+        write_file(get_mod_dir() / "sw.cpp", contents);
 
+        primitives::Command c;
+        c.working_directory = get_mod_dir();
+        c.push_back("sw");
+        c.push_back("build");
+        c.push_back("-platform");
+        c.push_back("x86");
+        c.push_back("-config");
+        c.push_back("r");
+        c.push_back("-config-name");
+        c.push_back("r");
+        run_command(c);
+
+        auto dllname = get_mod_dir() / ".sw" / "out" / "r" / get_sw_dll_name();
+        fs::copy_file(dllname, game_dir / get_dll_name(), fs::copy_options::overwrite_existing);
+        files_to_distribute.insert(get_dll_name());
+    }
+    decltype(name) get_sw_dll_name() const {
+        if (!version.empty()) {
+            return get_dll_name();
+        }
+        return name + "-0.0.1.dll";
+    }
+    decltype(name) get_dll_name() const {
+        return get_full_mod_name() + ".dll";
+    }
+    void prepare_injections() {
+#ifndef NDEBUG
+        enable_free_camera();
+#endif
         create_backup_exe_file();
+        make_injected_dll();
+        files_to_distribute.insert(aim_exe);
         primitives::templates2::mmap_file<uint8_t> f{find_real_filename(aim_exe), primitives::templates2::mmap_file<uint8_t>::rw{}};
         constexpr uint32_t trampoline_base      = 0x00025100;
         constexpr uint32_t trampoline_target    = 0x001207f0;
@@ -181,8 +290,8 @@ private:
         //constexpr uint32_t free_data_base_real  = 0x140000 + our_data - 0x00540000;
 
         auto ptr = f.p + trampoline_target;
-        //strcpy((char *)f.p + free_data_base_real, "aim_fixes-0.0.1.dll");
-        strcpy((char *)ptr, "aim_fixes-0.0.1.dll");
+        //strcpy((char *)f.p + free_data_base_real, get_dll_name().c_str());
+        strcpy((char *)ptr, get_dll_name().c_str());
         auto push_dll_name = make_insn_with_address("68"_bin, our_data); // push
         ptr += 0x20;
         our_data += 0x20;
@@ -225,11 +334,12 @@ FF D7                   ; call    edi
         memcpy(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - trampoline_base - jumppad.size())));
 
         // E8 C5  87 25 00
+        constexpr auto call_command_length = 5;
         uint32_t start_addr = 0x0043A1F6;
         uint32_t len = 10;
         ptr = f.p + start_addr - our_data_start + trampoline_target;
-        memcpy(ptr, make_insn_with_address("e8"_bin, free_data_base - (start_addr + 5)));
-        memcpy(ptr, make_nops(len - 5));
+        memcpy(ptr, make_insn_with_address("e8"_bin, free_data_base - (start_addr + call_command_length)));
+        memcpy(ptr, make_nops(len - call_command_length));
     }
     path find_real_filename(path fn) const {
         auto s = fn.wstring();
@@ -386,7 +496,8 @@ FF D7                   ; call    edi
         game_dir = fs::absolute(game_dir).lexically_normal();
     }
     void detect_tools() {
-        check_in_path("git");
+        //check_in_path("git");
+        // also --self-upgrade?
         check_in_path("sw");
     }
     void check_in_path(const path &program) const {
