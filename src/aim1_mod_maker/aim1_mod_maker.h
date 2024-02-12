@@ -51,6 +51,18 @@ auto operator""_bin(const char *ptr, uint64_t len) {
     return ret;
 }
 
+struct aim_exe_v1_06_constants {
+    enum : uint32_t {
+        trampoline_base_real = 0x00025100,
+        trampoline_target_real = 0x001207f0,
+        //code_base = 0x00401000,
+        //data_base = 0x00540000,
+        //free_data_base_virtual = 0x006929C0,
+        free_data_base_virtual = 0x00692FF0,
+        our_code_start_virtual = 0x005207F0, // place to put out dll load
+    };
+};
+
 struct mod_maker {
     enum class file_type {
         unknown,
@@ -164,6 +176,24 @@ struct mod_maker {
         return patch_raw(fn, offset, oldval, val);
     }
 
+    // all you need is to provide injection address (virtual) with size
+    // handle the call instruction in 'dispatcher' symbol (naked) of your dll
+    constexpr static inline auto call_command_length = 5;
+    void make_injection(uint32_t virtual_address, uint32_t size = call_command_length) {
+        uint32_t len = size;
+        if (len < call_command_length) {
+            throw std::runtime_error{"jumppad must be 5 bytes atleast"};
+        }
+        primitives::templates2::mmap_file<uint8_t> f{find_real_filename(aim_exe),
+                                                     primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto ptr = f.p + virtual_address - aim_exe_v1_06_constants::our_code_start_virtual + aim_exe_v1_06_constants::trampoline_target_real;
+        memcpy(ptr, make_insn_with_address("e8"_bin, aim_exe_v1_06_constants::free_data_base_virtual -
+                                                         (virtual_address + call_command_length)));
+        memcpy(ptr, make_nops(len - call_command_length));
+        std::println("making injection on the virtual address 0x{:0X} (real address 0x{:0X}), size {}", virtual_address, ptr - f.p,
+                     size);
+    }
+
 #define ENABLE_DISABLE_FUNC(name, enable, disable) \
     void enable_##name() { name(enable); } \
     void disable_##name() { name(disable); }
@@ -226,7 +256,7 @@ private:
         *(uint32_t *)(&arr[insn.size()]) = addr;
         return arr;
     }
-    static auto make_nops(uint32_t len) {
+    static byte_array make_nops(uint32_t len) {
         byte_array arr(len, 0x90);
         return arr;
     }
@@ -279,28 +309,26 @@ private:
         make_injected_dll();
         files_to_distribute.insert(aim_exe);
         primitives::templates2::mmap_file<uint8_t> f{find_real_filename(aim_exe), primitives::templates2::mmap_file<uint8_t>::rw{}};
-        constexpr uint32_t trampoline_base      = 0x00025100;
-        constexpr uint32_t trampoline_target    = 0x001207f0;
-        constexpr uint32_t code_base            = 0x00401000;
-        constexpr uint32_t data_base            = 0x00540000;
-        constexpr uint32_t free_data_base       = 0x006929C0;
-        //constexpr uint32_t our_data  = 0x00550FD0;
-        const uint32_t our_data_start  = 0x005207F0;
-        uint32_t our_data  = 0x005207F0;
-        //constexpr uint32_t free_data_base_real  = 0x140000 + our_data - 0x00540000;
+        uint32_t our_data = aim_exe_v1_06_constants::our_code_start_virtual;
 
-        auto ptr = f.p + trampoline_target;
-        //strcpy((char *)f.p + free_data_base_real, get_dll_name().c_str());
-        strcpy((char *)ptr, get_dll_name().c_str());
+        auto ptr = f.p + aim_exe_v1_06_constants::trampoline_target_real;
+#ifdef NDEBUG
+        auto dllnamelen = get_sw_dll_name().size() + 1;
+        strcpy((char *)ptr, get_sw_dll_name().c_str());
+#else
+        auto dllname = "h:\\Games\\AIM\\1\\.sw\\out\\d\\aim_fixes-0.0.1.dll"s;
+        auto dllnamelen = dllname.size() + 1;
+        strcpy((char *)ptr, dllname.c_str());
+#endif
+        ptr += dllnamelen;
         auto push_dll_name = make_insn_with_address("68"_bin, our_data); // push
-        ptr += 0x20;
         our_data += 0x20;
         strcpy((char *)ptr, "dispatcher");
         auto dispatcher_func_name = make_insn_with_address("68"_bin, our_data); // push
         ptr += 0x20;
         our_data += 0x20;
         const auto jumppad = "68 30 B8 51 00"_bin; // push    offset SEH_425100
-        uint32_t jump_offset = ptr - f.p - trampoline_base - jumppad.size() * 2;
+        uint32_t jump_offset = ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size() * 2;
         memreplace(f.p, f.sz, jumppad, make_insn_with_address("e9"_bin, jump_offset));
         memcpy(ptr, jumppad); // put our removed insn
         memcpy(ptr, R"(
@@ -331,15 +359,7 @@ FF D7                   ; call    edi
         memcpy(ptr, R"(
 61                      ; popa
 )"_bin);
-        memcpy(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - trampoline_base - jumppad.size())));
-
-        // E8 C5  87 25 00
-        constexpr auto call_command_length = 5;
-        uint32_t start_addr = 0x0043A1F6;
-        uint32_t len = 10;
-        ptr = f.p + start_addr - our_data_start + trampoline_target;
-        memcpy(ptr, make_insn_with_address("e8"_bin, free_data_base - (start_addr + call_command_length)));
-        memcpy(ptr, make_nops(len - call_command_length));
+        memcpy(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size())));
     }
     path find_real_filename(path fn) const {
         auto s = fn.wstring();

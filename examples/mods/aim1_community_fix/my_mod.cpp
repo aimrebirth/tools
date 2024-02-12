@@ -12,6 +12,9 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
  * You can also distribute mod archive (requires 7z program).
  **/
 
+#define AIM_TYPES_FILE_NAME "aim.exe.h"
+#define INJECTIONS_FILE_NAME "aim.exe.fixes.h"
+
 #ifndef INJECTED_DLL
 #include "aim1_mod_maker.h"
 
@@ -19,7 +22,7 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
 // patch note: lz, Solant, Streef
 // patch note:
 // patch note: Description
-// patch note: This mod fixes some issues with the original AIM v1.04 game.
+// patch note: This mod fixes some issues with the original AIM v1.06 (DRM-free) (1.0.6.3) game.
 // patch note:
 // patch note: Installation
 // patch note: Unpack and drop all files near original aim.exe. Replace files if necessary.
@@ -27,6 +30,16 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
 
 int main(int argc, char *argv[]) {
     mod_maker mod;
+    mod.files_to_distribute.insert(INJECTIONS_FILE_NAME);
+    mod.files_to_distribute.insert(AIM_TYPES_FILE_NAME);
+
+    // patch note: enable double weap gliders (still have many bugs related)
+    mod.make_injection(0x004072FA); // can trade for buy purposes
+    mod.make_injection(0x004D62E4); // setup proper weapon slots for a glider
+    mod.make_injection(0x00417A6D); // put weapon into the right slot after purchase
+    mod.make_injection(0x004176BC); // sell correct weapon
+    mod.make_injection(0x004067C4); // empty light weap
+    mod.make_injection(0x0040688B); // empty heavy weap
 
     // patch note: CHANGES
     // patch note:
@@ -65,7 +78,6 @@ int main(int argc, char *argv[]) {
     // patch note:
 
     // patch note: Script Changes
-    // patch note: _ISGLIDER() function can check exact glider name now, for example _ISGLIDER(GL_M3_A_FIRST1) (lz)
     // patch note: fix joining First Ones having one of four required gliders (lz, Streef)
     mod.replace("ORG_FIRST.scr",
         "IF(_PLAYERHAS(GL_M3_A_FIRST1)||_PLAYERHAS(GL_M3_A_FIRST1))",
@@ -77,24 +89,30 @@ int main(int argc, char *argv[]) {
     mod.replace("ORG_SINIGR.scr",
         "IF(_PLAYERHAS(GL_S2_PA_SINYGR)|_PLAYERHAS(GL_S4_S_SINYGR))",
         "IF(_ISGLIDER(GL_S2_PA_SINYGR)|_ISGLIDER(GL_S4_S_SINYGR))");
+
+    // patch note: _ISGLIDER() function can check exact glider name now, for example _ISGLIDER(GL_M3_A_FIRST1) (lz)
+    mod.make_injection(0x0043A1F6, 10);
+    //
+
+    // end of scripts section
     // patch note:
 
-    /*mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
+    mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
     _ADDBALANCE(300 )
 
-    _ADDOBJECT(GL_M3_PA_EYEDSTONE)
+    _ADDOBJECT(GL_S3_PS_FINDER1)
     _ADDOBJECT(EQP_VACUUM_DRIVE_S3)
     _ADDOBJECT(EQP_ZERO_ARMOR_S3)
     _ADDOBJECT(EQP_SHIELD_GENERATOR4_S3)
 
-    _ADDOBJECT(GL_M4_S_FIRST2)
-    _ADDOBJECT(EQP_VACUUM_DRIVE_S4)
+    //_ADDOBJECT(GL_M4_S_FIRST2)
+    //_ADDOBJECT(EQP_VACUUM_DRIVE_S4)
     //_ADDOBJECT(EQP_MEZON_REACTOR_S4)
     //_ADDOBJECT(EQP_GLUON_REACTOR_S1)
-    _ADDOBJECT(EQP_ZERO_ARMOR_S4)
-    _ADDOBJECT(EQP_SHIELD_GENERATOR4_S4)
-    _ADDOBJECT(GUN_MICROWAVE_OSCILLATOR)
-    _ADDOBJECT(GUN_RAILGUN)
+    //_ADDOBJECT(EQP_ZERO_ARMOR_S4)
+    //_ADDOBJECT(EQP_SHIELD_GENERATOR4_S4)
+    //_ADDOBJECT(GUN_MICROWAVE_OSCILLATOR)
+    //_ADDOBJECT(GUN_RAILGUN)
 
     _ADDRATING(300000000)
     _ADDBALANCE(30000000)
@@ -115,7 +133,7 @@ int main(int argc, char *argv[]) {
     _SETEVENT(SECTOR7.ACCESS)
     //_SETEVENT(SECTOR8.VISIT)
     _SETEVENT(SECTOR8.ACCESS)
-)");*/
+)");
 
     // patch note: Release Manager
     // patch note: lz
@@ -144,100 +162,5 @@ int main(int argc, char *argv[]) {
 }
 
 #else // INJECTED_DLL
-
-#include <stdint.h>
-#include <windows.h>
-
-constexpr auto call_command_length = 5;
-
-enum aim1_fix : uint32_t {
-    script_function__ISGLIDER = 0x0043A1F6,
-};
-uint32_t known_caller;
-
-__declspec(naked) void fix_script_function__ISGLIDER() {
-    __asm {
-        ; restore values
-        popad
-        pushad
-
-        mov edi, eax; my glider
-        mov esi, [esp + 20h + 4 + 8 * 4]; arg
-
-        label_cmp :
-        mov al, [edi]
-            mov cl, [esi]
-            cmp al, cl
-            jne bad
-            cmp al, 0
-            je end
-            cmp cl, 0
-            je end
-            inc edi
-            inc esi
-            jmp label_cmp
-            end :
-        cmp al, cl
-            jne bad
-            popad
-            ; push some regs as required by success branch
-            push    ebx
-            push    ebp
-            push    esi
-            push    edi
-            push 0x0043A2DA
-            ret
-
-            bad :
-        popad
-            ; popf
-            ; original thunk
-            copy :
-        mov     cl, [eax]; injection point
-            inc     eax
-            mov[edx], cl
-            inc     edx
-            test    cl, cl
-            jnz     copy
-
-            ; epilogue
-            push known_caller
-            ret
-    }
-}
-
-extern "C" __declspec(dllexport) __declspec(naked) void dispatcher() {
-    __asm {
-        pop known_caller
-        pushad
-    }
-    switch (known_caller - call_command_length) {
-    case aim1_fix::script_function__ISGLIDER:
-        known_caller += 0xA - call_command_length; // make normal ret
-        __asm jmp fix_script_function__ISGLIDER
-        break;
-    default:
-        break;
-    }
-    // just return
-    __asm {
-        popa
-        push known_caller
-        ret
-    }
-}
-
-void setup() {
-    constexpr uint32_t free_data_base = 0x006929C0;
-    auto mem = (uint8_t *)free_data_base;
-    mem[0] = 0xE9;
-    *(uint32_t *)&mem[1] = (uint32_t)&dispatcher - free_data_base - call_command_length;
-}
-BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
-    if (fdwReason == DLL_PROCESS_ATTACH) {
-        setup();
-    }
-    return TRUE;
-}
-
+#include INJECTIONS_FILE_NAME
 #endif

@@ -22,4 +22,43 @@
         </DisplayString>
     </Type>
 
+    <Type Name="db2::tab">
+        <Expand>
+            <Item Name="[number of tables]" ExcludeView="simple">n_tables</Item>
+            <Item Name="[number of fields]" ExcludeView="simple">n_fields</Item>
+            <ArrayItems>
+                <Size>n_tables</Size>
+                <ValuePointer>(db2::tab::table*)(&amp;n_fields+1)</ValuePointer>
+            </ArrayItems>
+            <ArrayItems>
+                <Size>n_fields</Size>
+                <ValuePointer>(db2::tab::field*)((db2::tab::table*)(&amp;n_fields+1)+n_tables)</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+    <Type Name="db2::tab::table">
+        <DisplayString>
+            {id},{name,s}
+        </DisplayString>
+    </Type>
+    <Type Name="db2::tab::field">
+        <DisplayString>
+            {table_id},{id},{name,s},{type}
+        </DisplayString>
+    </Type>
+    <Type Name="db2::ind">
+        <Expand>
+            <Item Name="[number of values]" ExcludeView="simple">n_values</Item>
+            <ArrayItems>
+                <Size>n_values</Size>
+                <ValuePointer>(db2::value*)(&amp;n_values+1)</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+    <Type Name="db2::value">
+        <DisplayString>
+            {table_id},{name,s}
+        </DisplayString>
+    </Type>
+
 </AutoVisualizer>

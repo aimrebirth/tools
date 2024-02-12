@@ -8,10 +8,13 @@ void build(Solution &s)
     auto cppstd = cpp23;
 
     auto &common = tools.addStaticLibrary("common");
-    common += cppstd;
-    common.setRootDirectory("src/common");
-    common.Public += "pub.egorpugin.primitives.filesystem"_dep;
-    common.Public += "pub.egorpugin.primitives.templates2"_dep;
+    {
+        common += cppstd;
+        common.setRootDirectory("src/common");
+        common += ".*"_rr;
+        common.Public += "pub.egorpugin.primitives.filesystem"_dep;
+        common.Public += "pub.egorpugin.primitives.templates2"_dep;
+    }
 
     auto add_exe_base = [&](const String &name) -> decltype(auto)
     {
@@ -73,16 +76,16 @@ void build(Solution &s)
             ;
     }
 
-    auto &aim1_mod_maker = tools.addStaticLibrary("aim1_mod_maker");
+    auto &aim1_mod_maker = add_exe_with_common("aim1_mod_maker"); // actually a library
+    aim1_mod_maker.Public += "pub.egorpugin.primitives.command"_dep;
+
+    auto &aim1_community_fix = tools.addExecutable("examples.mods.aim1_community_fix");
     {
-        auto &t = aim1_mod_maker;
-        auto name = "aim1_mod_maker";
+        auto &t = aim1_community_fix;
         t.PackageDefinitions = true;
         t += cppstd;
-        t.setRootDirectory("src/"s + name);
-        //t.Public += "pub.egorpugin.primitives.sw.main"_dep;
-        t.Public += "pub.egorpugin.primitives.command"_dep;
-        t.Public += common;
+        t += "examples/mods/aim1_community_fix/.*"_rr;
+        t += aim1_mod_maker;
     }
 
     add_exe("mod_reader") += model;

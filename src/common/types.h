@@ -183,7 +183,7 @@ struct Good
     };
 
     std::string name;
-    char unk1[0x40];
+    char condition_variable[0x40]; // when this var is set, we can access the good
     float unk1_2 = 0;
     float price = 0; // unk, quantity?
     float unk2[10];
@@ -199,7 +199,7 @@ struct Good
     {
         READ_STRING(b, name);
         if (gameType == GameType::Aim1)
-            READ(b, unk1);
+            READ(b, condition_variable);
         else
             READ(b, unk1_2);
         READ(b, price);
