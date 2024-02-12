@@ -262,7 +262,7 @@ private:
     }
     void make_injected_dll() {
         path fn = loc.file_name();
-        fs::copy_file(fn, get_mod_dir() / fn.filename(), fs::copy_options::overwrite_existing);
+        //fs::copy_file(fn, get_mod_dir() / fn.filename(), fs::copy_options::overwrite_existing);
         std::string contents;
         contents += "void build(Solution &s) {\n";
         contents += "auto &t = s.addSharedLibrary(\"" + name + "\"";
@@ -271,7 +271,7 @@ private:
         }
         contents += ");\n";
         contents += "t += cpp23;\n";
-        contents += "t += \"" + fn.filename().string() + "\";\n";
+        contents += "t += \"" + boost::replace_all_copy(fn.string(), "\\", "/") + "\";\n";
         contents += "t += \"INJECTED_DLL\"_def;\n";
         contents += "}\n";
         write_file(get_mod_dir() / "sw.cpp", contents);
