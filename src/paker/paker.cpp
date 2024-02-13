@@ -111,8 +111,11 @@ int main(int argc, char *argv[]) {
     p.n_files = files.size();
     p.n_blocks = nsegs;
 
+    fs::create_directories(name.parent_path());
+    std::ofstream{name};
+    fs::resize_file(name, total);
     primitives::templates2::mmap_file<uint8_t> f{name, primitives::templates2::mmap_file<uint8_t>::rw{}};
-    f.alloc_raw(total);
+    //f.alloc_raw(total);
 
     stream s{f};
     s = p;
@@ -141,7 +144,6 @@ int main(int argc, char *argv[]) {
         s.skip(sz_to_copy);
     }
     f.close();
-    fs::resize_file(name, total);
 
     return 0;
 }
