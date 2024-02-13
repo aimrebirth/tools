@@ -24,6 +24,8 @@
 std::string str2utf8(const std::string &codepage_str, int cp = 0);
 std::wstring str2utf16(const std::string &codepage_str, int cp = 0);
 
+std::string str2str(const std::string &codepage_str, int cp_from, int cp_to);
+
 struct progress_bar {
     const size_t max_elements;
     const int displaylen;

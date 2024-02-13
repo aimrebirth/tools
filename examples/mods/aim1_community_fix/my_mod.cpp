@@ -29,17 +29,9 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
 // patch note:
 
 int main(int argc, char *argv[]) {
-    mod_maker mod;
-    mod.files_to_distribute.insert(INJECTIONS_FILE_NAME);
-    mod.files_to_distribute.insert(AIM_TYPES_FILE_NAME);
-
-    // patch note: enable double weap gliders (still have many bugs related)
-    mod.make_injection(0x004072FA); // can trade for buy purposes
-    mod.make_injection(0x004D62E4); // setup proper weapon slots for a glider
-    mod.make_injection(0x00417A6D); // put weapon into the right slot after purchase
-    mod.make_injection(0x004176BC); // sell correct weapon
-    mod.make_injection(0x004067C4); // empty light weap
-    mod.make_injection(0x0040688B); // empty heavy weap
+    mod_maker mod("community_fix-0.0.2"s);
+    mod.add_code_file_for_archive(INJECTIONS_FILE_NAME);
+    mod.add_code_file_for_archive(AIM_TYPES_FILE_NAME);
 
     // patch note: CHANGES
     // patch note:
@@ -90,13 +82,30 @@ int main(int argc, char *argv[]) {
         "IF(_PLAYERHAS(GL_S2_PA_SINYGR)|_PLAYERHAS(GL_S4_S_SINYGR))",
         "IF(_ISGLIDER(GL_S2_PA_SINYGR)|_ISGLIDER(GL_S4_S_SINYGR))");
 
-    // patch note: _ISGLIDER() function can check exact glider name now, for example _ISGLIDER(GL_M3_A_FIRST1) (lz)
+    // patch note: * _ISGLIDER() function can check exact glider name now, for example _ISGLIDER(GL_M3_A_FIRST1) (lz)
     mod.make_injection(0x0043A1F6, 10);
-    //
-
     // end of scripts section
     // patch note:
 
+    // patch note: Database Changes
+    // patch note: add name for SINIGR armor, it was unnamed before (lz)
+    mod.db.quest().add_value("INFORMATION"sv, "EQP_ZERO_ARMOR_S_SIN"sv, "NAME", (const char *)u8"Особая нуль-броня");
+    // patch note:
+
+    // patch note: Game Changes
+    // patch note: enable double weapon gliders (lz)
+    // patch note:    double light weapons: GL_M2_PA_NARGOON and GL_S3_PS_FINDER1
+    // patch note:    double heavy weapons: GL_M3_PA_EYEDSTONE and GL_S3_PS_FINDER2
+    // patch note:    (still have many bugs related)
+    mod.make_injection(0x004072FA); // can trade for buy purposes
+    mod.make_injection(0x004D62E4); // setup proper weapon slots for a glider
+    mod.make_injection(0x00417A6D); // put weapon into the right slot after purchase
+    mod.make_injection(0x004176BC); // sell correct weapon
+    mod.make_injection(0x004067C4); // empty light weap
+    mod.make_injection(0x0040688B); // empty heavy weap
+    // patch note:
+
+    // test scripts
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
     _ADDBALANCE(300 )
 

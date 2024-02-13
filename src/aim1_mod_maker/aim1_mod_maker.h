@@ -1,10 +1,12 @@
 #pragma once
 
+#include <db2.h>
 #include <mmap.h>
 
 #include <primitives/command.h>
 #include <primitives/filesystem.h>
 
+#include <format>
 #include <fstream>
 #include <set>
 #include <source_location>
@@ -13,9 +15,6 @@
 constexpr auto aim_exe = "aim.exe"sv;
 
 using byte_array = std::vector<uint8_t>;
-
-struct patcher {
-};
 
 auto operator""_bin(const char *ptr, uint64_t len) {
     byte_array ret;
@@ -51,6 +50,13 @@ auto operator""_bin(const char *ptr, uint64_t len) {
     return ret;
 }
 
+void log(auto &&format, auto &&arg, auto &&...args) {
+    std::println("{}", std::vformat(format, std::make_format_args(arg, args...)));
+}
+void log(auto &&str) {
+    std::println("{}", str);
+}
+
 struct aim_exe_v1_06_constants {
     enum : uint32_t {
         trampoline_base_real = 0x00025100,
@@ -75,20 +81,43 @@ struct mod_maker {
         script,
         sound,
     };
-    enum pak_files {
-    };
+    struct {
+        mod_maker &m;
+        db2 db_;
+        db2 quest_;
+
+        db2 &db() {
+            add_files("db");
+            return db_;
+        }
+        db2 &quest() {
+            add_files("quest");
+            return quest_;
+        }
+    private:
+        void add_files(const path &fn) {
+            auto base = path{"data"} / fn;
+            m.files_to_distribute.insert(path{base} += ".ind");
+            m.files_to_distribute.insert(path{base} += ".dat");
+            m.files_to_distribute.insert(path{base} += ".tab");
+        }
+    } db{*this};
 
     std::string name;
     std::string version;
     path game_dir;
     std::set<path> files_to_pak;
     std::set<path> files_to_distribute;
+    std::set<path> code_files_to_distribute;
     std::source_location loc;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
         init(fs::current_path());
     }
-    mod_maker(const path &dir, std::source_location loc = std::source_location::current()) : loc{loc} {
+    mod_maker(const std::string &name, std::source_location loc = std::source_location::current()) : name{name}, loc{loc} {
+        init(fs::current_path());
+    }
+    mod_maker(const std::string &name, const path &dir, std::source_location loc = std::source_location::current()) : name{name}, loc{loc} {
         init(dir);
     }
 
@@ -114,6 +143,9 @@ struct mod_maker {
         }
     }
     void apply() {
+        db.db_.close();
+        db.quest_.close();
+
         std::vector<std::string> files;
         for (auto &&p : files_to_pak) {
             if (p.filename() == aim_exe) {
@@ -140,7 +172,10 @@ struct mod_maker {
             auto pos = line.find(anchor);
             if (pos != -1) {
                 auto s = line.substr(pos + anchor.size());
-                boost::trim(s);
+                if (!s.empty() && s[0] == ' ') {
+                    s = s.substr(1);
+                }
+                boost::trim_right(s);
                 if (!s.empty() && (s[0] >= 'a' && s[0] <= 'z' || s[0] >= '0' && s[0] <= '9')) {
                     s = "* " + s;
                 }
@@ -151,17 +186,41 @@ struct mod_maker {
 
         // we do not check for presence of 7z command here
         if (has_in_path("7z")) {
+            auto ar = get_full_mod_name() + ".zip";
+
             primitives::Command c;
             c.working_directory = game_dir;
             c.push_back("7z");
             c.push_back("a");
-            c.push_back(get_full_mod_name() + ".zip"); // we use zip as more common
+            c.push_back(ar); // we use zip as more common
             for (auto &&f : files_to_distribute) {
                 c.push_back(f);
             }
+            for (auto &&f : code_files_to_distribute) {
+                c.push_back(f);
+            }
             run_command(c);
+
+            auto rename = [&](auto &&from, auto &&to) {
+                primitives::Command c;
+                c.working_directory = game_dir;
+                c.push_back("7z");
+                c.push_back("rn");
+                c.push_back(ar);
+                c.push_back(from);
+                c.push_back(to);
+                run_command(c);
+            };
+            for (auto &&f : code_files_to_distribute) {
+                if (f.filename() == path{loc.file_name()}.filename()) {
+                    rename(f.filename(), path{"data"} / "mods" / get_full_mod_name() / get_full_mod_name() += ".cpp");
+                } else {
+                    rename(f.filename(), path{"data"} / "mods" / get_full_mod_name() / f.filename());
+                }
+            }
         }
     }
+
     template <typename T>
     void patch(path fn, uint32_t offset, T val) {
         fn = find_real_filename(fn);
@@ -190,7 +249,7 @@ struct mod_maker {
         memcpy(ptr, make_insn_with_address("e8"_bin, aim_exe_v1_06_constants::free_data_base_virtual -
                                                          (virtual_address + call_command_length)));
         memcpy(ptr, make_nops(len - call_command_length));
-        std::println("making injection on the virtual address 0x{:0X} (real address 0x{:0X}), size {}", virtual_address, ptr - f.p,
+        log("making injection on the virtual address 0x{:0X} (real address 0x{:0X}), size {}", virtual_address, ptr - f.p,
                      size);
     }
 
@@ -201,17 +260,25 @@ struct mod_maker {
     ENABLE_DISABLE_FUNC(win_key, 0x00, 0x10)
 #undef ENABLE_DISABLE_FUNC
 
+    void add_code_file_for_archive(const path &fn) {
+        code_files_to_distribute.insert(path{loc.file_name()}.parent_path() / fn);
+    }
+
 private:
     void init(const path &dir) {
         read_name();
         detect_game_dir(dir);
         fs::create_directories(get_mod_dir());
-        files_to_distribute.insert(loc.file_name());
+        code_files_to_distribute.insert(loc.file_name());
+        db.db_.open(get_data_dir() / "db", primitives::templates2::mmap_file<uint8_t>::rw{});
+        db.quest_.open(get_data_dir() / "quest", primitives::templates2::mmap_file<uint8_t>::rw{});
         detect_tools();
         prepare_injections();
     }
     void read_name() {
-        name = path{loc.file_name()}.stem().string();
+        if (name.empty()) {
+            name = path{loc.file_name()}.stem().string();
+        }
         // use regex?
         auto p = name.find('-');
         if (p != -1) {
@@ -261,6 +328,8 @@ private:
         return arr;
     }
     void make_injected_dll() {
+        log("making injected dll");
+
         path fn = loc.file_name();
         //fs::copy_file(fn, get_mod_dir() / fn.filename(), fs::copy_options::overwrite_existing);
         std::string contents;
@@ -306,7 +375,9 @@ private:
         enable_free_camera();
 #endif
         create_backup_exe_file();
+#ifdef NDEBUG
         make_injected_dll();
+#endif
         files_to_distribute.insert(aim_exe);
         primitives::templates2::mmap_file<uint8_t> f{find_real_filename(aim_exe), primitives::templates2::mmap_file<uint8_t>::rw{}};
         uint32_t our_data = aim_exe_v1_06_constants::our_code_start_virtual;
@@ -439,34 +510,34 @@ FF D7                   ; call    edi
     void patch_raw(path fn, uint32_t offset, T val) const {
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         auto &old = *(T *)(f.p + offset);
-        std::println("patching {} offset 0x{:08X} to {} (old value: {})", fn.string(), offset, val, old);
+        log("patching {} offset 0x{:08X} to {} (old value: {})", fn.string(), offset, val, old);
         old = val;
     }
     template <typename T>
     bool patch_raw(path fn, uint32_t offset, T expected, T val) const {
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         auto &old = *(T *)(f.p + offset);
-        std::println("patching {} offset 0x{:08X} from {} to {}", fn.string(), offset, expected, val);
+        log("patching {} offset 0x{:08X} from {} to {}", fn.string(), offset, expected, val);
         if (old == expected) {
-            std::println("success");
+            log("success");
             old = val;
             return true;
         } else if (old == val) {
-            std::println("success, already patched");
+            log("success, already patched");
             return true;
         } else {
-            std::println("old value {} != expected {}", old, expected);
+            log("old value {} != expected {}", old, expected);
             return false;
         }
     }
     path get_mod_dir() const {
-        return get_data_dir() / "mods" / name;
+        return get_data_dir() / "mods" / get_full_mod_name();
     }
     path get_data_dir() const {
         return game_dir / "data";
     }
     static void replace_in_file_raw(const path &fn, const std::string &from, const std::string &to) {
-        std::println("replacing in file {} from '{}' to '{}'", fn.string(), from, to);
+        log("replacing in file {} from '{}' to '{}'", fn.string(), from, to);
         auto f = read_file(fn);
         boost::replace_all(f, from, to);
         boost::replace_all(f, "\r", "");
@@ -501,7 +572,7 @@ FF D7                   ; call    edi
     static void run_command(auto &c) {
         c.out.inherit = true;
         c.err.inherit = true;
-        std::cout << c.print() << "\n";
+        log(c.print());
         c.execute();
     }
     void detect_game_dir(const path &dir) {

@@ -58,3 +58,15 @@ std::wstring str2utf16(const std::string &codepage_str, int cp)
     SW_UNIMPLEMENTED;
 #endif
 }
+
+std::string str2str(const std::string &codepage_str, int cp_from, int cp_to) {
+#ifdef _WIN32
+    auto utf16_str = str2utf16(codepage_str, cp_from);
+    int dest_size = WideCharToMultiByte(cp_to, 0, utf16_str.c_str(), utf16_str.length(), nullptr, 0, nullptr, nullptr);
+    std::string dest_str(dest_size, '\0');
+    WideCharToMultiByte(cp_to, 0, utf16_str.c_str(), utf16_str.length(), &dest_str[0], dest_size, nullptr, nullptr);
+    return dest_str;
+#else
+    SW_UNIMPLEMENTED;
+#endif
+}
