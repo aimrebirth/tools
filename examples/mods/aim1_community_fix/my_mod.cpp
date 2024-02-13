@@ -1,6 +1,7 @@
 /*
 name: aim_mod_maker
 c++: 23
+package_definitions: true
 deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
 */
 
@@ -29,15 +30,20 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
 // patch note:
 
 int main(int argc, char *argv[]) {
-    mod_maker mod("community_fix-0.0.2"s);
+    mod_maker mod(
+#ifdef NDEBUG
+        "community_fix"s
+#else
+        "test_mod"s
+#endif
+        + "-0.0.2"s
+    );
     mod.add_code_file_for_archive(INJECTIONS_FILE_NAME);
     mod.add_code_file_for_archive(AIM_TYPES_FILE_NAME);
 
     // patch note: CHANGES
     // patch note:
     // patch note: General Notes
-    // patch note: enabled free camera (use F3 key) (Solant)
-    mod.enable_free_camera();
     // patch note: enabled WIN key during the game (Solant)
     mod.enable_win_key();
     // patch note:
@@ -63,6 +69,18 @@ int main(int argc, char *argv[]) {
     // patch note:
 
     // patch note: Hills Sector
+    // patch note: allow to buy double heavy weapon Finder-2 glider on Finders base after the second quest. You must start the new game to make it appear (lz)
+    mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", R"(
+47 4c 5f 53 33 5f 50 53 5f 46 49 4e 44 45 52 32
+00 d2 e2 77 42 04 06 00 35 01 00 00 76 0c 01 30
+54 5f 4c 36 5f 49 4b 5f 46 32 2e 43 4f 4d 50 4c
+45 54 45 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00
+)"_bin);
     // patch note: set correct model for a plant (Streef)
     mod.patch<uint8_t>("location6.mmo", 0x575DD, 'R', 'F');
     // patch note: fix 'TOV_POLYMER_PLATE' spawn (Streef)
@@ -106,22 +124,27 @@ int main(int argc, char *argv[]) {
     // patch note:
 
     // test scripts
+#ifndef NDEBUG
+    // patch note dev: Developer Mode!!!
+    // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
+    mod.enable_free_camera();
+    // patch note dev: start money, rating, glider and sector access
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
     _ADDBALANCE(300 )
 
-    _ADDOBJECT(GL_S3_PS_FINDER1)
-    _ADDOBJECT(EQP_VACUUM_DRIVE_S3)
-    _ADDOBJECT(EQP_ZERO_ARMOR_S3)
-    _ADDOBJECT(EQP_SHIELD_GENERATOR4_S3)
+    //_ADDOBJECT(GL_S3_PS_FINDER1)
+    //_ADDOBJECT(EQP_VACUUM_DRIVE_S3)
+    //_ADDOBJECT(EQP_ZERO_ARMOR_S3)
+    //_ADDOBJECT(EQP_SHIELD_GENERATOR4_S3)
 
-    //_ADDOBJECT(GL_M4_S_FIRST2)
-    //_ADDOBJECT(EQP_VACUUM_DRIVE_S4)
+    _ADDOBJECT(GL_M4_S_FIRST2)
+    _ADDOBJECT(EQP_VACUUM_DRIVE_S4)
     //_ADDOBJECT(EQP_MEZON_REACTOR_S4)
     //_ADDOBJECT(EQP_GLUON_REACTOR_S1)
-    //_ADDOBJECT(EQP_ZERO_ARMOR_S4)
-    //_ADDOBJECT(EQP_SHIELD_GENERATOR4_S4)
-    //_ADDOBJECT(GUN_MICROWAVE_OSCILLATOR)
-    //_ADDOBJECT(GUN_RAILGUN)
+    _ADDOBJECT(EQP_ZERO_ARMOR_S4)
+    _ADDOBJECT(EQP_SHIELD_GENERATOR4_S4)
+    _ADDOBJECT(GUN_MICROWAVE_OSCILLATOR)
+    _ADDOBJECT(GUN_RAILGUN)
 
     _ADDRATING(300000000)
     _ADDBALANCE(30000000)
@@ -143,6 +166,8 @@ int main(int argc, char *argv[]) {
     //_SETEVENT(SECTOR8.VISIT)
     _SETEVENT(SECTOR8.ACCESS)
 )");
+    // patch note dev:
+#endif
 
     // patch note: Release Manager
     // patch note: lz

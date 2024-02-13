@@ -27,7 +27,7 @@ void build(Solution &s)
     auto add_exe = [&](const String &name) -> decltype(auto)
     {
         auto &t = add_exe_base(name);
-        t += "pub.egorpugin.primitives.sw.main"_dep;
+        t.Public += "pub.egorpugin.primitives.sw.main"_dep;
         return t;
     };
 
@@ -50,6 +50,7 @@ void build(Solution &s)
     add_exe_with_data_manager("db_extractor2");
     add_exe_with_data_manager("mmm_extractor");
     add_exe_with_data_manager("mmo_extractor");
+    add_exe_with_common("mmo_extractor2");
     add_exe_with_common("mmp_extractor") += "org.sw.demo.intel.opencv.highgui"_dep;
     add_exe_with_common("mpj_loader");
     add_exe_with_common("paker");

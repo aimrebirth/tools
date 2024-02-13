@@ -1,10 +1,12 @@
 #pragma once
 
 #include <db2.h>
-#include <mmap.h>
+#include <mmo2.h>
 
+#include <boost/container_hash/hash.hpp>
 #include <primitives/command.h>
 #include <primitives/filesystem.h>
+#include <primitives/sw/main.h>
 
 #include <format>
 #include <fstream>
@@ -61,7 +63,7 @@ struct aim_exe_v1_06_constants {
     enum : uint32_t {
         trampoline_base_real = 0x00025100,
         trampoline_target_real = 0x001207f0,
-        //code_base = 0x00401000,
+        code_base = 0x00401000,
         //data_base = 0x00540000,
         //free_data_base_virtual = 0x006929C0,
         free_data_base_virtual = 0x00692FF0,
@@ -161,6 +163,9 @@ struct mod_maker {
         auto patchnotes_fn = path{game_dir / get_full_mod_name()} += ".README.txt";
         files_to_distribute.insert(patchnotes_fn.filename());
         std::ofstream ofile{patchnotes_fn};
+#ifndef NDEBUG
+        ofile << "Developer Mode!!!\nOnly for testing purposes!\nDO NOT USE FOR ACTUAL PLAYING !!!\n\n";
+#endif
         ofile << name;
         if (!version.empty()) {
             ofile << " (version: " << version << ")";
@@ -168,19 +173,26 @@ struct mod_maker {
         ofile << "\n\n";
         ofile << std::format("Release Date\n{:%d.%m.%Y %X}\n\n", std::chrono::system_clock::now());
         for (auto &&line : read_lines(loc.file_name())) {
+            auto f = [&](auto &&a) {
+                auto pos = line.find(a);
+                if (pos != -1) {
+                    auto s = line.substr(pos + a.size());
+                    if (!s.empty() && s[0] == ' ') {
+                        s = s.substr(1);
+                    }
+                    boost::trim_right(s);
+                    if (!s.empty() && (s[0] >= 'a' && s[0] <= 'z' || s[0] >= '0' && s[0] <= '9')) {
+                        s = "* " + s;
+                    }
+                    ofile << s << "\n";
+                }
+            };
             auto anchor = "patch note:"sv;
-            auto pos = line.find(anchor);
-            if (pos != -1) {
-                auto s = line.substr(pos + anchor.size());
-                if (!s.empty() && s[0] == ' ') {
-                    s = s.substr(1);
-                }
-                boost::trim_right(s);
-                if (!s.empty() && (s[0] >= 'a' && s[0] <= 'z' || s[0] >= '0' && s[0] <= '9')) {
-                    s = "* " + s;
-                }
-                ofile << s << "\n";
-            }
+            auto anchor_dev = "patch note dev:"sv;
+            f(anchor);
+#ifndef NDEBUG
+            f(anchor_dev);
+#endif
         }
         ofile.close();
 
@@ -234,6 +246,62 @@ struct mod_maker {
         files_to_pak.insert(fn);
         return patch_raw(fn, offset, oldval, val);
     }
+    void insert(path fn, uint32_t offset, const byte_array &data) {
+        files_to_pak.insert(find_real_filename(fn));
+        if (is_already_inserted(fn, data)) {
+            return;
+        }
+
+        log("inserting into {} offset 0x{:08X} {} bytes", fn.string(), offset, data.size());
+
+        auto rfn = find_real_filename(fn);
+        fs::resize_file(rfn, fs::file_size(rfn) + data.size());
+        primitives::templates2::mmap_file<uint8_t> f{rfn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        memmove(f.p + offset + data.size(), f.p + offset, f.sz - offset);
+        ::memcpy(f.p + offset, data.data(), data.size());
+        f.close();
+
+        write_file(get_hash_fn(fn, data), ""s);
+    }
+    void add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const byte_array &data) {
+        files_to_pak.insert(find_real_filename(mmo_fn));
+        if (is_already_inserted(mmo_fn, data)) {
+            return;
+        }
+
+        auto fn = find_real_filename(mmo_fn);
+        mmo_storage2 m;
+        m.load(fn);
+
+        auto it = m.map_building_goods.find(building_name);
+        if (it == m.map_building_goods.end()) {
+            throw std::runtime_error{"no such building: "s + building_name};
+        }
+
+        uint32_t insertion_offset = it->second.offset + sizeof(uint32_t);
+        if (!after_good_name.empty()) {
+            auto it2 = it->second.building_goods.find(after_good_name);
+            if (it2 == it->second.building_goods.end()) {
+                throw std::runtime_error{"no such building good: "s + after_good_name};
+            }
+            insertion_offset = it2->second;
+        }
+
+        {
+            primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+            if (::memcmp(f.p + insertion_offset, data.data(), data.size()) == 0) {
+                return;
+            }
+        }
+
+        insert(mmo_fn, insertion_offset, data);
+
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        // increase section size
+        *(uint32_t *)(f.p + m.sections.map_goods.offset) += data.size();
+        // increase number of goods
+        ++*(uint32_t *)(f.p + it->second.offset);
+    }
 
     // all you need is to provide injection address (virtual) with size
     // handle the call instruction in 'dispatcher' symbol (naked) of your dll
@@ -265,6 +333,22 @@ struct mod_maker {
     }
 
 private:
+    path get_hash_fn(path fn, const byte_array &data) const {
+        return get_mod_dir() / std::format("{:0X}.hash", get_insert_hash(fn, data));
+    }
+    size_t get_insert_hash(path fn, const byte_array &data) const {
+        auto s = fn.wstring();
+        boost::to_lower(s);
+        fn = s;
+
+        size_t hash{};
+        boost::hash_combine(hash, fn);
+        boost::hash_combine(hash, data);
+        return hash;
+    }
+    bool is_already_inserted(path fn, const byte_array &data) const {
+        return fs::exists(get_hash_fn(fn,data));
+    }
     void init(const path &dir) {
         read_name();
         detect_game_dir(dir);
@@ -274,6 +358,9 @@ private:
         db.quest_.open(get_data_dir() / "quest", primitives::templates2::mmap_file<uint8_t>::rw{});
         detect_tools();
         prepare_injections();
+#ifndef NDEBUG
+        enable_win_key();
+#endif
     }
     void read_name() {
         if (name.empty()) {
@@ -370,10 +457,19 @@ private:
     decltype(name) get_dll_name() const {
         return get_full_mod_name() + ".dll";
     }
+    uint32_t virtual_to_real(uint32_t v) {
+        return v - aim_exe_v1_06_constants::code_base + 0x1000;
+    }
+    void patch(uint8_t *p, uint32_t off, const byte_array &from, const byte_array &to) {
+        if (from.size() != to.size()) {
+            throw std::runtime_error{"size mismatch"};
+        }
+        if (memcmp(p + off, to.data(), to.size()) == 0) {
+            return; // ok, already patched
+        }
+        ::memcpy(p + off, to.data(), to.size());
+    }
     void prepare_injections() {
-#ifndef NDEBUG
-        enable_free_camera();
-#endif
         create_backup_exe_file();
 #ifdef NDEBUG
         make_injected_dll();
@@ -383,51 +479,30 @@ private:
         uint32_t our_data = aim_exe_v1_06_constants::our_code_start_virtual;
 
         auto ptr = f.p + aim_exe_v1_06_constants::trampoline_target_real;
-#ifdef NDEBUG
-        auto dllnamelen = get_sw_dll_name().size() + 1;
-        strcpy((char *)ptr, get_sw_dll_name().c_str());
-#else
-        auto dllname = "h:\\Games\\AIM\\1\\.sw\\out\\d\\aim_fixes-0.0.1.dll"s;
-        auto dllnamelen = dllname.size() + 1;
-        strcpy((char *)ptr, dllname.c_str());
-#endif
-        ptr += dllnamelen;
+
+        auto strcpy = [&](const std::string &s) {
+            ::strcpy((char *)ptr, s.c_str());
+            ptr += s.size() + 1;
+            our_data += s.size() + 1;
+        };
+
         auto push_dll_name = make_insn_with_address("68"_bin, our_data); // push
-        our_data += 0x20;
-        strcpy((char *)ptr, "dispatcher");
-        auto dispatcher_func_name = make_insn_with_address("68"_bin, our_data); // push
-        ptr += 0x20;
-        our_data += 0x20;
+#ifdef NDEBUG
+        strcpy(get_sw_dll_name());
+#else
+        strcpy("h:\\Games\\AIM\\1\\.sw\\out\\d\\aim_fixes-0.0.1.dll"s);
+#endif
         const auto jumppad = "68 30 B8 51 00"_bin; // push    offset SEH_425100
         uint32_t jump_offset = ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size() * 2;
-        memreplace(f.p, f.sz, jumppad, make_insn_with_address("e9"_bin, jump_offset));
+        patch(f.p, virtual_to_real(0x00425105), jumppad, make_insn_with_address("e9"_bin, jump_offset));
         memcpy(ptr, jumppad); // put our removed insn
         memcpy(ptr, R"(
 60                      ; pusha
 )"_bin);
         memcpy(ptr, push_dll_name);
         memcpy(ptr, R"(
-8B 3D D8 10 52 00       ;  mov     edi, ds:LoadLibraryA - not working ; but do not remove, it does not work without it
-;bf 30 0f 91 75          ;  mov    edi, 0x75910f30 - load direct adress
-; edi has wrong address after prev. insn, so we fix it manually
-;81 EF 00 BD 00 00       ;  sub     edi, 0BD00h
-)"_bin);
-        memcpy(ptr, R"(
+8B 3D D8 10 52 00       ; mov     edi, ds:LoadLibraryA
 FF D7                   ; call    edi
-)"_bin);
-        memcpy(ptr, dispatcher_func_name);
-        // get proc addr
-        memcpy(ptr, R"(
-8B 3D D4 10 52 00       ;  mov     edi, ds:GetProcAddr - not working ; but do not remove, it does not work without it
-;bf 2C 0f 91 75          ;  mov    edi, 0x75910f30 - load direct adress
-; edi has wrong address after prev. insn, so we fix it manually
-;81 EF FC BC 00 00       ;  sub     edi, 0BC00h
-50                      ; push eax
-)"_bin);
-        memcpy(ptr, R"(
-FF D7                   ; call    edi
-)"_bin);
-        memcpy(ptr, R"(
 61                      ; popa
 )"_bin);
         memcpy(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size())));
@@ -461,8 +536,13 @@ FF D7                   ; call    edi
         }
         case file_type::mmo: {
             auto p = get_data_dir() / "maps2.pak";
-            if (fs::exists(p)) {
-                unpak(p);
+            if (fs::exists(p) && (false
+                // it contains only these
+                || fn == "location3.mmo"
+                || fn == "location4.mmo"
+                || fn == "location5.mmo"
+                )) {
+                unpak(p, fn);
                 p = make_unpak_dir(p);
                 if (!fs::exists(p / fn)) {
                     p = p / fn.filename();
@@ -470,11 +550,19 @@ FF D7                   ; call    edi
                     p /= fn;
                 }
                 if (fs::exists(p)) {
-                    return p;
+                    auto dst = get_mod_dir() / p.filename();
+                    if (!fs::exists(dst)) {
+                        fs::copy_file(p, dst);
+                    }
+                    return dst;
                 }
             }
             p = get_data_dir() / "maps.pak";
-            unpak(p);
+            unpak(p
+                // takes too long to extract specific files
+                // maybe speedup the unpaker
+                //, fn
+            );
             p = make_unpak_dir(p);
             if (!fs::exists(p / fn)) {
                 p = p / fn.filename();
@@ -484,7 +572,11 @@ FF D7                   ; call    edi
             if (!fs::exists(p)) {
                 throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
             }
-            return p;
+            auto dst = get_mod_dir() / p.filename();
+            if (!fs::exists(dst)) {
+                fs::copy_file(p, dst);
+            }
+            return dst;
         }
         default:
             SW_UNIMPLEMENTED;
@@ -551,11 +643,16 @@ FF D7                   ; call    edi
         p += ".txt";
         return p;
     }
-    void unpak(const path &p) const {
-        if (fs::exists(make_unpak_dir(p))) {
+    void unpak(const path &p, const path &fn = {}) const {
+        auto udir = make_unpak_dir(p);
+        if (fs::exists(udir) && (fn.empty() || fs::exists(udir / fn))) {
             return;
         }
-        run_p4_tool("unpaker", p);
+        if (fn.empty()) {
+            run_p4_tool("unpaker", p);
+        } else {
+            run_p4_tool("unpaker", p, fn);
+        }
     }
     void run_p4_tool(const std::string &tool, auto && ... args) const {
         run_sw("pub.lzwdgc.Polygon4.Tools."s + tool + "-master", args...);
@@ -627,15 +724,3 @@ FF D7                   ; call    edi
         return t;
     }
 };
-
-int main1(int argc, char *argv[]);
-int main(int argc, char *argv[]) {
-    try {
-        return main1(argc, argv);
-    } catch (std::exception &e) {
-        std::cerr << e.what() << "\n";
-    } catch (...) {
-        std::cerr << "unknown exception" << "\n";
-    }
-}
-#define main main1
