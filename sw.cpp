@@ -76,6 +76,9 @@ void build(Solution &s)
             ;
     }
 
+    auto &aim1_mod_activator = add_exe_with_common("aim1_mod_activator");
+    aim1_mod_activator += "pub.egorpugin.primitives.pack"_dep;
+
     auto &aim1_mod_maker = add_exe_with_common("aim1_mod_maker"); // actually a library
     aim1_mod_maker.Public += "pub.egorpugin.primitives.command"_dep;
 
