@@ -27,6 +27,10 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
 // patch note:
 // patch note: Installation
 // patch note: Unpack and drop all files near original aim.exe. Replace files if necessary.
+// patch note: Or you can use mod_activator.exe, put it near aim.exe and drop mod archive
+// patch note: onto mod_activator.exe in explorer.
+// patch note: Game loads .pak files from the latest to oldest, so active mod .pak file must have
+// patch note: the latest timestamp on it.
 // patch note:
 
 int main(int argc, char *argv[]) {

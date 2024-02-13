@@ -199,6 +199,9 @@ struct mod_maker {
         // we do not check for presence of 7z command here
         if (has_in_path("7z")) {
             auto ar = get_full_mod_name() + ".zip";
+            if (fs::exists(ar)) {
+                fs::remove(ar);
+            }
 
             primitives::Command c;
             c.working_directory = game_dir;
