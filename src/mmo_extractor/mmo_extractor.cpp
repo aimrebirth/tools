@@ -63,7 +63,7 @@ struct mmo_storage
     std::vector<OrganizationBase> organizationBases;
     Prices prices;
 
-    uint32_t unk0 = 0;
+    uint32_t music_and_sounds_section_size = 0;
 
     void load(const buffer &b)
     {
@@ -72,7 +72,7 @@ struct mmo_storage
         if (b.eof()) // custom maps
             return;
         mapGoods.load(b);
-        READ(b, unk0);
+        READ(b, music_and_sounds_section_size);
         mapMusic.load(b);
         mapSounds.load(b);
         if (gameType == GameType::Aim2)
