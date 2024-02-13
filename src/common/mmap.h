@@ -24,6 +24,11 @@ struct stream {
         memcpy(p, (uint8_t*)&v, sizeof(v));
         p += sizeof(v);
     }
+    template <typename T>
+    void read(std::vector<T> &v) {
+        memcpy(v.data(), p, sizeof(T) * v.size());
+        p += sizeof(T) * v.size();
+    }
     void skip(size_t len) {
         p += len;
     }

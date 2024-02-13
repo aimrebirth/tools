@@ -86,6 +86,7 @@ struct db2 {
     tab *tab_{};
     ind *ind_{};
     dat *dat_{};
+    int codepage{1251};
 
     db2() = default;
     db2(const path &fn) : fn{fn} {
@@ -117,14 +118,14 @@ struct db2 {
         auto fields = tab_->fields();
         auto values = ind_->values();
 
-        auto calc_fields_size = [](this auto &&f, std::string_view field_name, auto &&n, auto &&v, auto &&...fields) {
+        auto calc_fields_size = [&](this auto &&f, std::string_view field_name, auto &&n, auto &&v, auto &&...fields) {
             if (field_name == n) {
                 if constexpr (std::same_as<std::decay_t<decltype(v)>, int>) {
                     return sizeof(db2::dat::field_value_base) + sizeof(int);
                 } else if constexpr (std::same_as<std::decay_t<decltype(v)>, float>) {
                     return sizeof(db2::dat::field_value_base) + sizeof(float);
                 } else {
-                    auto s = str2str(v, CP_UTF8, 1251);
+                    auto s = str2str(v, CP_UTF8, codepage);
                     return sizeof(db2::dat::field_value_base) + s.size() + 1;
                 }
             }
@@ -139,7 +140,7 @@ struct db2 {
                 return sizeof(db2::dat::field_value_base) + 1;
             }
         };
-        auto write_fields = [](this auto &&f, auto &&p, auto &&field, std::string_view field_name, auto &&n, auto &&v, auto &&...fields) {
+        auto write_fields = [&](this auto &&f, auto &&p, auto &&field, std::string_view field_name, auto &&n, auto &&v, auto &&...fields) {
             if (field_name == n) {
                 if constexpr (std::same_as<std::decay_t<decltype(v)>, int>) {
                     if (field.type != db2::field_type::integer) {
@@ -165,7 +166,7 @@ struct db2 {
                     if (field.type != db2::field_type::string) {
                         throw std::runtime_error{"field type mismatch"};
                     }
-                    auto s = str2str(v, CP_UTF8, 1251);
+                    auto s = str2str(v, CP_UTF8, codepage);
                     (*(db2::dat::field_value_base *)p).field_id = field.id;
                     (*(db2::dat::field_value_base *)p).size = s.size() + 1;
                     p += sizeof(db2::dat::field_value_base);
