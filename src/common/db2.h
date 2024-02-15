@@ -125,7 +125,7 @@ struct db2 {
                 } else if constexpr (std::same_as<std::decay_t<decltype(v)>, float>) {
                     return sizeof(db2::dat::field_value_base) + sizeof(float);
                 } else {
-                    auto s = str2str(v, CP_UTF8, codepage);
+                    auto s = utf8_to_dbstr(v);
                     return sizeof(db2::dat::field_value_base) + s.size() + 1;
                 }
             }
@@ -166,7 +166,7 @@ struct db2 {
                     if (field.type != db2::field_type::string) {
                         throw std::runtime_error{"field type mismatch"};
                     }
-                    auto s = str2str(v, CP_UTF8, codepage);
+                    auto s = utf8_to_dbstr(v);
                     (*(db2::dat::field_value_base *)p).field_id = field.id;
                     (*(db2::dat::field_value_base *)p).size = s.size() + 1;
                     p += sizeof(db2::dat::field_value_base);
@@ -231,5 +231,62 @@ struct db2 {
                 write_fields(p, f, fn, fields1...);
             }
         }
+    }
+    template <typename T>
+    void edit_value(std::string_view table, std::string_view value, std::string_view field, const T &field_value) {
+        auto tbl = tab_->tables();
+        auto fields = tab_->fields();
+        auto values = ind_->values();
+
+        auto table_db_cp = utf8_to_dbstr(table.data());
+        auto value_db_cp = utf8_to_dbstr(value.data());
+        auto field_db_cp = utf8_to_dbstr(field.data());
+
+        auto it = std::ranges::find_if(tbl, [&](auto &v) {
+            return table_db_cp == v.name;
+        });
+        if (it == tbl.end()) {
+            throw std::runtime_error{"no such table: "s + table_db_cp};
+        }
+        auto &t = *it;
+        auto itv = std::ranges::find_if(values, [&](auto &v) {
+            return v.table_id == t.id && value_db_cp == v.name;
+        });
+        if (itv == values.end()) {
+            throw std::runtime_error{"no such value: "s + value_db_cp};
+        }
+        auto itf = std::ranges::find_if(fields, [&](auto &v) {
+            return v.table_id == t.id && field_db_cp == v.name;
+        });
+        if (itf == fields.end()) {
+            throw std::runtime_error{"no such field: "s + field_db_cp};
+        }
+
+        auto p = fdat.p + itv->offset;
+        while (p < fdat.p + itv->offset + itv->size) {
+            auto &header = *(dat::field_value_base*)p;
+            p += sizeof(header);
+            if (header.field_id == itf->id) {
+                if constexpr (std::same_as<std::decay_t<decltype(field_value)>, int>) {
+                    *(int*)p = field_value;
+                } else if constexpr (std::same_as<std::decay_t<decltype(field_value)>, float>) {
+                    *(float *)p = field_value;
+                } else {
+                    auto s = utf8_to_dbstr(field_value);
+                    if (s.size() + 1 != header.size) {
+                        throw std::runtime_error{"not implemented yet"}; // maybe just assign new value into the end of db
+                    }
+                    memcpy(p, s.data(), s.size());
+                }
+                return;
+            }
+            p += header.size;
+        }
+        throw std::runtime_error{"no such field"};
+    }
+
+private:
+    std::string utf8_to_dbstr(const char *s) const {
+        return str2str(s, CP_UTF8, codepage);
     }
 };
