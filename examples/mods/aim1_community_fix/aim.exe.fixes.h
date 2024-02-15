@@ -27,12 +27,17 @@ enum aim1_fix : uint32_t {
     sell_correct_weapon = 0x004176BC,
     empty_light_weapon_message = 0x004067C4,
     empty_heavy_weapon_message = 0x0040688B,
+    can_leave_trade_window = 0x0040C20E,
 };
 uint32_t known_caller;
 auto player_ptr = (Player **)0x005B7B38;
 auto get_player_ptr() {
     auto player_ptr2 = (Player *)0x00678FEC;
     return player_ptr2;
+}
+auto get_model_manager() {
+    auto p = (CModelManager **)0x00677DF8;
+    return *p;
 }
 
 enum class glider_id : uint32_t {
@@ -129,13 +134,33 @@ bool is_special_glider(glider_id id) {
     return is_double_light_weapons_glider(id) || is_double_heavy_weapons_glider(id);
 }
 
-bool __stdcall can_buy_weapon(int selected_weapon_type, int *canbuy) {
+uint32_t fix_trade_actions_weapon_checks_ret = 0x00407308;
+bool __stdcall fix_buy_weapon(gun_desc *selected_weapon, int selected_weapon_id, bool *canbuy, int is_left_menu_click) {
+    if (is_left_menu_click) {
+        return false;
+    }
     if (is_special_glider()) {
-        if (selected_weapon_type == light && is_double_heavy_weapons_glider()) {
-            *(uint8_t*)canbuy = 0;
+        if (selected_weapon->type == light && is_double_heavy_weapons_glider()) {
+            *canbuy = false;
+            return true;
         }
-        if (selected_weapon_type == heavy && is_double_light_weapons_glider()) {
-            *(uint8_t *)canbuy = 0;
+        if (selected_weapon->type == heavy && is_double_light_weapons_glider()) {
+            *canbuy = false;
+            return true;
+        }
+
+        auto mm = get_model_manager();
+        if (mm->current_light_weap == -1 || mm->current_heavy_weap == -1) {
+            fix_trade_actions_weapon_checks_ret = 0x0040737E;
+            return true;
+        }
+        if (selected_weapon->type == heavy && mm->current_light_weap != -1 && selected_weapon_id == mm->current_heavy_weap) {
+            *canbuy = false;
+            return true;
+        }
+        if (selected_weapon->type == light && mm->current_heavy_weap != -1 && selected_weapon_id == mm->current_light_weap) {
+            *canbuy = false;
+            return true;
         }
         return true;
     }
@@ -155,14 +180,16 @@ __declspec(naked) void fix_trade_actions_weapon_checks() {
         mov edx, esp
         add edx, 123h
         lea edx, [edx]
-        push edx
 
-        push ebx
-        call can_buy_weapon
-        test al, 1
-        jz epi
+        push [ebp+0xC] ; is_left_menu_click
+        push edx ; can_buy
+        push edi ; selected_weapon_id
+        push esi ; gun_desc
+        call fix_buy_weapon
+        cmp al, 0
+        je epi
         popad
-        push 0x00407308
+        push fix_trade_actions_weapon_checks_ret
         ret
 
     epi:
@@ -239,11 +266,8 @@ __declspec(naked) void fix_put_weapon_into_the_right_slot_after_purchase() {
     }
 }
 
-bool __stdcall sell_light_weapon(int sold_weapon_type) {
-    if (is_special_glider()) {
-        return get_player_ptr()->glider_object->light_gun_id != -1;
-    }
-    return sold_weapon_type == 0;
+bool __stdcall sell_light_weapon(CMMScriptManager *mgr) {
+    return mgr->line_id_clicked == 0x9;
 }
 __declspec(naked) void fix_sell_correct_weapon() {
     __asm {
@@ -251,8 +275,7 @@ __declspec(naked) void fix_sell_correct_weapon() {
         popad
         pushad
 
-        push eax; purchased weapon type
-
+        push ebx
         call sell_light_weapon
         cmp al, 1
         jne heavy_exit
@@ -312,6 +335,56 @@ __declspec(naked) void fix_empty_heavy_weapon_message() {
     }
 }
 
+/* 114 */
+struct guns_with_count {
+    int count;
+    gun_desc *ptr;
+};
+auto guns_0 = (guns_with_count *)0x00677D00;
+using get_gun_desc_f = gun_desc *(__thiscall*)(guns_with_count *, int idx);
+auto get_gun_desc = (get_gun_desc_f)0x00404050;
+bool __stdcall fix_can_leave_trade_window1() {
+    uint32_t ret_fail = 0x0040C265;
+    if (is_special_glider()) {
+        if (get_player_ptr()->light_weapon_name.idx != -1) {
+            auto desc = get_gun_desc(guns_0, get_player_ptr()->light_weapon_name.idx);
+            if (desc->type == light && is_double_heavy_weapons_glider()) {
+                known_caller = ret_fail;
+                return true;
+            }
+        }
+        if (get_player_ptr()->heavy_weapon_name.idx != -1) {
+            auto desc = get_gun_desc(guns_0, get_player_ptr()->heavy_weapon_name.idx);
+            if (desc->type == heavy && is_double_light_weapons_glider()) {
+                known_caller = ret_fail;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+__declspec(naked) void fix_can_leave_trade_window() {
+    __asm {
+        ; restore values
+        popad
+        pushad
+
+        call fix_can_leave_trade_window1
+        cmp eax, 1
+        jne epi
+        popad
+        push known_caller
+        ret
+
+    epi:
+        popad
+        mov     bl, [ecx+18Ch]
+        ;mov     cl, [ecx+18Dh] ; if we want this here, increase jumppad to 12 bytes
+        push known_caller
+        ret
+    }
+}
+
 extern "C" __declspec(dllexport) __declspec(naked) void dispatcher() {
     __asm {
         pop known_caller
@@ -339,6 +412,9 @@ extern "C" __declspec(dllexport) __declspec(naked) void dispatcher() {
         break;
     case aim1_fix::empty_heavy_weapon_message:
         __asm jmp fix_empty_heavy_weapon_message
+        break;
+    case aim1_fix::can_leave_trade_window:
+        __asm jmp fix_can_leave_trade_window
         break;
     default:
         break;
