@@ -538,52 +538,44 @@ FF D7                   ; call    edi
             return p;
         }
         case file_type::mmo: {
-            auto p = get_data_dir() / "maps2.pak";
-            if (fs::exists(p) && (false
-                // it contains only these
-                || fn == "location3.mmo"
-                || fn == "location4.mmo"
-                || fn == "location5.mmo"
-                )) {
-                unpak(p, fn);
-                p = make_unpak_dir(p);
-                if (!fs::exists(p / fn)) {
-                    p = p / fn.filename();
-                } else {
-                    p /= fn;
+            auto p = find_file_in_paks(fn, "res3.pak", "maps2.pak", "maps.pak");
+            if (!fs::exists(p)) {
+                throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
                 }
-                if (fs::exists(p)) {
                     auto dst = get_mod_dir() / p.filename();
                     if (!fs::exists(dst)) {
                         fs::copy_file(p, dst);
                     }
                     return dst;
                 }
-            }
-            p = get_data_dir() / "maps.pak";
-            unpak(p
-                // takes too long to extract specific files
-                // maybe speedup the unpaker
-                //, fn
-            );
-            p = make_unpak_dir(p);
-            if (!fs::exists(p / fn)) {
-                p = p / fn.filename();
-            } else {
-                p /= fn;
-            }
-            if (!fs::exists(p)) {
-                throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
-            }
-            auto dst = get_mod_dir() / p.filename();
-            if (!fs::exists(dst)) {
-                fs::copy_file(p, dst);
-            }
-            return dst;
-        }
         default:
             SW_UNIMPLEMENTED;
+            }
+            }
+    path find_file_in_paks(path fn, auto &&... paks) const {
+        auto find_file = [&](const path &pak) {
+            auto p = get_data_dir() / pak;
+            if (!fs::exists(p)) {
+                return false;
+            }
+            auto up = make_unpak_dir(p);
+            if (!fs::exists(up)) {
+                unpak(p);
+            }
+            p = up;
+            if (!fs::exists(p / fn)) {
+                p = p / fn.filename();
+                if (!fs::exists(p)) {
+                    return false;
         }
+            } else {
+                p /= fn;
+        }
+            fn = p;
+            return true;
+        };
+        (find_file(paks) || ...);
+        return fn;
     }
     // from https://github.com/Solant/aim-patches
     void free_camera(uint8_t val) {
@@ -647,6 +639,9 @@ FF D7                   ; call    edi
         return p;
     }
     void unpak(const path &p, const path &fn = {}) const {
+        unpak1(p,{});
+    }
+    void unpak1(const path &p, const path &fn = {}) const {
         auto udir = make_unpak_dir(p);
         if (fs::exists(udir) && (fn.empty() || fs::exists(udir / fn))) {
             return;
