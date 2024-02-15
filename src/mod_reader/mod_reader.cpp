@@ -36,7 +36,7 @@ using namespace std;
 
 // options
 cl::opt<bool> all_formats("a", cl::desc("all formats"));
-cl::opt<bool> silent("s", cl::desc("silent"));
+cl::opt<bool> silent("silent", cl::desc("silent"));
 cl::opt<bool> printMaxPolygonBlock("m", cl::desc("print max polygon block"));
 
 void convert_model(const path &fn)
