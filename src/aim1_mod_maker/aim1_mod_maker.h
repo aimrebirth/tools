@@ -237,6 +237,12 @@ struct mod_maker {
     }
 
     template <typename T>
+    void patch_after_pattern(path fn, const std::string &pattern, uint32_t offset, T oldval, T val) {
+        fn = find_real_filename(fn);
+        files_to_pak.insert(fn);
+        patch_raw(fn, pattern, offset, oldval, val);
+    }
+    template <typename T>
     void patch(path fn, uint32_t offset, T val) {
         fn = find_real_filename(fn);
         files_to_pak.insert(fn);
@@ -334,6 +340,10 @@ struct mod_maker {
     void add_code_file_for_archive(const path &fn) {
         code_files_to_distribute.insert(path{loc.file_name()}.parent_path() / fn);
     }
+    void add_resource(path fn) {
+        fn = find_real_filename(fn);
+        files_to_pak.insert(fn);
+    }
 
 private:
     path get_hash_fn(path fn, const byte_array &data) const {
@@ -387,20 +397,23 @@ private:
         ::memcpy(ptr, data.data(), data.size());
         ptr += data.size();
     }
-    static auto memmem(auto ptr, auto sz, const byte_array &bytes) {
+    static auto memmem(auto ptr, auto sz, auto &&bytes) -> decltype(ptr) {
         sz -= bytes.size();
         for (int i = 0; i < sz; ++i) {
             if (memcmp(ptr + i, bytes.data(), bytes.size()) == 0) {
                 return ptr + i;
             }
         }
-        throw std::runtime_error{"not found"};
+        return nullptr;
     }
     static auto memreplace(auto base, auto sz, const byte_array &from, const byte_array &to) {
         if (from.size() != to.size()) {
             throw std::runtime_error{"size mismatch"};
         }
         auto ptr = memmem(base, sz, from);
+        if (!ptr) {
+            throw std::runtime_error{"oldmem not found"};
+        }
         byte_array old;
         old.resize(from.size());
         ::memcpy(old.data(), ptr, old.size());
@@ -517,6 +530,10 @@ FF D7                   ; call    edi
         if (fs::exists(fn)) {
             return fn;
         }
+        // free files
+        if (fs::exists(get_data_dir() / fn)) {
+            return get_data_dir() / fn;
+        }
         if (fn == aim_exe) {
             return game_dir / fn;
         }
@@ -541,17 +558,17 @@ FF D7                   ; call    edi
             auto p = find_file_in_paks(fn, "res3.pak", "maps2.pak", "maps.pak");
             if (!fs::exists(p)) {
                 throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
-                }
-                    auto dst = get_mod_dir() / p.filename();
-                    if (!fs::exists(dst)) {
-                        fs::copy_file(p, dst);
-                    }
-                    return dst;
-                }
+            }
+            auto dst = get_mod_dir() / p.filename();
+            if (!fs::exists(dst)) {
+                fs::copy_file(p, dst);
+            }
+            return dst;
+        }
         default:
             SW_UNIMPLEMENTED;
-            }
-            }
+        }
+    }
     path find_file_in_paks(path fn, auto &&... paks) const {
         auto find_file = [&](const path &pak) {
             auto p = get_data_dir() / pak;
@@ -567,10 +584,10 @@ FF D7                   ; call    edi
                 p = p / fn.filename();
                 if (!fs::exists(p)) {
                     return false;
-        }
+                }
             } else {
                 p /= fn;
-        }
+            }
             fn = p;
             return true;
         };
@@ -616,6 +633,17 @@ FF D7                   ; call    edi
             log("old value {} != expected {}", old, expected);
             return false;
         }
+    }
+    template <typename T>
+    bool patch_raw(path fn, const std::string &pattern, uint32_t offset, T expected, T val) const {
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto p = memmem(f.p, f.sz, pattern);
+        if (!p) {
+            throw std::runtime_error{"pattern not found"};
+        }
+        f.close();
+        log("patching {} offset 0x{:X} after pattern {} from {} to {}", fn.string(), offset, pattern, expected, val);
+        return patch_raw<T>(fn, p - f.p + offset, expected, val);
     }
     path get_mod_dir() const {
         return get_data_dir() / "mods" / get_full_mod_name();
