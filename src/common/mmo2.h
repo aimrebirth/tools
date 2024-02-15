@@ -18,7 +18,7 @@ struct mmo_storage2 {
         // in the other mech cargo
         uint32_t type;
         uint32_t n_mechs;
-        char org_ru[0x70];
+        char comment[0x70];
     };
     struct map_good {
         char name[0x20];
@@ -66,10 +66,10 @@ struct mmo_storage2 {
                 mech_group o = s;
 
                 switch (o.type) {
-                case 0:
+                case 0: // alive
                 case 1: {
-                    uint32_t unk0 = s; // road id?
-                    float unk1 = s;    // height?
+                    uint32_t sector_id = s; // road id? or sector id
+                    float height = s;    // height?
                 } break;
                 case 2: {
                     std::vector<uint32_t> t; // current path?
