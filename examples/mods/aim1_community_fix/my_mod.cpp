@@ -129,30 +129,30 @@ int main(int argc, char *argv[]) {
     // patch note: Database Changes
     // patch note: DB
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
-    mod.db.db().edit_value((const char *)u8"Глайдеры", "GL_S3_PS_FINDER2", "MODEL", "MOD_GL_S3_PS_FINDER2");
+    mod.db().edit_value(u8"Глайдеры", "GL_S3_PS_FINDER2", "MODEL", "MOD_GL_S3_PS_FINDER2");
     // patch note: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
-    mod.db.db().edit_value((const char *)u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS", 4.012578f);
+    mod.db().edit_value(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS", 4.012578f);
     // patch note: double gun for config CFG_NARGOON (double electro discharge) (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_NARGOON", "HEAVYGUN1", "GUN_ELECTRO_DISCHARGER");
+    mod.db().edit_value(u8"Конфигурации", "CFG_NARGOON", "HEAVYGUN1", "GUN_ELECTRO_DISCHARGER");
     // patch note: double gun for config CFG_NARGOON1 (double two-barreled atomic gun) (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_NARGOON1", "HEAVYGUN1", "GUN_DOUBLE_BARRELED_ATOMIC_GUN");
+    mod.db().edit_value(u8"Конфигурации", "CFG_NARGOON1", "HEAVYGUN1", "GUN_DOUBLE_BARRELED_ATOMIC_GUN");
     // patch note: double gun for config CFG_BASE_NARG - Nargoon (double two-barreled atomic gun) (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_BASE_NARG", "HEAVYGUN1", "GUN_DOUBLE_BARRELED_ATOMIC_GUN");
+    mod.db().edit_value(u8"Конфигурации", "CFG_BASE_NARG", "HEAVYGUN1", "GUN_DOUBLE_BARRELED_ATOMIC_GUN");
     // patch note: double gun for config CFG_STNAR-97 - Nargoon (double GUN_INFRAATOMIC_PLASMA_GUN) (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_STNAR-97", "HEAVYGUN1", "GUN_INFRAATOMIC_PLASMA_GUN");
+    mod.db().edit_value(u8"Конфигурации", "CFG_STNAR-97", "HEAVYGUN1", "GUN_INFRAATOMIC_PLASMA_GUN");
     // patch note: double gun for config CFG_FINDER_1 (std.3): from GUN_MICROWAVE_OSCILLATOR (std.4) and GUN_CHAOS_GENERATOR (std.4) to double GUN_FOUR_BARRELED_IMP_GAZER (std.3) (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_FINDER_1", "LIGHTGUN1", "GUN_FOUR_BARRELED_IMP_GAZER");
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_FINDER_1", "HEAVYGUN1", "GUN_FOUR_BARRELED_IMP_GAZER");
+    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_1", "LIGHTGUN1", "GUN_FOUR_BARRELED_IMP_GAZER");
+    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_1", "HEAVYGUN1", "GUN_FOUR_BARRELED_IMP_GAZER");
     // patch note: double gun for config CFG_FINDER_2: from GUN_FOUR_BARRELED_IMP_GAZER (std.3) + GUN_POZITRON_EMITTER (std.4) to double GUN_TACHYON_HEATER (std.3) (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_FINDER_2", "LIGHTGUN1", "GUN_TACHYON_HEATER");
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_FINDER_2", "HEAVYGUN1", "GUN_TACHYON_HEATER");
+    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_2", "LIGHTGUN1", "GUN_TACHYON_HEATER");
+    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_2", "HEAVYGUN1", "GUN_TACHYON_HEATER");
     // patch note: double gun for config CFG_EYEDSTONE_1: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_EYEDSTONE_1", "LIGHTGUN1", "GUN_FAST_ELECTROMAGNETIC_BEAM");
+    mod.db().edit_value(u8"Конфигурации", "CFG_EYEDSTONE_1", "LIGHTGUN1", "GUN_FAST_ELECTROMAGNETIC_BEAM");
     // patch note: double gun for config CFG_EYEDSTONE_2: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
-    mod.db.db().edit_value((const char *)u8"Конфигурации", "CFG_EYEDSTONE_2", "LIGHTGUN1", "GUN_FAST_ELECTROMAGNETIC_BEAM");
+    mod.db().edit_value(u8"Конфигурации", "CFG_EYEDSTONE_2", "LIGHTGUN1", "GUN_FAST_ELECTROMAGNETIC_BEAM");
     // patch note: INFORMATION
     // patch note: add name for SINIGR armor, it was unnamed before (lz)
-    mod.db.quest().add_value("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME", (const char *)u8"Особая нуль-броня");
+    mod.quest().add_value("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME", u8"Особая нуль-броня");
     // patch note:
 
     // patch note: Game Changes

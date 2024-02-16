@@ -83,27 +83,6 @@ struct mod_maker {
         script,
         sound,
     };
-    struct {
-        mod_maker &m;
-        db2 db_;
-        db2 quest_;
-
-        db2 &db() {
-            add_files("db");
-            return db_;
-        }
-        db2 &quest() {
-            add_files("quest");
-            return quest_;
-        }
-    private:
-        void add_files(const path &fn) {
-            auto base = path{"data"} / fn;
-            m.files_to_distribute.insert(path{base} += ".ind");
-            m.files_to_distribute.insert(path{base} += ".dat");
-            m.files_to_distribute.insert(path{base} += ".tab");
-        }
-    } db{*this};
 
     std::string name;
     std::string version;
@@ -112,6 +91,7 @@ struct mod_maker {
     std::set<path> files_to_distribute;
     std::set<path> code_files_to_distribute;
     std::source_location loc;
+    int db_codepage = 1251;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
         init(fs::current_path());
@@ -145,9 +125,6 @@ struct mod_maker {
         }
     }
     void apply() {
-        db.db_.close();
-        db.quest_.close();
-
         std::vector<std::string> files;
         for (auto &&p : files_to_pak) {
             if (p.filename() == aim_exe) {
@@ -345,7 +322,28 @@ struct mod_maker {
         files_to_pak.insert(fn);
     }
 
+    db2 db() {
+        return open_db("db");
+    }
+    db2 quest() {
+        return open_db("quest");
+    }
+
 private:
+    void make_bak_file(const path &fn) {
+        auto backup = path{fn} += ".bak";
+        if (!fs::exists(backup)) {
+            fs::copy_file(fn, backup);
+        }
+    }
+    auto open_db(auto &&name) {
+        auto d = db2{get_data_dir() / name, db_codepage};
+        for (auto &&f : d.open().get_files()) {
+            make_bak_file(f);
+            files_to_distribute.insert(f);
+        }
+        return d;
+    }
     path get_hash_fn(path fn, const byte_array &data) const {
         return get_mod_dir() / std::format("{:0X}.hash", get_insert_hash(fn, data));
     }
@@ -367,8 +365,6 @@ private:
         detect_game_dir(dir);
         fs::create_directories(get_mod_dir());
         code_files_to_distribute.insert(loc.file_name());
-        db.db_.open(get_data_dir() / "db", primitives::templates2::mmap_file<uint8_t>::rw{});
-        db.quest_.open(get_data_dir() / "quest", primitives::templates2::mmap_file<uint8_t>::rw{});
         detect_tools();
         prepare_injections();
 #ifndef NDEBUG
@@ -605,10 +601,7 @@ FF D7                   ; call    edi
     }
     void create_backup_exe_file() {
         auto fn = find_real_filename(aim_exe);
-        auto backup = path{fn} += ".orig";
-        if (!fs::exists(backup)) {
-            fs::copy_file(fn, backup);
-        }
+        make_bak_file(fn);
     }
     template <typename T>
     void patch_raw(path fn, uint32_t offset, T val) const {
