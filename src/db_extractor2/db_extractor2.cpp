@@ -36,9 +36,30 @@ int main(int argc, char *argv[])
     cl::ParseCommandLineOptions(argc, argv);
 
     db2 db{db_fn};
-    auto tbl = db.tab_->tables();
-    auto fields = db.tab_->fields();
-    auto values = db.ind_->values();
+    auto f = db.open();
+
+    auto tbl2 = f.find_table(u8"Глайдеры");
+    auto valuexxx = tbl2.find_value("GL_S3_PS_FINDER2");
+    auto valuexxx2 = tbl2.find_value("GL_TEST_XXX");
+    valuexxx2.set_field("NAME", "X");
+    valuexxx2.set_field("NAME", "X");
+    valuexxx2.set_field("NAME", "X");
+    valuexxx2.set_field("NAME", "X");
+    valuexxx2.set_field("NAME", "X");
+    valuexxx2.set_field("NA", "X");
+    valuexxx2.set_field("VW", 5);
+    valuexxx2.set_field("VW2", 5.3f);
+    valuexxx2.set_field("VW2", 6.3f);
+    valuexxx2.set_field("VW2", 6.3f);
+    valuexxx2.set_field("VW2", 6.3f);
+    valuexxx2.set_field("VW2", 6.3f);
+
+    f(u8"Глайдеры", "GL_S3_PS_FINDER2", "NAME") = "xx";
+    f(u8"Глайдеры", "GL_S3_PS_FINDER2", "VW2") = 4.3f;
+
+    auto tbl = f.tab_.data->tables();
+    auto fields = f.tab_.data->fields();
+    auto values = f.ind_.data->values();
 
     std::string spaceval(4, ' ');
     std::string spacefield(8, ' ');
@@ -46,8 +67,8 @@ int main(int argc, char *argv[])
         std::println("{}:", t.name);
         for (auto &&v : values | std::views::filter([&](auto &v){return v.table_id == t.id;})) {
             std::println("{}{}:", spaceval, v.name);
-            auto max = db.fdat.p + v.offset + v.size;
-            auto p = db.fdat.p + v.offset;
+            auto max = f.dat_.f.p + v.offset + v.size;
+            auto p = f.dat_.f.p + v.offset;
             while (p < max) {
                 auto vb = (db2::dat::field_value_base*)p;
                 p += sizeof(db2::dat::field_value_base);
