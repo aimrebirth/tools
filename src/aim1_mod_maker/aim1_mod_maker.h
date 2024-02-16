@@ -186,30 +186,12 @@ struct mod_maker {
             c.push_back("a");
             c.push_back(ar); // we use zip as more common
             for (auto &&f : files_to_distribute) {
-                c.push_back(f);
+                c.push_back(f.is_absolute() ? f.lexically_relative(game_dir) : f);
             }
             for (auto &&f : code_files_to_distribute) {
-                c.push_back(f);
+                c.push_back(f.is_absolute() ? f.lexically_relative(game_dir) : f);
             }
             run_command(c);
-
-            auto rename = [&](auto &&from, auto &&to) {
-                primitives::Command c;
-                c.working_directory = game_dir;
-                c.push_back("7z");
-                c.push_back("rn");
-                c.push_back(ar);
-                c.push_back(from);
-                c.push_back(to);
-                run_command(c);
-            };
-            for (auto &&f : code_files_to_distribute) {
-                if (f.filename() == path{loc.file_name()}.filename()) {
-                    rename(f.filename(), path{"data"} / "mods" / get_full_mod_name() / get_full_mod_name() += ".cpp");
-                } else {
-                    rename(f.filename(), path{"data"} / "mods" / get_full_mod_name() / f.filename());
-                }
-            }
         }
     }
 
@@ -314,8 +296,13 @@ struct mod_maker {
     ENABLE_DISABLE_FUNC(win_key, 0x00, 0x10)
 #undef ENABLE_DISABLE_FUNC
 
-    void add_code_file_for_archive(const path &fn) {
-        code_files_to_distribute.insert(path{loc.file_name()}.parent_path() / fn);
+    void add_code_file_for_archive(path fn) {
+        if (!fn.is_absolute()) {
+            fn = path{loc.file_name()}.parent_path() / fn.filename();
+        }
+        auto dst_fn = get_mod_dir() / fn.filename();
+        fs::copy_file(fn, dst_fn, fs::copy_options::overwrite_existing);
+        code_files_to_distribute.insert(dst_fn);
     }
     void add_resource(path fn) {
         fn = find_real_filename(fn);
@@ -330,16 +317,21 @@ struct mod_maker {
     }
 
 private:
-    void make_bak_file(const path &fn) {
+    path make_bak_file(const path &fn) {
         auto backup = path{fn} += ".bak";
         if (!fs::exists(backup)) {
             fs::copy_file(fn, backup);
         }
+        return backup;
     }
     auto open_db(auto &&name) {
         auto d = db2{get_data_dir() / name, db_codepage};
-        for (auto &&f : d.open().get_files()) {
-            make_bak_file(f);
+        auto files = d.open().get_files();
+        for (auto &&f : files) {
+            auto bak = make_bak_file(f);
+            if (fs::exists(bak)) {
+                fs::copy_file(bak, f, fs::copy_options::overwrite_existing);
+            }
             files_to_distribute.insert(f);
         }
         return d;
@@ -363,9 +355,17 @@ private:
     void init(const path &dir) {
         read_name();
         detect_game_dir(dir);
+#ifdef NDEBUG
+        if (fs::exists(get_mod_dir())) {
+            fs::remove_all(get_mod_dir());
+        }
+#endif
         fs::create_directories(get_mod_dir());
-        code_files_to_distribute.insert(loc.file_name());
+        auto src_fn = get_mod_dir() / get_full_mod_name() += ".cpp";
+        fs::copy_file(loc.file_name(), src_fn, fs::copy_options::overwrite_existing);
+        code_files_to_distribute.insert(src_fn);
         detect_tools();
+        create_backup_exe_file();
         prepare_injections();
 #ifndef NDEBUG
         enable_win_key();
@@ -482,7 +482,6 @@ private:
         ::memcpy(p + off, to.data(), to.size());
     }
     void prepare_injections() {
-        create_backup_exe_file();
 #ifdef NDEBUG
         make_injected_dll();
 #endif
@@ -592,16 +591,17 @@ FF D7                   ; call    edi
     }
     // from https://github.com/Solant/aim-patches
     void free_camera(uint8_t val) {
-        create_backup_exe_file();
         patch(aim_exe, 0x1F805, val);
     }
     void win_key(uint8_t val) {
-        create_backup_exe_file();
         patch(aim_exe, 0x4A40D, val);
     }
     void create_backup_exe_file() {
         auto fn = find_real_filename(aim_exe);
-        make_bak_file(fn);
+        auto bak = make_bak_file(fn);
+        if (fs::exists(bak)) {
+            fs::copy_file(bak, fn, fs::copy_options::overwrite_existing);
+        }
     }
     template <typename T>
     void patch_raw(path fn, uint32_t offset, T val) const {

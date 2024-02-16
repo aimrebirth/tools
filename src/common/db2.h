@@ -100,6 +100,14 @@ struct db2 {
     };
     // actual db
     struct files {
+        template <typename T, typename V>
+        struct setter {
+            T field;
+            V value;
+            void operator=(auto &&v) {
+                value.set_field(field, v);
+            }
+        };
         struct table {
             files &f;
             db2::tab::table t;
@@ -149,6 +157,17 @@ struct db2 {
                 }
                 return value{*this,*itv};
             }
+            auto operator()(auto &&name) {
+                return find_value(name);
+            }
+            auto operator()(auto &&vname, auto &&fname) {
+                auto value = find_value(vname);
+                if constexpr (std::is_convertible_v<decltype(fname), const char *>) {
+                    return setter<const char *, decltype(value)>{fname, value};
+                } else {
+                    return setter<std::string, decltype(value)>{fname, value};
+                }
+            }
         };
         struct value {
             table t;
@@ -166,6 +185,9 @@ struct db2 {
             void set_field(auto &&name, auto &&v) {
                 using T = std::decay_t<decltype(v)>;
                 auto f = t.find_field(name, field_type(v));
+                if (f.type != field_type(v)) {
+                    throw std::runtime_error{"field type mismatch: "s + t.f.db.utf8_to_dbstr(name)};
+                }
                 dat::field_value_base newfield{f.id};
                 if constexpr (std::same_as<std::decay_t<decltype(v)>, int> ||
                               std::same_as<std::decay_t<decltype(v)>, float>) {
@@ -215,13 +237,12 @@ struct db2 {
                 this->v.offset = t.f.dat_.f.sz;
                 memcpy(t.f.dat_.f.alloc_raw(t.f.dat_.f.sz + reallen), data.data(), reallen);
             }
-        };
-        template <typename T>
-        struct setter {
-            T field;
-            value value;
-            void operator=(auto &&v) {
-                value.set_field(field, v);
+            auto operator()(auto &&name) {
+                if constexpr (std::is_convertible_v<decltype(name), const char *>) {
+                    return setter<const char *, value>{name, *this};
+                } else {
+                    return setter<std::string, value>{name, *this};
+                }
             }
         };
 
@@ -258,187 +279,22 @@ struct db2 {
         }
 
         // [] not in msvc yet
+        auto operator()(auto &&tname) {
+            return find_table(tname);
+        }
         auto operator()(auto &&tname, auto &&vname, auto &&fname) {
             auto tbl = find_table(tname);
             auto value = tbl.find_value(vname);
             if constexpr (std::is_convertible_v<decltype(fname), const char *>) {
-                return setter<const char *>{fname, value};
+                return setter<const char *, decltype(value)>{fname, value};
             } else {
-                return setter<std::string>{fname, value};
+                return setter<std::string, decltype(value)>{fname, value};
             }
         }
     };
 
     auto open() {
         return files{*this,fn};
-    }
-    void add_value(auto &&table, auto &&value, auto && ... fields1) {
-        auto f = open();
-        auto tbl = f.tab_.data->tables();
-        auto fields = f.tab_.data->fields();
-        auto values = f.ind_.data->values();
-
-        auto table_db_cp = utf8_to_dbstr(table);
-        auto value_db_cp = utf8_to_dbstr(value);
-
-        auto calc_fields_size = [&](this auto &&f, auto &&field_name, auto &&n, auto &&v, auto &&...fields) {
-            if (field_name == n) {
-                if constexpr (std::same_as<std::decay_t<decltype(v)>, int>) {
-                    return sizeof(db2::dat::field_value_base) + sizeof(int);
-                } else if constexpr (std::same_as<std::decay_t<decltype(v)>, float>) {
-                    return sizeof(db2::dat::field_value_base) + sizeof(float);
-                } else {
-                    auto s = utf8_to_dbstr(v);
-                    return sizeof(db2::dat::field_value_base) + s.size() + 1;
-                }
-            }
-            if constexpr (sizeof...(fields)) {
-                return f(field_name, fields...);
-            }
-            if constexpr (std::same_as<std::decay_t<decltype(v)>, int>) {
-                return sizeof(db2::dat::field_value_base) + sizeof(int);
-            } else if constexpr (std::same_as<std::decay_t<decltype(v)>, float>) {
-                return sizeof(db2::dat::field_value_base) + sizeof(float);
-            } else {
-                return sizeof(db2::dat::field_value_base) + 1;
-            }
-        };
-        auto write_fields = [&](this auto &&f, auto &&p, auto &&field, auto &&field_name, auto &&n, auto &&v, auto &&...fields) {
-            if (field_name == n) {
-                if constexpr (std::same_as<std::decay_t<decltype(v)>, int>) {
-                    if (field.type != db2::field_type::integer) {
-                        throw std::runtime_error{"field type mismatch"};
-                    }
-                    (*(db2::dat::field_value_base*)p).field_id = field.id;
-                    (*(db2::dat::field_value_base*)p).size = sizeof(int);
-                    p += sizeof(db2::dat::field_value_base);
-                    *(int*)p = v;
-                    p += sizeof(int);
-                    return;
-                } else if constexpr (std::same_as<std::decay_t<decltype(v)>, float>) {
-                    if (field.type != db2::field_type::float_) {
-                        throw std::runtime_error{"field type mismatch"};
-                    }
-                    (*(db2::dat::field_value_base *)p).field_id = field.id;
-                    (*(db2::dat::field_value_base *)p).size = sizeof(float);
-                    p += sizeof(db2::dat::field_value_base);
-                    *(float *)p = v;
-                    p += sizeof(float);
-                    return;
-                } else {
-                    if (field.type != db2::field_type::string) {
-                        throw std::runtime_error{"field type mismatch"};
-                    }
-                    auto s = utf8_to_dbstr(v);
-                    (*(db2::dat::field_value_base *)p).field_id = field.id;
-                    (*(db2::dat::field_value_base *)p).size = s.size() + 1;
-                    p += sizeof(db2::dat::field_value_base);
-                    memcpy(p, s.data(), s.size());
-                    p[s.size()] = 0;
-                    p += s.size() + 1;
-                    return;
-                }
-            }
-            if constexpr (sizeof...(fields)) {
-                return f(p, field, field_name, fields...);
-            }
-            if constexpr (std::same_as<std::decay_t<decltype(v)>, int>) {
-                (*(db2::dat::field_value_base *)p).field_id = field.id;
-                (*(db2::dat::field_value_base *)p).size = 0;
-                p += sizeof(db2::dat::field_value_base);
-                return;
-            } else if constexpr (std::same_as<std::decay_t<decltype(v)>, float>) {
-                (*(db2::dat::field_value_base *)p).field_id = field.id;
-                (*(db2::dat::field_value_base *)p).size = 0;
-                p += sizeof(db2::dat::field_value_base);
-                return;
-            } else {
-                (*(db2::dat::field_value_base *)p).field_id = field.id;
-                (*(db2::dat::field_value_base *)p).size = 1;
-                p += sizeof(db2::dat::field_value_base);
-                p[1] = 0;
-                p += 1;
-                return;
-            }
-        };
-
-        auto it = std::ranges::find_if(tbl, [&](auto &v){return v.name == table_db_cp;});
-        if (it == tbl.end()) {
-            throw std::runtime_error{"no such table: "s + table_db_cp};
-        }
-        auto &t = *it;
-        auto itv = std::ranges::find_if(values, [&](auto &v){return v.table_id == t.id && value_db_cp == v.name;});
-        if (itv == values.end()) {
-            db2::ind::value i{};
-            i.table_id = t.id;
-            memcpy(i.name, value_db_cp.data(), value_db_cp.size());
-            i.offset = f.dat_.f.sz;
-            for (auto &&f : fields) {
-                if (f.table_id != t.id) {
-                    continue;
-                }
-                std::string_view fn = f.name;
-                i.size += calc_fields_size(fn, fields1...);
-            }
-
-            ++f.ind_.data->n_values;
-            auto p = f.ind_.f.alloc_raw(f.ind_.f.sz + sizeof(i));
-            memcpy(p, &i, sizeof(i));
-
-            p = f.dat_.f.alloc_raw(f.dat_.f.sz + i.size);
-            for (auto &&f : fields) {
-                if (f.table_id != t.id) {
-                    continue;
-                }
-                std::string_view fn = f.name;
-                write_fields(p, f, fn, fields1...);
-            }
-        }
-    }
-    template <typename T>
-    void edit_value(auto &&table, auto &&value, auto &&field, const T &field_value) {
-        auto f = open();
-        auto fields = f.tab_.data->fields();
-        auto values = f.ind_.data->values();
-
-        auto value_db_cp = utf8_to_dbstr(value);
-        auto field_db_cp = utf8_to_dbstr(field);
-
-        /*auto t = f.find_table(table);
-        auto itv = std::ranges::find_if(values, [&](auto &v) {
-            return v.table_id == t.id && value_db_cp == v.name;
-        });
-        if (itv == values.end()) {
-            throw std::runtime_error{"no such value: "s + value_db_cp};
-        }
-        auto itf = std::ranges::find_if(fields, [&](auto &v) {
-            return v.table_id == t.id && field_db_cp == v.name;
-        });
-        if (itf == fields.end()) {
-            throw std::runtime_error{"no such field: "s + field_db_cp};
-        }
-
-        auto p = f.dat_.f.p + itv->offset;
-        while (p < f.dat_.f.p + itv->offset + itv->size) {
-            auto &header = *(dat::field_value_base*)p;
-            p += sizeof(header);
-            if (header.field_id == itf->id) {
-                if constexpr (std::same_as<std::decay_t<decltype(field_value)>, int>) {
-                    *(int*)p = field_value;
-                } else if constexpr (std::same_as<std::decay_t<decltype(field_value)>, float>) {
-                    *(float *)p = field_value;
-                } else {
-                    auto s = utf8_to_dbstr(field_value);
-                    if (s.size() + 1 != header.size) {
-                        throw std::runtime_error{"not implemented yet"}; // maybe just assign new value into the end of db
-                    }
-                    memcpy(p, s.data(), s.size());
-                }
-                return;
-            }
-            p += header.size;
-        }*/
-        throw std::runtime_error{"no such field"};
     }
 
 private:

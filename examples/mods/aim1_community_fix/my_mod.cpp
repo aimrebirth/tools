@@ -87,14 +87,14 @@ int main(int argc, char *argv[]) {
     mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", R"(
 47 4c 5f 53 33 5f 50 53 5f 46 49 4e 44 45 52 32
 00 d2 e2 77 42 04 06 00 35 01 00 00 76 0c 01 30
-00 5f 4c 36 5f 49 4b 5f 46 32 2e 43 4f 4d 50 4c
+54 5f 4c 36 5f 49 4b 5f 46 32 2e 43 4f 4d 50 4c
 45 54 45 00 00 00 00 00 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00 00 00 00 00
-)"_bin); // 54
+)"_bin);
     //mod.add_resource("MOD_GL_S3_PS_FINDER1");
     //mod.add_resource("TEX_GL_S3_PS_FINDER1_MASK.TM");
     // patch note: add Finder-2 model and textures from aim2 game (lz)
@@ -128,31 +128,36 @@ int main(int argc, char *argv[]) {
 
     // patch note: Database Changes
     // patch note: DB
+    auto db = mod.db().open();
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
-    mod.db().edit_value(u8"Глайдеры", "GL_S3_PS_FINDER2", "MODEL", "MOD_GL_S3_PS_FINDER2");
+    db(u8"Глайдеры", "GL_S3_PS_FINDER2", "MODEL") = "MOD_GL_S3_PS_FINDER2";
     // patch note: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
-    mod.db().edit_value(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS", 4.012578f);
+    db(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS") = 4.768386f; // from finder1 - 4.012578f;
     // patch note: double gun for config CFG_NARGOON (double electro discharge) (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_NARGOON", "HEAVYGUN1", "GUN_ELECTRO_DISCHARGER");
+    auto tblcfg = db(u8"Конфигурации");
+    tblcfg("CFG_NARGOON", "HEAVYGUN1") = "GUN_ELECTRO_DISCHARGER";
     // patch note: double gun for config CFG_NARGOON1 (double two-barreled atomic gun) (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_NARGOON1", "HEAVYGUN1", "GUN_DOUBLE_BARRELED_ATOMIC_GUN");
+    tblcfg("CFG_NARGOON1", "HEAVYGUN1") = "GUN_DOUBLE_BARRELED_ATOMIC_GUN";
     // patch note: double gun for config CFG_BASE_NARG - Nargoon (double two-barreled atomic gun) (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_BASE_NARG", "HEAVYGUN1", "GUN_DOUBLE_BARRELED_ATOMIC_GUN");
+    tblcfg("CFG_BASE_NARG", "HEAVYGUN1") = "GUN_DOUBLE_BARRELED_ATOMIC_GUN";
     // patch note: double gun for config CFG_STNAR-97 - Nargoon (double GUN_INFRAATOMIC_PLASMA_GUN) (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_STNAR-97", "HEAVYGUN1", "GUN_INFRAATOMIC_PLASMA_GUN");
+    tblcfg("CFG_STNAR-97", "HEAVYGUN1") = "GUN_INFRAATOMIC_PLASMA_GUN";
     // patch note: double gun for config CFG_FINDER_1 (std.3): from GUN_MICROWAVE_OSCILLATOR (std.4) and GUN_CHAOS_GENERATOR (std.4) to double GUN_FOUR_BARRELED_IMP_GAZER (std.3) (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_1", "LIGHTGUN1", "GUN_FOUR_BARRELED_IMP_GAZER");
-    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_1", "HEAVYGUN1", "GUN_FOUR_BARRELED_IMP_GAZER");
+    auto finder1 = tblcfg("CFG_FINDER_1");
+    finder1("LIGHTGUN1") = "GUN_FOUR_BARRELED_IMP_GAZER";
+    finder1("HEAVYGUN1") = "GUN_FOUR_BARRELED_IMP_GAZER";
     // patch note: double gun for config CFG_FINDER_2: from GUN_FOUR_BARRELED_IMP_GAZER (std.3) + GUN_POZITRON_EMITTER (std.4) to double GUN_TACHYON_HEATER (std.3) (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_2", "LIGHTGUN1", "GUN_TACHYON_HEATER");
-    mod.db().edit_value(u8"Конфигурации", "CFG_FINDER_2", "HEAVYGUN1", "GUN_TACHYON_HEATER");
+    auto finder2 = tblcfg("CFG_FINDER_2");
+    finder2("LIGHTGUN1") = "GUN_TACHYON_HEATER";
+    finder2("HEAVYGUN1") = "GUN_TACHYON_HEATER";
     // patch note: double gun for config CFG_EYEDSTONE_1: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_EYEDSTONE_1", "LIGHTGUN1", "GUN_FAST_ELECTROMAGNETIC_BEAM");
+    tblcfg("CFG_EYEDSTONE_1", "LIGHTGUN1") = "GUN_FAST_ELECTROMAGNETIC_BEAM";
     // patch note: double gun for config CFG_EYEDSTONE_2: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
-    mod.db().edit_value(u8"Конфигурации", "CFG_EYEDSTONE_2", "LIGHTGUN1", "GUN_FAST_ELECTROMAGNETIC_BEAM");
+    tblcfg("CFG_EYEDSTONE_2", "LIGHTGUN1") = "GUN_FAST_ELECTROMAGNETIC_BEAM";
     // patch note: INFORMATION
+    auto quest = mod.quest().open();
     // patch note: add name for SINIGR armor, it was unnamed before (lz)
-    mod.quest().add_value("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME", u8"Особая нуль-броня");
+    quest("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME") = u8"Особая нуль-броня";
     // patch note:
 
     // patch note: Game Changes
@@ -174,6 +179,11 @@ int main(int argc, char *argv[]) {
     // patch note dev: Developer Mode!!!
     // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
     mod.enable_free_camera();
+    // patch note dev: make initial reactor (EQP_GLUON_REACTOR_S1) and drive (EQP_ION_DRIVE_S1) more powerful
+    db(u8"Оборудование", "EQP_GLUON_REACTOR_S1", "VALUE1") = 9'000'000.f;
+    db(u8"Оборудование", "EQP_ION_DRIVE_S1", "VALUE1") = 4158000.f;
+    // patch note dev: make EQP_VACUUM_DRIVE_S4 more powerful
+    db(u8"Оборудование", "EQP_VACUUM_DRIVE_S4", "VALUE1") = 4158000.f;
     // patch note dev: start money, rating, glider and sector access
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
     _ADDBALANCE(300 )
@@ -223,6 +233,8 @@ int main(int argc, char *argv[]) {
     // patch note: lz
     // patch note:
     // patch note: Have fun!
+    db.~files();
+    quest.~files();
     mod.apply();
 
     // patch note:
