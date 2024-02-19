@@ -15,4 +15,4 @@ jobs:
     - uses: egorpugin/sw-action@master
 
     - name: build
-      run: ./sw -static -shared -config d,r build
+      run: ./sw build
