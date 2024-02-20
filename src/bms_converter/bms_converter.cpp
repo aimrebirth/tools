@@ -39,102 +39,119 @@ struct bms {
         uint32_t unk;
     };
     struct animation_header {
-        uint32_t unk1;
-        uint32_t n_unk1;
-        uint32_t n_unk2;
+        uint32_t unk1; // type?
+        uint32_t n_anim1;
+        uint32_t n_anim2;
     };
-    struct v {
-        float x,y,z;
-    };
-    struct vn {
-        float x, y, z;
-    };
-    struct vt {
+    struct vec2 {
         float x, y;
+        void operator+=(const vec2 &v) {
+            x += v.x;
+            y += v.y;
+        }
     };
+    struct vec3 : vec2 {
+        float z;
+        void operator+=(const vec3 &v) {
+            vec2::operator+=(v);
+            z += v.z;
+        }
+    };
+    struct v : vec3 {};
+    struct vn : vec3 {};
+    struct vt : vec2 {};
     struct vertex {
         v coords;
         vn normal;
         vt tex;
     };
-    struct f {
-        uint16_t x, y;
-    };
+    using vertex_id = uint16_t;
     struct animation_data {
-        uint16_t vertex_id;
+        vertex_id id;
         v coords;
         vn normal;
     };
     using charC = char[0xC];
+    using animation_name = charC;
+
+    static void convert_model(const path &fn) {
+        primitives::templates2::mmap_file<uint8_t> f{fn};
+        stream s{f};
+
+        header h = s;
+        auto animation_names = s.span<animation_name>(h.n_animations);
+        uint32_t unk1 = s;
+        auto animations = s.span<animation_header>(h.n_animations);
+        uint32_t n_vertices = s;
+        uint32_t n_faces = s;
+        auto vertices_read = s.span<vertex>(n_vertices);
+        auto faces = s.span<vertex_id>(n_faces);
+
+        std::vector<vertex> vertices(vertices_read.begin(), vertices_read.end());
+        auto print = [&faces](const path &fn, auto &&vertices) {
+            std::ofstream ofile{path{fn} += ".obj"};
+            for (auto &&v : vertices) {
+                ofile << std::format("v {} {} {}\n", v.coords.x, v.coords.y, v.coords.z);
+            }
+            ofile << "\n";
+            for (auto &&v : vertices) {
+                ofile << std::format("vt {} {}\n", v.tex.x, v.tex.y);
+            }
+            ofile << "\n";
+            for (auto &&v : vertices) {
+                ofile << std::format("vn {} {} {}\n", v.normal.x, v.normal.y, v.normal.z);
+            }
+            ofile << "\n";
+            // ofile << "g obj\n";
+            // ofile << "s 1\n";
+            for (auto &&f : std::views::chunk(faces, 3)) {
+                ofile << std::format("f {}/{}/{} {}/{}/{} {}/{}/{}\n"
+                    , f[0] + 1, f[0] + 1, f[0] + 1
+                    , f[1] + 1, f[1] + 1, f[1] + 1
+                    , f[2] + 1, f[2] + 1, f[2] + 1
+                );
+            }
+            // ofile << "g\n";
+        };
+        auto apply_animation = [&](auto &&anim) {
+            for (auto &&a : anim) {
+                auto &v = vertices[a.id];
+                v.coords += a.coords;
+                v.normal += a.normal;
+            }
+        };
+
+        print(path{fn}, vertices);
+        for (int id = 0; auto &&d : animations) {
+            vertices.assign(vertices_read.begin(), vertices_read.end());
+            auto anim1 = s.span<animation_data>(d.n_anim1);
+            apply_animation(anim1);
+            print(path{fn} += std::format(".anim.{}.1", animation_names[id]), vertices);
+
+            vertices.assign(vertices_read.begin(), vertices_read.end());
+            auto anim2 = s.span<animation_data>(d.n_anim2);
+            apply_animation(anim2);
+            print(path{fn} += std::format(".anim.{}.2", animation_names[id]), vertices);
+
+            vertices.assign(vertices_read.begin(), vertices_read.end());
+            apply_animation(anim1);
+            apply_animation(anim2);
+            print(path{fn} += std::format(".anim.{}.merged", animation_names[id]), vertices);
+
+            ++id;
+        }
+    }
 };
 #pragma pack(pop)
 
-void convert_model(const path &fn) {
-    primitives::templates2::mmap_file<uint8_t> f{fn};
-    stream s{f};
-    bms::header h = s;
-    auto names = s.span<bms::charC>(h.n_animations);
-    uint32_t unk1 = s;
-    auto animations = s.span<bms::animation_header>(h.n_animations);
-    uint32_t n_vertices = s;
-    uint32_t n_faces = s;
-    auto vertices_read = s.span<bms::vertex>(n_vertices);
-    std::vector<bms::vertex> vertices(vertices_read.begin(), vertices_read.end());
-    auto vfs = s.span<uint16_t>(n_faces);
-
-    auto print = [&vfs](const path &fn, auto &&vertices) {
-        std::ofstream ofile{path{fn} += ".obj"};
-        for (auto &&v : vertices) {
-            ofile << std::format("v {} {} {}\n", v.coords.x, v.coords.y, v.coords.z);
-        }
-        ofile << "\n";
-        for (auto &&v : vertices) {
-            ofile << std::format("vt {} {}\n", v.tex.x, v.tex.y);
-        }
-        ofile << "\n";
-        for (auto &&v : vertices) {
-            ofile << std::format("vn {} {} {}\n", v.normal.x, v.normal.y, v.normal.z);
-        }
-        ofile << "\n";
-        // ofile << "g obj\n";
-        // ofile << "s 1\n";
-        for (auto &&f : std::views::chunk(vfs, 3)) {
-            // ofile << std::format("f {} {} {}\n", f[0] + 1, f[1] + 1, f[2] + 1);
-            ofile << std::format("f {}/{}/{} {}/{}/{} {}/{}/{}\n", f[0] + 1, f[0] + 1, f[0] + 1, f[1] + 1, f[1] + 1,
-                                 f[1] + 1, f[2] + 1, f[2] + 1, f[2] + 1);
-        }
-        // ofile << "g\n";
-    };
-    auto apply_animation = [&](auto &&anim) {
-        //vertices.assign(vertices_read.begin(), vertices_read.end());
-        for (auto &&a : anim) {
-            memcpy(&vertices[a.vertex_id], &a.coords, sizeof(a) - sizeof(a.vertex_id));
-        }
-    };
-
-    print(path{fn}, vertices);
-    for (int id = 0; auto &&d : animations) {
-        vertices.assign(vertices_read.begin(), vertices_read.end());
-
-        auto anim1 = s.span<bms::animation_data>(d.n_unk1);
-        apply_animation(anim1);
-        print(path{fn} += std::format(".{}.1", names[id]), vertices);
-
-        auto anim2 = s.span<bms::animation_data>(d.n_unk2);
-        apply_animation(anim2);
-        print(path{fn} += std::format(".{}.2", names[id]), vertices);
-        ++id;
-    }
-}
-
 int main(int argc, char *argv[])
 {
-    cl::opt<path> p(cl::Positional, cl::desc("<.bms file>"), cl::Required);
+    cl::opt<path> p(cl::Positional, cl::desc("<.bms file or dir>"), cl::Required);
 
     cl::ParseCommandLineOptions(argc, argv);
 
     if (fs::is_regular_file(p)) {
-        convert_model(p);
+        bms::convert_model(p);
     } else if (fs::is_directory(p)) {
         auto files = enumerate_files(p, false);
         for (auto &f : FilesSorted(files.begin(), files.end()))
@@ -145,7 +162,7 @@ int main(int argc, char *argv[])
             std::cout << "processing: " << f << "\n";
             try
             {
-                convert_model(f);
+                bms::convert_model(f);
             }
             catch (std::exception &e)
             {
