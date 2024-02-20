@@ -35,21 +35,13 @@ struct bms {
     struct header {
         uint32_t magic;
         uint32_t version;
-        uint32_t n_blocks; // anims prob
+        uint32_t n_animations;
         uint32_t unk;
     };
-    struct unk {
+    struct animation_header {
         uint32_t unk1;
-        uint32_t n_unk;
-        uint32_t unk2;
-    };
-    struct desc {
-        uint32_t unk0;
-        uint32_t unk1;
-        uint32_t n_vertices;
-        uint32_t unk2;
-        uint32_t n_faces;
-        uint32_t n_unk;
+        uint32_t n_unk1;
+        uint32_t n_unk2;
     };
     struct v {
         float x,y,z;
@@ -60,21 +52,20 @@ struct bms {
     struct vt {
         float x, y;
     };
+    struct vertex {
+        v coords;
+        vn normal;
+        vt tex;
+    };
     struct f {
-        uint16_t x,y;
+        uint16_t x, y;
     };
-    struct unk2 {
-        uint16_t id;
-        uint32_t unk1;
-        float unk2[2];
-        uint32_t unk3;
-        float unk4[2];
+    struct animation_data {
+        uint16_t vertex_id;
+        v coords;
+        vn normal;
     };
-
     using charC = char[0xC];
-
-    int n_blocks;
-    char header_[0x40];
 };
 #pragma pack(pop)
 
@@ -82,49 +73,63 @@ void convert_model(const path &fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn};
     stream s{f};
     bms::header h = s;
-    auto names = s.span<bms::charC>(h.n_blocks);
+    auto names = s.span<bms::charC>(h.n_animations);
     uint32_t unk1 = s;
-    auto unk_descs = s.span<bms::unk>(h.n_blocks);
+    auto animations = s.span<bms::animation_header>(h.n_animations);
     uint32_t n_vertices = s;
     uint32_t n_faces = s;
-    //bms::desc d = s;
-    auto vcs = s.span<bms::v>(n_vertices);
-    auto vns = s.span<bms::vn>(n_vertices);
-    auto vts = s.span<bms::vt>(n_vertices);
+    auto vertices_read = s.span<bms::vertex>(n_vertices);
+    std::vector<bms::vertex> vertices(vertices_read.begin(), vertices_read.end());
     auto vfs = s.span<uint16_t>(n_faces);
-    for (auto &&d : unk_descs) {
-        auto unk2 = s.span<bms::unk2>(d.n_unk);
-        auto unk3 = s.span<bms::unk2>(d.unk2);
-    }
 
-    std::ofstream ofile{path{fn} += ".obj"};
-    for (auto &&v : vcs) {
-        ofile << std::format("v {} {} {}\n", v.x, v.y, v.z);
+    auto print = [&vfs](const path &fn, auto &&vertices) {
+        std::ofstream ofile{path{fn} += ".obj"};
+        for (auto &&v : vertices) {
+            ofile << std::format("v {} {} {}\n", v.coords.x, v.coords.y, v.coords.z);
+        }
+        ofile << "\n";
+        for (auto &&v : vertices) {
+            ofile << std::format("vt {} {}\n", v.tex.x, v.tex.y);
+        }
+        ofile << "\n";
+        for (auto &&v : vertices) {
+            ofile << std::format("vn {} {} {}\n", v.normal.x, v.normal.y, v.normal.z);
+        }
+        ofile << "\n";
+        // ofile << "g obj\n";
+        // ofile << "s 1\n";
+        for (auto &&f : std::views::chunk(vfs, 3)) {
+            // ofile << std::format("f {} {} {}\n", f[0] + 1, f[1] + 1, f[2] + 1);
+            ofile << std::format("f {}/{}/{} {}/{}/{} {}/{}/{}\n", f[0] + 1, f[0] + 1, f[0] + 1, f[1] + 1, f[1] + 1,
+                                 f[1] + 1, f[2] + 1, f[2] + 1, f[2] + 1);
+        }
+        // ofile << "g\n";
+    };
+    auto apply_animation = [&](auto &&anim) {
+        //vertices.assign(vertices_read.begin(), vertices_read.end());
+        for (auto &&a : anim) {
+            memcpy(&vertices[a.vertex_id], &a.coords, sizeof(a) - sizeof(a.vertex_id));
+        }
+    };
+
+    print(path{fn}, vertices);
+    for (int id = 0; auto &&d : animations) {
+        vertices.assign(vertices_read.begin(), vertices_read.end());
+
+        auto anim1 = s.span<bms::animation_data>(d.n_unk1);
+        apply_animation(anim1);
+        print(path{fn} += std::format(".{}.1", names[id]), vertices);
+
+        auto anim2 = s.span<bms::animation_data>(d.n_unk2);
+        apply_animation(anim2);
+        print(path{fn} += std::format(".{}.2", names[id]), vertices);
+        ++id;
     }
-    ofile << "\n";
-    for (auto &&v : vns) {
-        ofile << std::format("vn {} {} {}\n", v.x, v.y, v.z);
-    }
-    ofile << "\n";
-    for (auto &&v : vts) {
-        ofile << std::format("vt {} {}\n", v.x, v.y);
-    }
-    ofile << "\n";
-    ofile << "g obj\n";
-    for (auto &&f : std::views::chunk(vfs, 3)) {
-        ofile << std::format("f {} {} {}\n", f[0], f[1], f[2]);
-        /*ofile << std::format("f {}/{}/{} {}/{}/{} {}/{}/{}\n"
-            , f[0], f[0], f[0]
-            , f[1], f[1], f[1]
-            , f[2], f[2], f[2]
-        );*/
-    }
-    ofile << "g\n";
 }
 
 int main(int argc, char *argv[])
 {
-    cl::opt<path> p(cl::Positional, cl::desc("<mod file>"), cl::Required);
+    cl::opt<path> p(cl::Positional, cl::desc("<.bms file>"), cl::Required);
 
     cl::ParseCommandLineOptions(argc, argv);
 
