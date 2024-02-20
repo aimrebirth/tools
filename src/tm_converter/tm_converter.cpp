@@ -84,10 +84,11 @@ void convert(const path &fn)
 
 int main(int argc, char *argv[])
 {
-    cl::opt<path> p(cl::Positional, cl::desc("<file.tm>"), cl::Required);
+    cl::list<path> list(cl::Positional, cl::desc("<files.tm or dirs>"), cl::Required, cl::OneOrMore);
 
     cl::ParseCommandLineOptions(argc, argv);
 
+    for (auto &&p : list)
     if (fs::is_regular_file(p))
         convert(p);
     else if (fs::is_directory(p))
