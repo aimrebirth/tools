@@ -15,7 +15,7 @@ jobs:
     - uses: egorpugin/sw-action@master
 
     - name: build
-      run: ./sw -static -shared -config d,r build
+      run: ./sw -static build
 
     - uses: actions/upload-artifact@v3
       with:
