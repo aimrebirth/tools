@@ -16,3 +16,8 @@ jobs:
 
     - name: build
       run: ./sw -static -shared -config d,r build
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: sw
+        path: .sw/out
