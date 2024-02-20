@@ -61,6 +61,7 @@ void build(Solution &s)
     add_exe_with_common("save_loader");
     add_exe_with_common("mod_converter2");
     add_exe_with_common("bms_converter");
+    add_exe_with_common("rgb_converter");
     add_exe_with_common("unpaker") +=
         "org.sw.demo.oberhumer.lzo.lzo"_dep,
         "org.sw.demo.xz_utils.lzma"_dep
