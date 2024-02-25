@@ -122,6 +122,9 @@ struct DemoApp {
                 continue;
             }
             auto q = fn.path().stem().wstring();
+            while (q.find('.') != -1) {
+                q = fs::path{q}.stem();
+            }
             std::transform(q.begin(), q.end(), q.begin(), ::towlower);
             auto tofind = L"quest_"s;
             if (!q.starts_with(tofind)) {
