@@ -37,11 +37,12 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1.mod_maker-master
 // patch note:  to became visible.
 // patch note:
 // patch note: Changes from 0.0.3
-// patch note: add en_US localization (quest database)
-// patch note: add locale suffix to all quest databases
+// patch note: add locale suffix to all quest databases (localized strings). Example: quest_ru_RU.*
+// patch note: add en_US localization (quest database, quest_en_US.*)
 // patch note: add language_switcher.exe. You can use it to switch game language
 // patch note:  (only texts, but not menus). If you want your localization to be included into
 // patch note:  this mod, contact mod author (lz) and send your quest.* files.
+// patch note:  Run language_switcher.exe to select actual localization.
 // patch note:
 // patch note: Changes from 0.0.2
 // patch note: correctly use .mmo files from the last patch instead of v1.0.0 (from res3.pak)
