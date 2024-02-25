@@ -2,7 +2,7 @@
 name: aim_mod_maker
 c++: 23
 package_definitions: true
-deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
+deps: pub.lzwdgc.Polygon4.Tools.aim1.mod_maker-master
 */
 
 /*
@@ -29,10 +29,19 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1_mod_maker-master
 // patch note: Unpack and drop all files near original aim.exe. Replace files if necessary.
 // patch note: Or you can use mod_activator.exe, put it near aim.exe and drop mod archive
 // patch note:  onto mod_activator.exe in explorer.
+// patch note: You may need to run language_switcher.exe to select proper localization language.
+// patch note:
 // patch note: Game loads .pak files from the latest to oldest, so active mod .pak file must have
 // patch note:  the latest timestamp on it.
 // patch note: You should start new game after applying this mod. This is necessary for map changes
 // patch note:  to became visible.
+// patch note:
+// patch note: Changes from 0.0.3
+// patch note: add en_US localization (quest database)
+// patch note: add locale suffix to all quest databases
+// patch note: add language_switcher.exe. You can use it to switch game language
+// patch note:  (only texts, but not menus). If you want your localization to be included into
+// patch note:  this mod, contact mod author (lz) and send your quest.* files.
 // patch note:
 // patch note: Changes from 0.0.2
 // patch note: correctly use .mmo files from the last patch instead of v1.0.0 (from res3.pak)
@@ -50,10 +59,11 @@ int main(int argc, char *argv[]) {
 #else
         "test_mod"s
 #endif
-        + "-0.0.3"s
+        + "-0.0.4"s
     );
     mod.add_code_file_for_archive(INJECTIONS_FILE_NAME);
     mod.add_code_file_for_archive(AIM_TYPES_FILE_NAME);
+    mod.files_to_distribute.insert("language_switcher.exe");
 
     // patch note: === LIST OF CHANGES ===
     // patch note:
@@ -165,6 +175,10 @@ int main(int argc, char *argv[]) {
         quest("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME") = u8"Special zero armor";
     }
     // more known langs: cs_CZ, de_DE, et_EE, fr_FR
+    // you can find vanilla dbs here (not sure if it is 1.00 or 1.03, probably 1.00):
+    // Supercluster discord
+    // https://discord.gg/CFFKpTwYZD
+    // https://discord.com/channels/463656710666584064/516316063747538945/615934366593581067
     // patch note:
 
     // patch note: Game Changes
