@@ -16,31 +16,31 @@ void build(Solution &s)
         common.Public += "pub.egorpugin.primitives.templates2"_dep;
     }
 
-    auto add_exe_base = [&](const String &name) -> decltype(auto)
+    auto add_exe_base = [&](const String &name, String dirname = {}) -> decltype(auto)
     {
+        if (dirname.empty())
+            dirname = name;
         auto &t = tools.addExecutable(name);
         t.PackageDefinitions = true;
         t += cppstd;
-        t.setRootDirectory("src/" + name);
+        t.setRootDirectory("src/" + dirname);
         return t;
     };
-    auto add_exe = [&](const String &name) -> decltype(auto)
+    auto add_exe = [&](const String &name, const String &dirname = {}) -> decltype(auto)
     {
-        auto &t = add_exe_base(name);
+        auto &t = add_exe_base(name, dirname);
         t.Public += "pub.egorpugin.primitives.sw.main"_dep;
         return t;
     };
-
-    auto add_exe_with_common = [&](const String &name) -> decltype(auto)
+    auto add_exe_with_common = [&](const String &name, const String &dirname = {}) -> decltype(auto)
     {
-        auto &t = add_exe(name);
+        auto &t = add_exe(name, dirname);
         t.Public += common;
         return t;
     };
-
-    auto add_exe_with_data_manager = [&](const String &name) -> decltype(auto)
+    auto add_exe_with_data_manager = [&](const String &name, const String &dirname = {}) -> decltype(auto)
     {
-        auto &t = add_exe_with_common(name);
+        auto &t = add_exe_with_common(name, dirname);
         t.Public += "pub.lzwdgc.Polygon4.DataManager-master"_dep;
         return t;
     };
@@ -80,13 +80,24 @@ void build(Solution &s)
             ;
     }
 
-    auto &aim1_mod_activator = add_exe_with_common("aim1_mod_activator");
+    auto &language_switcher = tools.addExecutable("aim1.language_switcher");
+    {
+        auto &t = language_switcher;
+        t += cppstd;
+        t += "src/aim1_language_switcher/.*"_rr;
+        t += "UNICODE"_def;
+        t += "gdi32.lib"_slib, "ole32.lib"_slib, "user32.lib"_slib;
+        if (auto L = t.getSelectedTool()->as<VisualStudioLinker*>(); L)
+            L->Subsystem = vs::Subsystem::Windows;
+    }
+
+    auto &aim1_mod_activator = add_exe_with_common("aim1.mod_activator", "aim1_mod_activator");
     aim1_mod_activator += "pub.egorpugin.primitives.pack"_dep;
 
-    auto &aim1_mod_maker = add_exe_with_common("aim1_mod_maker"); // actually a library
+    auto &aim1_mod_maker = add_exe_with_common("aim1.mod_maker", "aim1_mod_maker"); // actually a library
     aim1_mod_maker.Public += "pub.egorpugin.primitives.command"_dep;
 
-    auto &aim1_community_fix = tools.addExecutable("examples.mods.aim1_community_fix");
+    auto &aim1_community_fix = tools.addExecutable("examples.mods.aim1.community_fix");
     {
         auto &t = aim1_community_fix;
         t.PackageDefinitions = true;
