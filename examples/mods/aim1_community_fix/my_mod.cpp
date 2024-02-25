@@ -155,9 +155,16 @@ int main(int argc, char *argv[]) {
     // patch note: double gun for config CFG_EYEDSTONE_2: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
     tblcfg("CFG_EYEDSTONE_2", "LIGHTGUN1") = "GUN_FAST_ELECTROMAGNETIC_BEAM";
     // patch note: INFORMATION
-    auto quest = mod.quest().open();
-    // patch note: add name for SINIGR armor, it was unnamed before (lz)
-    quest("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME") = u8"Особая нуль-броня";
+    {
+        auto quest = mod.quest("ru_RU").open();
+        // patch note: add name for SINIGR armor, it was unnamed before (lz)
+        quest("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME") = u8"Особая нуль-броня";
+    }
+    {
+        auto quest = mod.quest("en_US").open();
+        quest("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME") = u8"Special zero armor";
+    }
+    // more known langs: cs_CZ, de_DE, et_EE, fr_FR
     // patch note:
 
     // patch note: Game Changes
@@ -236,7 +243,6 @@ int main(int argc, char *argv[]) {
     // patch note:
     // patch note: Have fun!
     db.~files();
-    quest.~files();
     mod.apply();
 
     // patch note:

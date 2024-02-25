@@ -312,8 +312,12 @@ struct mod_maker {
     db2 db() {
         return open_db("db");
     }
-    db2 quest() {
-        return open_db("quest");
+    db2 quest(const std::string &language = {}) {
+        if (language.empty()) {
+            return open_db("quest");
+        } else {
+            return open_db("quest_" + language);
+        }
     }
 
 private:
