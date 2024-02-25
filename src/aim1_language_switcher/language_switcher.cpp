@@ -11,21 +11,6 @@ fs::path datadir = fs::current_path();
 #include <CommCtrl.h>
 #include <objbase.h>
 
-auto read_file(const fs::path &fn) {
-    auto sz = fs::file_size(fn);
-    std::string s(sz, 0);
-    FILE *f = fopen(fn.string().c_str(), "rb");
-    fread(s.data(), s.size(), 1, f);
-    fclose(f);
-    return s;
-}
-void write_file(const fs::path &fn, const std::string &s = {}) {
-    fs::create_directories(fn.parent_path());
-
-    FILE *f = fopen(fn.string().c_str(), "wb");
-    fwrite(s.data(), s.size(), 1, f);
-    fclose(f);
-}
 void err(const std::wstring &s) {
     MessageBox(0, s.c_str(), TEXT("ERROR"), MB_OK);
     exit(1);
