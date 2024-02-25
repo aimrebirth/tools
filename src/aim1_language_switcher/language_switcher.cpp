@@ -32,9 +32,8 @@ void err(const std::wstring &s) {
 }
 struct cfg {
     fs::path cfgfn;
-    std::string findstr = "TextFile="s;
-    size_t pos{UINT64_MAX},pose{UINT64_MAX};
-    std::string s;
+    const wchar_t *sectionstr = L"PATH";
+    const wchar_t *keystr = L"TextFile";
 
     cfg() {
         if (fs::exists(datadir / "data")) {
@@ -46,21 +45,17 @@ struct cfg {
         cfgfn = datadir / "config" / "cfg.ini";
     }
     std::wstring get_current_lang() {
-        s = read_file(cfgfn);
-        pos = s.find(findstr);
-        if (pos == -1) {
-            err(L"cant find");
-            return {};
+        std::wstring fn(256,0);
+        GetPrivateProfileStringW(sectionstr, keystr, 0, fn.data(), fn.size(), cfgfn.wstring().c_str());
+        if (GetLastError() != 0) {
+            err(L"can't read file");
         }
-        pose = s.find_first_of("\r\n", pos);
-        fs::path fn = s.substr(pos + findstr.size(), pose - (pos + findstr.size()));
-        auto w = fn.stem().wstring();
+        fn = fn.c_str();
+        auto w = fs::path{fn}.stem().wstring();
         std::transform(w.begin(), w.end(), w.begin(), ::towlower);
         auto tofind = L"quest_"s;
         if (w.starts_with(tofind)) {
-            auto lang = w.substr(tofind.size());
-            std::transform(lang.begin(), lang.end(), lang.begin(), ::tolower);
-            return lang;
+            return w.substr(tofind.size());
         }
         return L"no language set (your default language)";
     }
@@ -68,9 +63,10 @@ struct cfg {
         if (lang.contains(L' ') || lang.contains(L" ")) {
             return false;
         }
-        auto out = s.substr(0, pos + findstr.size()) + std::format("Data\\Quest_{}.dat", fs::path{lang}.string()) + s.substr(pose);
-        write_file(cfgfn, out);
-        write_file(cfgfn.parent_path() / "language.txt", fs::path{lang}.string());
+        auto fn = std::format(L"Data\\Quest_{}.dat", lang);
+        if (!WritePrivateProfileStringW(sectionstr, keystr, fn.c_str(), cfgfn.wstring().c_str())) {
+            return false;
+        }
         return true;
     }
 } c;
@@ -141,12 +137,12 @@ struct DemoApp {
                 continue;
             }
             auto q = fn.path().stem().wstring();
+            std::transform(q.begin(), q.end(), q.begin(), ::towlower);
             auto tofind = L"quest_"s;
             if (!q.starts_with(tofind)) {
                 continue;
             }
             auto lang = q.substr(tofind.size());
-            std::transform(lang.begin(), lang.end(), lang.begin(), ::towlower);
             langs.insert(lang);
         }
         auto [it,_] = langs.insert(c.get_current_lang());
