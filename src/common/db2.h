@@ -253,6 +253,11 @@ struct db2 {
 
         files(auto &&db, auto &&base) : db{db}, tab_{base}, ind_{base}, dat_{base} {}
 
+        void alloc(auto sz) {
+            tab_.f.alloc_raw(sz);
+            ind_.f.alloc_raw(sz);
+            dat_.f.alloc_raw(sz);
+        }
         auto get_files() const {
             return std::set<path>{tab_.fn,ind_.fn,dat_.fn};
         }
@@ -293,11 +298,17 @@ struct db2 {
         }
     };
 
+    auto alloc() {
+        files{*this,fn}.alloc(0);
+    }
     auto open() {
-        return files{*this,fn};
+        return files{*this, fn};
     }
 
 private:
+    std::string utf8_to_dbstr(const std::string &s) const {
+        return utf8_to_dbstr((const char8_t *)s.c_str());
+    }
     std::string utf8_to_dbstr(const char *s) const {
         return utf8_to_dbstr((const char8_t *)s);
     }

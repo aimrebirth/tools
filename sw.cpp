@@ -47,7 +47,7 @@ void build(Solution &s)
 
     add_exe_with_data_manager("db_add_language") += "pub.egorpugin.primitives.executor"_dep;
     add_exe_with_data_manager("db_extractor");
-    add_exe_with_data_manager("db_extractor2");
+    add_exe_with_data_manager("db_extractor2") += "org.sw.demo.nlohmann.json.natvis"_dep;
     add_exe_with_data_manager("mmm_extractor");
     add_exe_with_data_manager("mmo_extractor");
     add_exe_with_common("mmo_extractor2");
