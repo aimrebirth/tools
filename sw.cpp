@@ -96,6 +96,7 @@ void build(Solution &s)
 
     auto &aim1_mod_maker = add_exe_with_common("aim1.mod_maker", "aim1_mod_maker"); // actually a library
     aim1_mod_maker.Public += "pub.egorpugin.primitives.command"_dep;
+    aim1_mod_maker.Public += "org.sw.demo.nlohmann.json.natvis"_dep;
 
     auto &aim1_community_fix = tools.addExecutable("examples.mods.aim1.community_fix");
     {
