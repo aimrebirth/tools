@@ -95,21 +95,16 @@ int main(int argc, char *argv[]) {
 
     // patch note: Hills Sector
     // patch note: allow to buy double heavy weapon Finder-2 glider on Finders base after the second quest. You must start the new game to make it appear (lz)
-    mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", R"(
-47 4c 5f 53 33 5f 50 53 5f 46 49 4e 44 45 52 32
-00 d2 e2 77 42 04 06 00 35 01 00 00 76 0c 01 30
-54 5f 4c 36 5f 49 4b 5f 46 32 2e 43 4f 4d 50 4c
-45 54 45 00 00 00 00 00 00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-00 00 00 00 00 00 00 00 00 00 00 00
-)"_bin);
-    //mod.add_resource("MOD_GL_S3_PS_FINDER1");
-    //mod.add_resource("TEX_GL_S3_PS_FINDER1_MASK.TM");
+    mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", mmo_storage2::map_good("GL_S3_PS_FINDER2"
+#ifdef NDEBUG
+        , "T_L6_IK_F2.COMPLETE"
+#endif
+    ));
     // patch note: add Finder-2 model and textures from aim2 game (lz)
+    // TODO: auto take models from aim2
+    // TODO: auto fix models with mod_converter2
     mod.add_resource("MOD_GL_S3_PS_FINDER2");
+    // TODO: copy data from aim2 db
     mod.add_resource("TEX_GL_S3_PS_FINDER_2.TM");
     mod.add_resource("TEX_GL_S3_PS_FINDER_2_SPEC.TM");
     mod.add_resource("TEX_GL_S3_PS_FINDER_2_SPEC_1.TM");
@@ -143,7 +138,18 @@ int main(int argc, char *argv[]) {
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
     db(u8"Глайдеры", "GL_S3_PS_FINDER2", "MODEL") = "MOD_GL_S3_PS_FINDER2";
     // patch note: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
-    db(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS") = 4.768386f; // from finder1 - 4.012578f;
+    // TODO: copy from aim2 db
+    db(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS") = 4.768386f; // from aim2;
+    //
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2", "TYPE") = 0;
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2", "COLOR") = 406137896;
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2", "FILENAME") = "Data\\TM\\TEX_GL_S3_PS_FINDER_2.TM";
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC", "TYPE") = 0;
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC", "COLOR") = 2631463;
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC", "FILENAME") = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC.TM";
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1", "TYPE") = 0;
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1", "COLOR") = 1842204;
+    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1", "FILENAME") = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC_1.TM";
     // patch note: double gun for config CFG_NARGOON (double electro discharge) (lz)
     auto tblcfg = db(u8"Конфигурации");
     tblcfg("CFG_NARGOON", "HEAVYGUN1") = "GUN_ELECTRO_DISCHARGER";

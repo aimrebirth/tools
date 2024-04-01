@@ -231,6 +231,10 @@ struct mod_maker {
 
         write_file(get_hash_fn(fn, data), ""s);
     }
+    void add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const mmo_storage2::map_good &mg) {
+        byte_array data((uint8_t*)&mg, (uint8_t*)&mg + sizeof(mg));
+        add_map_good(mmo_fn, building_name, after_good_name, data);
+    }
     void add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const byte_array &data) {
         files_to_pak.insert(find_real_filename(mmo_fn));
         if (is_already_inserted(mmo_fn, data)) {
