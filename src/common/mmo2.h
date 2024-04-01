@@ -27,6 +27,13 @@ struct mmo_storage2 {
         float sell_price;
         float unk[8];
         uint32_t unk1;
+
+        map_good() = default;
+        map_good(const std::string &name, const std::string &condition = {}) {
+            *this = map_good{};
+            strcpy(this->name, name.c_str());
+            strcpy(this->cond, condition.c_str());
+        }
     };
 
     // our own data
