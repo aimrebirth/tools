@@ -10,3 +10,11 @@ doc
 *.bat
 
 .sw
+
+*.diff
+*.patch
+
+*.dat
+*.ind
+*.tab
+*.json
