@@ -45,6 +45,16 @@ struct mem_stream {
         auto &r = *(T *)p;
         return r;
     }
+    template <typename T>
+    auto operator=(const T &in) {
+        T &v = *this;
+        v = in;
+        return sizeof(T);
+    }
+    auto operator=(const std::string &in) {
+        *this += in;
+        return in.size() + 1;
+    }
     void operator+=(const mem_stream &s) {
         d.append_range(s.d);
     }
@@ -62,6 +72,10 @@ struct mem_stream {
     }
     auto size() const { return d.size(); }
 };
+
+decltype(auto) visit(auto &&var, auto &&...f) {
+    return ::std::visit(overload{FWD(f)...}, var);
+}
 
 struct db2 {
     using char20 = char[0x20];
@@ -145,7 +159,7 @@ struct db2 {
 
         file(auto &&base) : fn{path{base} += "."s} {
             fn += type_name<T>();
-            f.open(fn, primitives::templates2::mmap_file<uint8_t>::rw{});
+            f.open(fn, primitives::templates2::mmap_file<uint8_t>::ro{});
             data = (T *)f.p;
         }
     };
@@ -245,24 +259,10 @@ struct db2 {
                         i.offset = datv.size();
                         for (auto &&[fn, fv] : fd) {
                             dat::field_value_base &_ = datv;
-                            auto sz = std::visit(overload{
-                                                    [&](const int &v) {
-                                                        int &i = datv;
-                                                        i = v;
-                                                        return sizeof(int);
-                                                    },
-                                                    [&](const float &v) {
-                                                        float &i = datv;
-                                                        i = v;
-                                                        return sizeof(float);
-                                                    },
-                                                    [&](const std::string &v) {
-                                                        auto s = utf8_to_dbstr(v);
-                                                        datv += s;
-                                                        return s.size() + 1;
-                                                    },
-                                                },
-                                                     fv);
+                            auto sz = visit(fv,
+                                [&](const int &v) { return datv = v; },
+                                [&](const float &v) { return datv = v; },
+                                [&](const std::string &v) { return datv = utf8_to_dbstr(v); });
                             auto &v = datv.at<dat::field_value_base>(-(sizeof(dat::field_value_base) + sz));
                             v.field_id = (int)fields[tn].find(fn)->second;
                             v.size = sz;
