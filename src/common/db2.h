@@ -207,6 +207,25 @@ struct db2 {
                 }
                 return ja;
             }
+            void load_from_json(const path &fn) {
+                auto ja = nlohmann::json::parse(read_file(fn));
+                for (auto &&[tn,t] : ja.items()) {
+                    for (auto &&[vn,v] : t.items()) {
+                        for (auto &&[fn, fv] : v.items()) {
+                            if (0) {
+                            } else if (fv.is_number_integer()) {
+                                m[tn][vn][fn] = fv.get<int>();
+                            } else if (fv.is_number_float()) {
+                                m[tn][vn][fn] = fv.get<float>();
+                            } else if (fv.is_string()) {
+                                m[tn][vn][fn] = fv.get<std::string>();
+                            } else {
+                                throw std::runtime_error{"bad json type"};
+                            }
+                        }
+                    }
+                }
+            }
             void save(const path &fn, int codepage = 1251) {
                 auto s_to_char20 = [&](char20 &dst, const std::string &in, int codepage = 1251) {
                     auto s = utf8_to_dbstr(in);

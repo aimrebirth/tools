@@ -31,15 +31,22 @@
 
 int main(int argc, char *argv[])
 {
-    cl::opt<path> db_fn(cl::Positional, cl::desc("<db file>"), cl::Required);
+    cl::opt<path> db_fn(cl::Positional, cl::desc("<db file or json file to backwards conversion>"), cl::Required);
 
     cl::ParseCommandLineOptions(argc, argv);
 
-    db2 db{db_fn};
-    auto f = db.open();
-    auto m = f.to_map();
-    write_file(path{db_fn} += ".json", m.to_json().dump(1));
-    m.save(path{db_fn} += "new");
+    path fn = db_fn;
+    fn = fs::absolute(fn);
+    if (fn.extension() != ".json") {
+        db2 db{fn};
+        auto f = db.open();
+        auto m = f.to_map();
+        write_file(path{fn} += ".json", m.to_json().dump(1));
+    } else {
+        db2::files::db2_internal db;
+        db.load_from_json(fn);
+        db.save(fn.parent_path() / fn.stem());
+    }
 
     return 0;
 }
