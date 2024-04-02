@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     auto m = f.to_map();
     write_file(path{db_fn} += ".json", m.to_json().dump(1));
     m.save(path{db_fn} += "new");
+    m.written = true;
 
     return 0;
 }

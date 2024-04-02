@@ -28,11 +28,11 @@
 std::string utf8_to_dbstr(const char8_t *s, int codepage = 1251) {
     return str2str((const char *)s, CP_UTF8, codepage);
 }
-std::string utf8_to_dbstr(const char *s) {
-    return utf8_to_dbstr((const char8_t *)s);
+std::string utf8_to_dbstr(const char *s, int codepage = 1251) {
+    return utf8_to_dbstr((const char8_t *)s, codepage);
 }
-std::string utf8_to_dbstr(const std::string &s) {
-    return utf8_to_dbstr((const char8_t *)s.c_str());
+std::string utf8_to_dbstr(const std::string &s, int codepage = 1251) {
+    return utf8_to_dbstr((const char8_t *)s.c_str(), codepage);
 }
 
 struct mem_stream {
@@ -179,12 +179,24 @@ struct db2 {
             using db2_memory_value = std::variant<std::string, int, float>;
             using db2_memory = std::map<std::string, std::map<std::string, std::map<std::string, db2_memory_value>>>;
 
+            path fn;
+            int codepage{1251};
             db2_memory m;
+            bool written{};
+
+            ~db2_internal() {
+                if (!written) {
+                    write();
+                }
+            }
 
             auto begin(this auto &&d) {return d.m.begin();}
             auto end(this auto &&d) {return d.m.end();}
             auto &operator[](this auto &&d, const std::string &s) {
                 return d.m[s];
+            }
+            auto &operator[](this auto &&d, const std::u8string &s) {
+                return d.m[(const char *)s.c_str()];
             }
             auto to_json() const {
                 nlohmann::json ja;
@@ -204,7 +216,7 @@ struct db2 {
                 return ja;
             }
             void save(const path &fn) {
-                auto s_to_char20 = [&](char20 &dst, const std::string &in) {
+                auto s_to_char20 = [&](char20 &dst, const std::string &in, int codepage = 1251) {
                     auto s = utf8_to_dbstr(in);
                     if (s.size() + 1 > sizeof(char20)) {
                         throw std::runtime_error{"too long string"};
@@ -221,7 +233,7 @@ struct db2 {
                 for (auto &&[tn,td] : m) {
                     tab::table &t = tabv;
                     t.id = table_id;
-                    s_to_char20(t.name, tn); // always 1251
+                    s_to_char20(t.name, tn, 1251); // always 1251
 
                     for (auto &&[_,fd] : td) {
                         for (auto &&[fn,fv] : fd) {
@@ -235,7 +247,7 @@ struct db2 {
                         f.table_id = table_id;
                         f.type = ft;
                         ft = (field_type)total_fields;
-                        s_to_char20(f.name, fn);
+                        s_to_char20(f.name, fn, 1251); // always 1251 if we have any field in Russian
                     }
 
                     ++table_id;
@@ -255,7 +267,7 @@ struct db2 {
                     for (auto &&[vn, fd] : td) {
                         ind::value &i = indv;
                         i.table_id = table_id;
-                        s_to_char20(i.name, vn);
+                        s_to_char20(i.name, vn, codepage);
                         i.offset = datv.size();
                         for (auto &&[fn, fv] : fd) {
                             dat::field_value_base &_ = datv;
@@ -276,9 +288,14 @@ struct db2 {
                 write_file(path{fn} += ".ind", indv.d);
                 write_file(path{fn} += ".dat", datv.d);
             }
+            void write() {
+                save(fn);
+                written = true;
+            }
         };
 
         // converts string to utf8, trims them
+        // filters out values with empty name ""
         auto to_map() const {
             auto prepare_string = [](auto &&in) {
                 auto s = str2utf8(in);
@@ -287,16 +304,18 @@ struct db2 {
             };
 
             db2_internal m;
+            m.fn = db.fn;
+            m.codepage = db.codepage;
             auto tbl = tab_.data->tables();
             for (auto &&t : tbl) {
                 auto &jt = m[prepare_string(t.name)];
                 auto fields = tab_.data->fields(t.id);
                 for (auto &&v : ind_.data->values(t.id)) {
                     auto vn = prepare_string(v.name);
-                    if (jt.contains(vn)) {
-                        throw std::logic_error{"duplicate"};
+                    if (vn.empty()) {
+                        continue;
                     }
-                    auto &jv = jt[vn];
+                    std::decay_t<decltype(jt)>::mapped_type jv;
                     auto p = dat_.f.p + v.offset;
                     auto max = p + v.size;
                     while (p < max) {
@@ -307,6 +326,10 @@ struct db2 {
                             throw std::logic_error{"unknown field"};
                         }
                         auto fn = prepare_string(f->name);
+                        if (jv.contains(fn)) {
+                            // we analyze such cases manually
+                            throw std::logic_error{"duplicate field: "s + fn};
+                        }
                         switch (f->type) {
                         case db2::field_type::integer:
                             jv[fn] = *(int *)p;
@@ -322,6 +345,13 @@ struct db2 {
                         }
                         p += vb->size;
                     }
+                    if (jt.contains(vn)) {
+                        if (!jv.contains("DELETED") || std::get<int>(jv["DELETED"]) == 0) {
+                            // we analyze such cases manually
+                            throw std::logic_error{"duplicate value: "s + vn};
+                        }
+                    }
+                    jt[vn] = jv;
                 }
             }
             return m;
