@@ -183,6 +183,7 @@ struct db2 {
 
             auto begin(this auto &&d) {return d.m.begin();}
             auto end(this auto &&d) {return d.m.end();}
+            bool empty() const { return m.empty(); }
             auto &operator[](this auto &&d, const std::string &s) {
                 return d.m[s];
             }
@@ -281,12 +282,14 @@ struct db2 {
             }
         };
 
-        // converts string to utf8, trims them
+        // converts string to utf8
         // filters out values with empty name ""
         auto to_map() const {
             auto prepare_string = [](auto &&in) {
                 auto s = str2utf8(in);
-                boost::trim(s);
+                // we have some erroneous table values (records) with spaces
+                // we can trim only field values, but don't do it at the moment
+                //boost::trim(s);
                 return s;
             };
 
@@ -311,6 +314,7 @@ struct db2 {
                             throw std::logic_error{"unknown field"};
                         }
                         auto fn = prepare_string(f->name);
+                        boost::trim(fn); // trim field name
                         if (jv.contains(fn)) {
                             // we analyze such cases manually
                             throw std::logic_error{"duplicate field: "s + fn};
@@ -323,7 +327,7 @@ struct db2 {
                             jv[fn] = *(float *)p;
                             break;
                         case db2::field_type::string:
-                            jv[fn] = prepare_string((const char *)p);
+                            jv[fn] = boost::trim_copy(prepare_string((const char *)p)); // trim field value
                             break;
                         default:
                             throw std::logic_error{"bad type"};
