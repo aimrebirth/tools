@@ -74,6 +74,7 @@ struct aim_exe_v1_06_constants {
 struct mod_maker {
     struct db_wrapper {
         db2::files::db2_internal m;
+        db2::files::db2_internal m2;
         path fn;
         int codepage{1251};
         bool written{};
@@ -92,6 +93,27 @@ struct mod_maker {
         }
         auto &operator[](this auto &&d, const std::u8string &s) {
             return d.m[(const char *)s.c_str()];
+        }
+        void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
+            auto check_val = [](auto &&m, const std::string &key, auto &&err) {
+                if (auto it = m.find(key); it == m.end()) {
+                    throw std::runtime_error{err};
+                }
+            };
+            check_val(m2.m, (const char *)table_name, "aim2: no such table");
+            check_val(m2[table_name], value_name, "aim2: no such value");
+            check_val(m2[table_name][value_name], field_name, "aim2: no such field");
+            m[table_name][value_name][field_name] = m2[table_name][value_name][field_name];
+        }
+        void copy_from_aim2(auto &&table_name, auto &&value_name) {
+            auto check_val = [](auto &&m, const std::string &key, auto &&err) {
+                if (auto it = m.find(key); it == m.end()) {
+                    throw std::runtime_error{err};
+                }
+            };
+            check_val(m2.m, (const char *)table_name, "aim2: no such table");
+            check_val(m2[table_name], value_name, "aim2: no such value");
+            m[table_name][value_name] = m2[table_name][value_name];
         }
     };
     enum class file_type {
@@ -339,7 +361,11 @@ struct mod_maker {
     }
 
     auto db() {
-        return open_db("db", 1251); // always 1251 probably
+        auto w = open_db("db", 1251); // always 1251 probably
+        if (aim2_available()) {
+            w.m2 = db2{aim2_game_dir / "data" / "db", 1251}.open().to_map();
+        }
+        return w;
     }
     auto quest(const std::string &language = {}) {
         // TODO: check if it's possible to use utf8/16 in aim game
@@ -373,6 +399,9 @@ struct mod_maker {
     }
 
 private:
+    bool aim2_available() const {
+        return !aim2_game_dir.empty();
+    }
     path make_bak_file(const path &fn) {
         auto backup = path{fn} += ".bak";
         if (!fs::exists(backup)) {

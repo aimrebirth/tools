@@ -140,19 +140,13 @@ int main(int argc, char *argv[]) {
     auto db = mod.db();
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
     db[u8"Глайдеры"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
-    // patch note: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
-    // TODO: copy from aim2 db
-    db[u8"Модели"]["MOD_GL_S3_PS_FINDER2"]["RADIUS"] = 4.768386f; // from aim2;
-    //
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2"]["TYPE"] = 0;
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2"]["COLOR"] = 406137896;
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2"]["FILENAME"] = "Data\\TM\\TEX_GL_S3_PS_FINDER_2.TM";
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC"]["TYPE"] = 0;
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC"]["COLOR"] = 2631463;
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC"]["FILENAME"] = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC.TM";
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC_1"]["TYPE"] = 0;
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC_1"]["COLOR"] = 1842204;
-    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC_1"]["FILENAME"] = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC_1.TM";
+    // patch note - maybe copy from finder1?: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
+    // patch note: copy MOD_GL_S3_PS_FINDER2 model radius from aim2 (lz)
+    db.copy_from_aim2(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS");
+    // patch note: copy MOD_GL_S3_PS_FINDER2 textures from aim2 (lz)
+    db.copy_from_aim2(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2");
+    db.copy_from_aim2(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC");
+    db.copy_from_aim2(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1");
     // patch note: double gun for config CFG_NARGOON (double electro discharge) (lz)
     auto &tblcfg = db[u8"Конфигурации"];
     tblcfg["CFG_NARGOON"]["HEAVYGUN1"] = "GUN_ELECTRO_DISCHARGER";
