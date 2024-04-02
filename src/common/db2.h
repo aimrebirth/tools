@@ -179,16 +179,7 @@ struct db2 {
             using db2_memory_value = std::variant<std::string, int, float>;
             using db2_memory = std::map<std::string, std::map<std::string, std::map<std::string, db2_memory_value>>>;
 
-            path fn;
-            int codepage{1251};
             db2_memory m;
-            bool written{};
-
-            ~db2_internal() {
-                if (!written) {
-                    write();
-                }
-            }
 
             auto begin(this auto &&d) {return d.m.begin();}
             auto end(this auto &&d) {return d.m.end();}
@@ -215,7 +206,7 @@ struct db2 {
                 }
                 return ja;
             }
-            void save(const path &fn) {
+            void save(const path &fn, int codepage = 1251) {
                 auto s_to_char20 = [&](char20 &dst, const std::string &in, int codepage = 1251) {
                     auto s = utf8_to_dbstr(in);
                     if (s.size() + 1 > sizeof(char20)) {
@@ -288,10 +279,6 @@ struct db2 {
                 write_file(path{fn} += ".ind", indv.d);
                 write_file(path{fn} += ".dat", datv.d);
             }
-            void write() {
-                save(fn);
-                written = true;
-            }
         };
 
         // converts string to utf8, trims them
@@ -304,8 +291,6 @@ struct db2 {
             };
 
             db2_internal m;
-            m.fn = db.fn;
-            m.codepage = db.codepage;
             auto tbl = tab_.data->tables();
             for (auto &&t : tbl) {
                 auto &jt = m[prepare_string(t.name)];

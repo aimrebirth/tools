@@ -72,6 +72,28 @@ struct aim_exe_v1_06_constants {
 };
 
 struct mod_maker {
+    struct db_wrapper {
+        db2::files::db2_internal m;
+        path fn;
+        int codepage{1251};
+        bool written{};
+
+        ~db_wrapper() {
+            if (!written) {
+                write();
+            }
+        }
+        void write() {
+            m.save(fn);
+            written = true;
+        }
+        auto &operator[](this auto &&d, const std::string &s) {
+            return d.m[s];
+        }
+        auto &operator[](this auto &&d, const std::u8string &s) {
+            return d.m[(const char *)s.c_str()];
+        }
+    };
     enum class file_type {
         unknown,
 
@@ -358,7 +380,7 @@ private:
         }
         return backup;
     }
-    auto open_db(auto &&name, int db_codepage) {
+    db_wrapper open_db(auto &&name, int db_codepage) {
         auto d = db2{get_data_dir() / name, db_codepage};
         auto files = d.open().get_files();
         for (auto &&f : files) {
@@ -368,7 +390,11 @@ private:
             }
             files_to_distribute.insert(f);
         }
-        return d.open().to_map();
+        db_wrapper w;
+        w.m = d.open().to_map();
+        w.fn = d.fn;
+        w.codepage = d.codepage;
+        return w;
     }
     path get_hash_fn(path fn, const byte_array &data) const {
         return get_mod_dir() / std::format("{:0X}.hash", get_insert_hash(fn, data));
