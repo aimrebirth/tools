@@ -111,6 +111,8 @@ auto read_model(const path &fn) {
             break;
         }
     }
+    textures.erase("_DEFAULT_"); // no tex
+    textures.erase("TEX_TOV_AKTIVMETAL_ANIM"); // this one used as no-texture as well
     write_lines(path{fn}+=".textures.txt",textures);
 }
 
