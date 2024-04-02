@@ -48,10 +48,19 @@ struct mem_stream {
     void operator+=(const mem_stream &s) {
         d.append_range(s.d);
     }
-    template <typename T>
-    T &at(size_t i) {
-        return *(T *)(d.data() + i);
+    void operator+=(const std::string &s) {
+        d.append_range(s);
+        d.push_back(0);
     }
+    template <typename T>
+    T &at(int i) {
+        if (i < 0) {
+            return *(T *)(d.data() + d.size() + i);
+        } else {
+            return *(T *)(d.data() + i);
+        }
+    }
+    auto size() const { return d.size(); }
 };
 
 struct db2 {
@@ -180,28 +189,7 @@ struct db2 {
                 }
                 return ja;
             }
-            size_t fields_size() const {
-                size_t sz{};
-                return sz;
-            }
-            size_t tables_size() const {
-                size_t sz{};
-                return sz;
-            }
-            size_t tab_size() const {
-                return tables_size() + fields_size();
-            }
-            size_t ind_size() const {
-                return tables_size() + fields_size();
-            }
-            size_t dat_size() const {
-                return tables_size() + fields_size();
-            }
             void save(const path &fn) {
-                auto tabsz = tab_size();
-                auto indsz = ind_size();
-                auto datsz = dat_size();
-
                 auto s_to_char20 = [&](char20 &dst, const std::string &in) {
                     auto s = utf8_to_dbstr(in);
                     if (s.size() + 1 > sizeof(char20)) {
@@ -211,29 +199,29 @@ struct db2 {
                 };
 
                 mem_stream tabv,tabv_fields;
-                tab &tab_ = tabv;
-                auto get_tab = [&](){};
+                tab &_ = tabv;
                 int table_id{1};
                 int total_fields{};
+                int total_values{};
+                std::map<std::string, std::map<std::string, field_type>> fields;
                 for (auto &&[tn,td] : m) {
                     tab::table &t = tabv;
                     t.id = table_id;
-                    s_to_char20(t.name, tn);
+                    s_to_char20(t.name, tn); // always 1251
 
-                    std::set<std::pair<std::string, field_type>> fields;
                     for (auto &&[_,fd] : td) {
                         for (auto &&[fn,fv] : fd) {
-                            fields.emplace(std::pair<std::string, field_type>{fn,(field_type)fv.index()});
+                            fields[tn][fn] = (field_type)fv.index();
                         }
+                        ++total_values;
                     }
-                    int field_id{1};
-                    for (auto &&[fn,ft] : fields) {
+                    for (auto &&[fn,ft] : fields[tn]) {
                         tab::field &f = tabv_fields;
-                        f.id = field_id;
+                        f.id = ++total_fields;
                         f.table_id = table_id;
                         f.type = ft;
+                        ft = (field_type)total_fields;
                         s_to_char20(f.name, fn);
-                        ++total_fields;
                     }
 
                     ++table_id;
@@ -246,37 +234,47 @@ struct db2 {
                 }
 
                 mem_stream indv, datv;
+                ind &i = indv;
+                i.n_values = total_values;
+                table_id = 1;
                 for (auto &&[tn, td] : m) {
-                    tab::table &t = tabv;
-                    t.id = table_id;
-                    s_to_char20(t.name, tn);
-
-                    std::set<std::pair<std::string, field_type>> fields;
-                    for (auto &&[_, fd] : td) {
+                    for (auto &&[vn, fd] : td) {
+                        ind::value &i = indv;
+                        i.table_id = table_id;
+                        s_to_char20(i.name, vn);
+                        i.offset = datv.size();
+                        for (auto &&[fn, fv] : fd) {
+                            dat::field_value_base &_ = datv;
+                            auto sz = std::visit(overload{
+                                                    [&](const int &v) {
+                                                        int &i = datv;
+                                                        i = v;
+                                                        return sizeof(int);
+                                                    },
+                                                    [&](const float &v) {
+                                                        float &i = datv;
+                                                        i = v;
+                                                        return sizeof(float);
+                                                    },
+                                                    [&](const std::string &v) {
+                                                        auto s = utf8_to_dbstr(v);
+                                                        datv += s;
+                                                        return s.size() + 1;
+                                                    },
+                                                },
+                                                     fv);
+                            auto &v = datv.at<dat::field_value_base>(-(sizeof(dat::field_value_base) + sz));
+                            v.field_id = (int)fields[tn].find(fn)->second;
+                            v.size = sz;
+                        }
+                        i.size = datv.size() - i.offset;
                     }
+                    ++table_id;
                 }
 
-
-                /*db2 x{};
-                auto newdb = x.open();
-                for (auto &&[t,vals] : ja.items()) {
-                    for (auto &&[v,fields] : vals.items()) {
-                        for (auto &&[f,val] : fields.items()) {
-                            auto s = newdb(t, v, f);
-                            if (0) {
-                            } else if (val.is_number_float()) {
-                                s = val.get<float>();
-                            } else if (val.is_number_integer()) {
-                                s = val.get<int>();
-                            } else if (val.is_string()) {
-                                s = val.get<std::string>();
-                            } else {
-                                throw std::logic_error{"bad type"};
-                            }
-                        }
-                    }
-                }*/
-
+                write_file(path{fn} += ".tab", tabv.d);
+                write_file(path{fn} += ".ind", indv.d);
+                write_file(path{fn} += ".dat", datv.d);
             }
         };
 
