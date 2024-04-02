@@ -74,7 +74,7 @@ struct aim_exe_v1_06_constants {
 struct mod_maker {
     struct db_wrapper {
         db2::files::db2_internal m;
-        db2::files::db2_internal m2;
+        db2::files::db2_internal *m2_{};
         path fn;
         int codepage{1251};
         bool written{};
@@ -94,16 +94,19 @@ struct mod_maker {
         auto &operator[](this auto &&d, const std::u8string &s) {
             return d.m[(const char *)s.c_str()];
         }
+        auto &m2() {
+            return *m2_;
+        }
         void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
             auto check_val = [](auto &&m, const std::string &key, auto &&err) {
                 if (auto it = m.find(key); it == m.end()) {
                     throw std::runtime_error{err};
                 }
             };
-            check_val(m2.m, (const char *)table_name, "aim2: no such table");
-            check_val(m2[table_name], value_name, "aim2: no such value");
-            check_val(m2[table_name][value_name], field_name, "aim2: no such field");
-            m[table_name][value_name][field_name] = m2[table_name][value_name][field_name];
+            check_val(m2().m, (const char *)table_name, "aim2: no such table");
+            check_val(m2()[table_name], value_name, "aim2: no such value");
+            check_val(m2()[table_name][value_name], field_name, "aim2: no such field");
+            m[table_name][value_name][field_name] = m2()[table_name][value_name][field_name];
         }
         void copy_from_aim2(auto &&table_name, auto &&value_name) {
             auto check_val = [](auto &&m, const std::string &key, auto &&err) {
@@ -111,9 +114,9 @@ struct mod_maker {
                     throw std::runtime_error{err};
                 }
             };
-            check_val(m2.m, (const char *)table_name, "aim2: no such table");
-            check_val(m2[table_name], value_name, "aim2: no such value");
-            m[table_name][value_name] = m2[table_name][value_name];
+            check_val(m2().m, (const char *)table_name, "aim2: no such table");
+            check_val(m2()[table_name], value_name, "aim2: no such value");
+            m[table_name][value_name] = m2()[table_name][value_name];
         }
     };
     enum class file_type {
@@ -363,7 +366,7 @@ struct mod_maker {
     auto db() {
         auto w = open_db("db", 1251); // always 1251 probably
         if (aim2_available()) {
-            w.m2 = db2{aim2_game_dir / "data" / "db", 1251}.open().to_map();
+            w.m2_ = &open_aim2_db();
         }
         return w;
     }
@@ -398,7 +401,78 @@ struct mod_maker {
         }
     }
 
+    void copy_from_aim2(auto &&object) {
+        log("copying from aim2: {}", path{object}.filename().string());
+
+        auto ft = detect_file_type(object);
+        switch (ft) {
+        case file_type::model: {
+            auto p = aim2_game_dir / "data" / "aimmod.pak";
+            unpak(p);
+            p = make_unpak_dir(p);
+            if (fs::exists(p / object)) {
+                p /= object;
+            } else {
+                p /= "data";
+                p /= "models";
+                p /= object;
+                if (!fs::exists(p)) {
+                    throw std::runtime_error{std::format("aim2: model is not found: {}", p.string())};
+                }
+            }
+            // TODO: this - fix add_resource()/find_real_filename()
+            //auto copied_fn = get_mod_dir() / object;
+            auto copied_fn = get_data_dir() / object;
+            fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
+            run_p4_tool("mod_converter2", copied_fn);
+            add_resource(object);
+            db().copy_from_aim2(u8"Модели", path{object}.stem().string());
+            auto textures = read_lines(path{copied_fn} += ".textures.txt");
+            auto &m2 = open_aim2_db();
+            for (auto &&t : textures) {
+                path fn = std::get<std::string>(m2[u8"Текстуры"][t]["FILENAME"]);
+                if (fn.empty()) {
+                    throw std::runtime_error{"Can't find texture: "s + t};
+                }
+                copy_from_aim2(fn);
+            }
+            break;
+        }
+        case file_type::tm: {
+            auto p = aim2_game_dir / "data" / "aimtex.pak";
+            unpak(p);
+            p = make_unpak_dir(p);
+            if (fs::exists(p / object)) {
+                p /= object;
+            } else {
+                p /= "data";
+                p /= "tm";
+                p /= object;
+                if (!fs::exists(p)) {
+                    throw std::runtime_error{std::format("aim2: model is not found: {}", p.string())};
+                }
+            }
+            // TODO: this - fix add_resource()/find_real_filename()
+            // auto copied_fn = get_mod_dir() / object;
+            auto copied_fn = get_data_dir() / path{object}.filename().string();
+            fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
+            add_resource(path{object}.filename());
+            db().copy_from_aim2(u8"Текстуры", path{object}.stem().string());
+            break;
+        }
+        default:
+            SW_UNIMPLEMENTED;
+        }
+    }
+
 private:
+    db2::files::db2_internal &open_aim2_db() {
+        if (!aim2_available()) {
+            throw std::runtime_error{"aim2 is not available, setup it first"};
+        }
+        static auto m2 = db2{aim2_game_dir / "data" / "db", 1251}.open().to_map();
+        return m2;
+    }
     bool aim2_available() const {
         return !aim2_game_dir.empty();
     }
@@ -757,8 +831,10 @@ FF D7                   ; call    edi
             return;
         }
         if (fn.empty()) {
+            log("unpacking {}", p.string());
             run_p4_tool("unpaker", p);
         } else {
+            log("unpacking {} from {}", fn.string(), p.string());
             run_p4_tool("unpaker", p, fn);
         }
     }

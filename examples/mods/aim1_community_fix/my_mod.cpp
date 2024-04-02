@@ -37,6 +37,9 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1.mod_maker-master
 // patch note: You should start new game after applying this mod. This is necessary for map changes
 // patch note:  to became visible.
 // patch note:
+// patch note: Changes from 0.0.4
+// patch note: fix Finder-2 textures
+// patch note:
 // patch note: Changes from 0.0.3
 // patch note: add locale suffix to all quest databases (localized strings). Example: quest_ru_RU.*
 // patch note: add en_US localization (quest database, quest_en_US.*)
@@ -104,13 +107,7 @@ int main(int argc, char *argv[]) {
 #endif
     ));
     // patch note: add Finder-2 model and textures from aim2 game (lz)
-    // TODO: auto take models from aim2
-    // TODO: auto fix models with mod_converter2
-    mod.add_resource("MOD_GL_S3_PS_FINDER2");
-    // TODO: copy data from aim2 db
-    mod.add_resource("TEX_GL_S3_PS_FINDER_2.TM");
-    mod.add_resource("TEX_GL_S3_PS_FINDER_2_SPEC.TM");
-    mod.add_resource("TEX_GL_S3_PS_FINDER_2_SPEC_1.TM");
+    mod.copy_from_aim2("MOD_GL_S3_PS_FINDER2");
     // patch note: set correct model for a plant (Streef)
     mod.patch<uint8_t>("location6.mmo", 0x0005775D, 'R', 'F');
     // patch note: fix 'TOV_POLYMER_PLATE' spawn (Streef)
@@ -139,14 +136,10 @@ int main(int argc, char *argv[]) {
     // patch note: DB
     auto db = mod.db();
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
-    db[u8"Глайдеры"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
     // patch note - maybe copy from finder1?: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
-    // patch note: copy MOD_GL_S3_PS_FINDER2 model radius from aim2 (lz)
-    db.copy_from_aim2(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS");
-    // patch note: copy MOD_GL_S3_PS_FINDER2 textures from aim2 (lz)
-    db.copy_from_aim2(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2");
-    db.copy_from_aim2(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC");
-    db.copy_from_aim2(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1");
+    db[u8"Глайдеры"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
+    // patch note: copy MOD_GL_S3_PS_FINDER2 model from aim2 (lz)
+    // patch note: copy MOD_GL_S3_PS_FINDER2 textures data from aim2 (lz)
     // patch note: double gun for config CFG_NARGOON (double electro discharge) (lz)
     auto &tblcfg = db[u8"Конфигурации"];
     tblcfg["CFG_NARGOON"]["HEAVYGUN1"] = "GUN_ELECTRO_DISCHARGER";
