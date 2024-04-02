@@ -77,10 +77,15 @@ auto read_model(const path &fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
     auto &m = *(mod*)f.p;
     auto v = m.blocks();
+    std::set<std::string> textures;
     for (auto &&b : v) {
         if (b->h.type != BlockType::VisibleObject) {
             continue;
         }
+        textures.insert(b->h.mask);
+        textures.insert(b->h.spec);
+        // we do not use tex3,tex4 atm
+        //
         switch (b->mat_type) {
         case MaterialType::Texture: // works in m1
         case MaterialType::TextureWithGlareMap: // works in m1
@@ -106,6 +111,7 @@ auto read_model(const path &fn) {
             break;
         }
     }
+    write_lines(path{fn}+=".textures.txt",textures);
 }
 
 void convert_model(const path &fn)
