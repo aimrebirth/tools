@@ -278,7 +278,10 @@ struct mod_maker {
     // all you need is to provide injection address (virtual) with size
     // handle the call instruction in 'dispatcher' symbol (naked) of your dll
     constexpr static inline auto call_command_length = 5;
-    void make_injection(uint32_t virtual_address, uint32_t size = call_command_length) {
+    void make_injection(uint32_t virtual_address) {
+        make_injection(virtual_address, get_injection_size(virtual_address));
+    }
+    void make_injection(uint32_t virtual_address, uint32_t size) {
         uint32_t len = size;
         if (len < call_command_length) {
             throw std::runtime_error{"jumppad must be 5 bytes atleast"};

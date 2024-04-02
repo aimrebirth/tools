@@ -16,6 +16,7 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1.mod_maker-master
 #define AIM_TYPES_FILE_NAME "aim.exe.h"
 #define INJECTIONS_FILE_NAME "aim.exe.fixes.h"
 
+#include INJECTIONS_FILE_NAME
 #ifndef INJECTED_DLL
 #include "aim1_mod_maker.h"
 
@@ -128,7 +129,7 @@ int main(int argc, char *argv[]) {
         "IF(_ISGLIDER(GL_S2_PA_SINYGR)|_ISGLIDER(GL_S4_S_SINYGR))");
 
     // patch note: * _ISGLIDER() function can check exact glider name now, for example _ISGLIDER(GL_M3_A_FIRST1) (lz)
-    mod.make_injection(0x0043A1F6, 10);
+    mod.make_injection(aim1_fix::script_function__ISGLIDER);
     // end of scripts section
     // patch note:
 
@@ -193,13 +194,13 @@ int main(int argc, char *argv[]) {
     // patch note:    double light weapons: GL_M2_PA_NARGOON and GL_S3_PS_FINDER1
     // patch note:    double heavy weapons: GL_M3_PA_EYEDSTONE and GL_S3_PS_FINDER2
     // patch note:    (still have many bugs related)
-    mod.make_injection(0x004072FA);    // can trade for buy purposes
-    mod.make_injection(0x004D62E4);    // setup proper weapon slots for a glider
-    mod.make_injection(0x00417A6D);    // put weapon into the right slot after purchase
-    mod.make_injection(0x004176BC);    // sell correct weapon
-    mod.make_injection(0x004067C4);    // empty light weap
-    mod.make_injection(0x0040688B);    // empty heavy weap
-    mod.make_injection(0x0040C20E, 6); // can_leave_trade_window
+    mod.make_injection(aim1_fix::trade_actions_weapon_checks);
+    mod.make_injection(aim1_fix::setup_proper_weapon_slots_for_a_glider);
+    mod.make_injection(aim1_fix::put_weapon_into_the_right_slot_after_purchase);
+    mod.make_injection(aim1_fix::sell_correct_weapon);
+    mod.make_injection(aim1_fix::empty_light_weapon_message);
+    mod.make_injection(aim1_fix::empty_heavy_weapon_message);
+    mod.make_injection(aim1_fix::can_leave_trade_window);
     // patch note:
 
     // test scripts
@@ -285,7 +286,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-#else // INJECTED_DLL
-#include INJECTIONS_FILE_NAME
 #endif
