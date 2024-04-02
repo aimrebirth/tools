@@ -61,10 +61,12 @@ int main(int argc, char *argv[]) {
 #else
         "test_mod"s
 #endif
-        + "-0.0.4"s
+        + "-0.0.5"s
     );
     mod.add_code_file_for_archive(INJECTIONS_FILE_NAME);
     mod.add_code_file_for_archive(AIM_TYPES_FILE_NAME);
+    // this mod uses aim2 files (copy finder from there), so we must set up its path
+    mod.setup_aim2_path();
     mod.files_to_distribute.insert("language_switcher.exe");
 
     // patch note: === LIST OF CHANGES ===
@@ -135,52 +137,52 @@ int main(int argc, char *argv[]) {
 
     // patch note: Database Changes
     // patch note: DB
-    auto db = mod.db().open();
+    auto db = mod.db();
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
-    db(u8"Глайдеры", "GL_S3_PS_FINDER2", "MODEL") = "MOD_GL_S3_PS_FINDER2";
+    db[u8"Глайдеры"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
     // patch note: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
     // TODO: copy from aim2 db
-    db(u8"Модели", "MOD_GL_S3_PS_FINDER2", "RADIUS") = 4.768386f; // from aim2;
+    db[u8"Модели"]["MOD_GL_S3_PS_FINDER2"]["RADIUS"] = 4.768386f; // from aim2;
     //
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2", "TYPE") = 0;
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2", "COLOR") = 406137896;
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2", "FILENAME") = "Data\\TM\\TEX_GL_S3_PS_FINDER_2.TM";
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC", "TYPE") = 0;
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC", "COLOR") = 2631463;
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC", "FILENAME") = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC.TM";
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1", "TYPE") = 0;
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1", "COLOR") = 1842204;
-    db(u8"Текстуры", "TEX_GL_S3_PS_FINDER_2_SPEC_1", "FILENAME") = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC_1.TM";
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2"]["TYPE"] = 0;
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2"]["COLOR"] = 406137896;
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2"]["FILENAME"] = "Data\\TM\\TEX_GL_S3_PS_FINDER_2.TM";
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC"]["TYPE"] = 0;
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC"]["COLOR"] = 2631463;
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC"]["FILENAME"] = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC.TM";
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC_1"]["TYPE"] = 0;
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC_1"]["COLOR"] = 1842204;
+    db[u8"Текстуры"]["TEX_GL_S3_PS_FINDER_2_SPEC_1"]["FILENAME"] = "Data\\TM\\TEX_GL_S3_PS_FINDER_2_SPEC_1.TM";
     // patch note: double gun for config CFG_NARGOON (double electro discharge) (lz)
-    auto tblcfg = db(u8"Конфигурации");
-    tblcfg("CFG_NARGOON", "HEAVYGUN1") = "GUN_ELECTRO_DISCHARGER";
+    auto &tblcfg = db[u8"Конфигурации"];
+    tblcfg["CFG_NARGOON"]["HEAVYGUN1"] = "GUN_ELECTRO_DISCHARGER";
     // patch note: double gun for config CFG_NARGOON1 (double two-barreled atomic gun) (lz)
-    tblcfg("CFG_NARGOON1", "HEAVYGUN1") = "GUN_DOUBLE_BARRELED_ATOMIC_GUN";
+    tblcfg["CFG_NARGOON1"]["HEAVYGUN1"] = "GUN_DOUBLE_BARRELED_ATOMIC_GUN";
     // patch note: double gun for config CFG_BASE_NARG - Nargoon (double two-barreled atomic gun) (lz)
-    tblcfg("CFG_BASE_NARG", "HEAVYGUN1") = "GUN_DOUBLE_BARRELED_ATOMIC_GUN";
+    tblcfg["CFG_BASE_NARG"]["HEAVYGUN1"] = "GUN_DOUBLE_BARRELED_ATOMIC_GUN";
     // patch note: double gun for config CFG_STNAR-97 - Nargoon (double GUN_INFRAATOMIC_PLASMA_GUN) (lz)
-    tblcfg("CFG_STNAR-97", "HEAVYGUN1") = "GUN_INFRAATOMIC_PLASMA_GUN";
+    tblcfg["CFG_STNAR-97"]["HEAVYGUN1"] = "GUN_INFRAATOMIC_PLASMA_GUN";
     // patch note: double gun for config CFG_FINDER_1 (std.3): from GUN_MICROWAVE_OSCILLATOR (std.4) and GUN_CHAOS_GENERATOR (std.4) to double GUN_FOUR_BARRELED_IMP_GAZER (std.3) (lz)
-    auto finder1 = tblcfg("CFG_FINDER_1");
-    finder1("LIGHTGUN1") = "GUN_FOUR_BARRELED_IMP_GAZER";
-    finder1("HEAVYGUN1") = "GUN_FOUR_BARRELED_IMP_GAZER";
+    auto &finder1 = tblcfg["CFG_FINDER_1"];
+    finder1["LIGHTGUN1"] = "GUN_FOUR_BARRELED_IMP_GAZER";
+    finder1["HEAVYGUN1"] = "GUN_FOUR_BARRELED_IMP_GAZER";
     // patch note: double gun for config CFG_FINDER_2: from GUN_FOUR_BARRELED_IMP_GAZER (std.3) + GUN_POZITRON_EMITTER (std.4) to double GUN_TACHYON_HEATER (std.3) (lz)
-    auto finder2 = tblcfg("CFG_FINDER_2");
-    finder2("LIGHTGUN1") = "GUN_TACHYON_HEATER";
-    finder2("HEAVYGUN1") = "GUN_TACHYON_HEATER";
+    auto &finder2 = tblcfg["CFG_FINDER_2"];
+    finder2["LIGHTGUN1"] = "GUN_TACHYON_HEATER";
+    finder2["HEAVYGUN1"] = "GUN_TACHYON_HEATER";
     // patch note: double gun for config CFG_EYEDSTONE_1: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
-    tblcfg("CFG_EYEDSTONE_1", "LIGHTGUN1") = "GUN_FAST_ELECTROMAGNETIC_BEAM";
+    tblcfg["CFG_EYEDSTONE_1"]["LIGHTGUN1"] = "GUN_FAST_ELECTROMAGNETIC_BEAM";
     // patch note: double gun for config CFG_EYEDSTONE_2: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
-    tblcfg("CFG_EYEDSTONE_2", "LIGHTGUN1") = "GUN_FAST_ELECTROMAGNETIC_BEAM";
+    tblcfg["CFG_EYEDSTONE_2"]["LIGHTGUN1"] = "GUN_FAST_ELECTROMAGNETIC_BEAM";
     // patch note: INFORMATION
     {
-        auto quest = mod.quest("ru_RU").open();
+        auto quest = mod.quest("ru_RU");
         // patch note: add name for SINIGR armor, it was unnamed before (lz)
-        quest("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME") = u8"Особая нуль-броня";
+        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = (const char *)u8"Особая нуль-броня";
     }
     {
-        auto quest = mod.quest("en_US").open();
-        quest("INFORMATION", "EQP_ZERO_ARMOR_S_SIN", "NAME") = u8"Special zero armor";
+        auto quest = mod.quest("en_US");
+        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = (const char *)u8"Special zero armor";
     }
     // more known langs: cs_CZ, de_DE, et_EE, fr_FR
     // you can find vanilla dbs here (not sure if it is 1.00 or 1.03, probably 1.00):
@@ -209,10 +211,10 @@ int main(int argc, char *argv[]) {
     // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
     mod.enable_free_camera();
     // patch note dev: make initial reactor (EQP_GLUON_REACTOR_S1) and drive (EQP_ION_DRIVE_S1) more powerful
-    db(u8"Оборудование", "EQP_GLUON_REACTOR_S1", "VALUE1") = 9'000'000.f;
-    db(u8"Оборудование", "EQP_ION_DRIVE_S1", "VALUE1") = 4158000.f;
+    db[u8"Оборудование"]["EQP_GLUON_REACTOR_S1"]["VALUE1"] = 9'000'000.f;
+    db[u8"Оборудование"]["EQP_ION_DRIVE_S1"]["VALUE1"] = 4158000.f;
     // patch note dev: make EQP_VACUUM_DRIVE_S4 more powerful
-    db(u8"Оборудование", "EQP_VACUUM_DRIVE_S4", "VALUE1") = 4158000.f;
+    db[u8"Оборудование"]["EQP_VACUUM_DRIVE_S4"]["VALUE1"] = 4158000.f;
     // patch note dev: start money, rating, glider and sector access
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
     _ADDBALANCE(300 )
@@ -264,7 +266,7 @@ int main(int argc, char *argv[]) {
     // patch note: lz
     // patch note:
     // patch note: Have fun!
-    db.~files();
+    db.write();
     mod.apply();
 
     // patch note:

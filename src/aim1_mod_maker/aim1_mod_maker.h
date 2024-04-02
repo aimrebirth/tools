@@ -87,11 +87,11 @@ struct mod_maker {
     std::string name;
     std::string version;
     path game_dir;
+    path aim2_game_dir;
     std::set<path> files_to_pak;
     std::set<path> files_to_distribute;
     std::set<path> code_files_to_distribute;
     std::source_location loc;
-    int db_codepage = 1251;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
         init(fs::current_path());
@@ -316,14 +316,37 @@ struct mod_maker {
         files_to_pak.insert(fn);
     }
 
-    db2 db() {
-        return open_db("db");
+    auto db() {
+        return open_db("db", 1251); // always 1251 probably
     }
-    db2 quest(const std::string &language = {}) {
+    auto quest(const std::string &language = {}) {
+        // TODO: check if it's possible to use utf8/16 in aim game
+        // set codepages here until we fix or implement unicode
+        int db_codepage = 1251;
+        if (language == "fr_fr") {
+            // change cp. Also for other langs
+        }
         if (language.empty()) {
-            return open_db("quest");
+            return open_db("quest", db_codepage);
         } else {
-            return open_db("quest_" + language);
+            return open_db("quest_" + language, db_codepage);
+        }
+    }
+
+    void setup_aim2_path() {
+        try {
+            aim2_game_dir = read_file(game_dir / "aim2_path.txt");
+            if (!fs::exists(aim2_game_dir)) {
+                throw std::runtime_error{"aim2 dir does not exist"};
+            }
+            if (!fs::is_directory(aim2_game_dir)) {
+                throw std::runtime_error{"aim2 path is not a directory"};
+            }
+        } catch (std::exception &e) {
+            throw std::runtime_error{std::format(
+                "Can't read aim2_path.\n"
+                "Create aim2_path.txt near your aim.exe and write down aim2 path there.\n"
+                "Error: {}", e.what())};
         }
     }
 
@@ -335,7 +358,7 @@ private:
         }
         return backup;
     }
-    auto open_db(auto &&name) {
+    auto open_db(auto &&name, int db_codepage) {
         auto d = db2{get_data_dir() / name, db_codepage};
         auto files = d.open().get_files();
         for (auto &&f : files) {
@@ -345,7 +368,7 @@ private:
             }
             files_to_distribute.insert(f);
         }
-        return d;
+        return d.open().to_map();
     }
     path get_hash_fn(path fn, const byte_array &data) const {
         return get_mod_dir() / std::format("{:0X}.hash", get_insert_hash(fn, data));
