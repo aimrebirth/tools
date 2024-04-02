@@ -136,7 +136,6 @@ int main(int argc, char *argv[]) {
     // patch note: DB
     auto db = mod.db();
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
-    // patch note - maybe copy from finder1?: change MOD_GL_S3_PS_FINDER2 model radius to MOD_GL_S3_PS_FINDER1 radius (lz)
     db[u8"Глайдеры"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
     // patch note: copy MOD_GL_S3_PS_FINDER2 model from aim2 (lz)
     // patch note: copy MOD_GL_S3_PS_FINDER2 textures data from aim2 (lz)
@@ -161,6 +160,10 @@ int main(int argc, char *argv[]) {
     tblcfg["CFG_EYEDSTONE_1"]["LIGHTGUN1"] = "GUN_FAST_ELECTROMAGNETIC_BEAM";
     // patch note: double gun for config CFG_EYEDSTONE_2: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
     tblcfg["CFG_EYEDSTONE_2"]["LIGHTGUN1"] = "GUN_FAST_ELECTROMAGNETIC_BEAM";
+    // end of db changes
+#ifdef NDEBUG
+    db.write();
+#endif
     // patch note: INFORMATION
     {
         auto quest = mod.quest("ru_RU");
@@ -202,6 +205,17 @@ int main(int argc, char *argv[]) {
     db[u8"Оборудование"]["EQP_ION_DRIVE_S1"]["VALUE1"] = 4158000.f;
     // patch note dev: make EQP_VACUUM_DRIVE_S4 more powerful
     db[u8"Оборудование"]["EQP_VACUUM_DRIVE_S4"]["VALUE1"] = 4158000.f;
+    // end of db changes in dev mode
+    db.write();
+    // patch note dev: copy gliders from m2: GL_M4_C_MASTODON, GL_M4_S_FLASH, GL_M4_A_FORWARD, GL_M4_A_FORWARD_BLACK
+    auto add_glider = [&, after = "GL_M1_A_ATTACKER"s](auto &&name) mutable {
+        mod.copy_glider_from_aim2(name);
+        after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(name));
+    };
+    add_glider("GL_M4_C_MASTODON");
+    add_glider("GL_M4_A_FORWARD");
+    add_glider("GL_M4_A_FORWARD_BLACK");
+    add_glider("GL_M4_S_FLASH");
     // patch note dev: start money, rating, glider and sector access
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
     _ADDBALANCE(300 )
@@ -253,7 +267,6 @@ int main(int argc, char *argv[]) {
     // patch note: lz
     // patch note:
     // patch note: Have fun!
-    db.write();
     mod.apply();
 
     // patch note:

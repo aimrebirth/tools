@@ -138,6 +138,7 @@ struct mod_maker {
     std::set<path> files_to_pak;
     std::set<path> files_to_distribute;
     std::set<path> code_files_to_distribute;
+    std::set<path> restored_files;
     std::source_location loc;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
@@ -278,9 +279,10 @@ struct mod_maker {
 
         write_file(get_hash_fn(fn, data), ""s);
     }
-    void add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const mmo_storage2::map_good &mg) {
+    std::string add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const mmo_storage2::map_good &mg) {
         byte_array data((uint8_t*)&mg, (uint8_t*)&mg + sizeof(mg));
         add_map_good(mmo_fn, building_name, after_good_name, data);
+        return mg.name;
     }
     void add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const byte_array &data) {
         files_to_pak.insert(find_real_filename(mmo_fn));
@@ -362,28 +364,6 @@ struct mod_maker {
         fn = find_real_filename(fn);
         files_to_pak.insert(fn);
     }
-
-    auto db() {
-        auto w = open_db("db", 1251); // always 1251 probably
-        if (aim2_available()) {
-            w.m2_ = &open_aim2_db();
-        }
-        return w;
-    }
-    auto quest(const std::string &language = {}) {
-        // TODO: check if it's possible to use utf8/16 in aim game
-        // set codepages here until we fix or implement unicode
-        int db_codepage = 1251;
-        if (language == "fr_fr") {
-            // change cp. Also for other langs
-        }
-        if (language.empty()) {
-            return open_db("quest", db_codepage);
-        } else {
-            return open_db("quest_" + language, db_codepage);
-        }
-    }
-
     void setup_aim2_path() {
         try {
             aim2_game_dir = read_file(game_dir / "aim2_path.txt");
@@ -394,13 +374,13 @@ struct mod_maker {
                 throw std::runtime_error{"aim2 path is not a directory"};
             }
         } catch (std::exception &e) {
-            throw std::runtime_error{std::format(
-                "Can't read aim2_path.\n"
-                "Create aim2_path.txt near your aim.exe and write down aim2 path there.\n"
-                "Error: {}", e.what())};
+            throw std::runtime_error{
+                std::format("Can't read aim2_path.\n"
+                            "Create aim2_path.txt near your aim.exe and write down aim2 path there.\n"
+                            "Error: {}",
+                            e.what())};
         }
     }
-
     void copy_from_aim2(auto &&object) {
         log("copying from aim2: {}", path{object}.filename().string());
 
@@ -421,7 +401,7 @@ struct mod_maker {
                 }
             }
             // TODO: this - fix add_resource()/find_real_filename()
-            //auto copied_fn = get_mod_dir() / object;
+            // auto copied_fn = get_mod_dir() / object;
             auto copied_fn = get_data_dir() / object;
             fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
             run_p4_tool("mod_converter2", copied_fn);
@@ -464,6 +444,40 @@ struct mod_maker {
             SW_UNIMPLEMENTED;
         }
     }
+    void copy_glider_from_aim2(auto &&object) {
+        copy_from_aim2("MOD_"s + object);
+        db().copy_from_aim2(u8"Глайдеры", path{object}.stem().string());
+        quest("ru_RU").copy_from_aim2("INFORMATION", path{object}.stem().string());
+    }
+
+    auto db() {
+        auto w = open_db("db", 1251); // always 1251 probably
+        if (aim2_available()) {
+            w.m2_ = &open_aim2_db();
+        }
+        return w;
+    }
+    auto quest(const std::string &language = {}) {
+        // TODO: check if it's possible to use utf8/16 in aim game
+        // set codepages here until we fix or implement unicode
+        int db_codepage = 1251;
+        if (language == "fr_fr") {
+            // change cp. Also for other langs
+        }
+        if (language.empty()) {
+            auto w = open_db("quest", db_codepage);
+            if (aim2_available()) {
+                w.m2_ = &open_aim2_quest();
+            }
+            return w;
+        } else {
+            auto w = open_db("quest_" + language, db_codepage);
+            if (aim2_available()) {
+                w.m2_ = &open_aim2_quest();
+            }
+            return w;
+        }
+    }
 
 private:
     db2::files::db2_internal &open_aim2_db() {
@@ -473,10 +487,17 @@ private:
         static auto m2 = db2{aim2_game_dir / "data" / "db", 1251}.open().to_map();
         return m2;
     }
+    db2::files::db2_internal &open_aim2_quest() {
+        if (!aim2_available()) {
+            throw std::runtime_error{"aim2 is not available, setup it first"};
+        }
+        static auto m2 = db2{aim2_game_dir / "data" / "quest", 1251}.open().to_map();
+        return m2;
+    }
     bool aim2_available() const {
         return !aim2_game_dir.empty();
     }
-    path make_bak_file(const path &fn) {
+    static path make_bak_file(const path &fn) {
         auto backup = path{fn} += ".bak";
         if (!fs::exists(backup)) {
             fs::copy_file(fn, backup);
@@ -487,10 +508,7 @@ private:
         auto d = db2{get_data_dir() / name, db_codepage};
         auto files = d.open().get_files();
         for (auto &&f : files) {
-            auto bak = make_bak_file(f);
-            if (fs::exists(bak)) {
-                fs::copy_file(bak, f, fs::copy_options::overwrite_existing);
-            }
+            backup_or_restore_once(f);
             files_to_distribute.insert(f);
         }
         db_wrapper w;
@@ -498,6 +516,13 @@ private:
         w.fn = d.fn;
         w.codepage = d.codepage;
         return w;
+    }
+    void backup_or_restore_once(const path &fn) {
+        auto bak = make_bak_file(fn);
+        if (fs::exists(bak) && !restored_files.contains(fn)) {
+            fs::copy_file(bak, fn, fs::copy_options::overwrite_existing);
+            restored_files.insert(fn);
+        }
     }
     path get_hash_fn(path fn, const byte_array &data) const {
         return get_mod_dir() / std::format("{:0X}.hash", get_insert_hash(fn, data));
