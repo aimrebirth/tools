@@ -1,5 +1,6 @@
 #pragma once
 
+#undef LOBYTE
 #define LOBYTE(x) (*((uint8_t *)&(x)))
 
 char decode_f2(char *input, int size, char *output) {
