@@ -25,13 +25,13 @@
 
 #include <variant>
 
-std::string utf8_to_dbstr(const char8_t *s, int codepage = 1251) {
+std::string utf8_to_dbstr(const char8_t *s, int codepage) {
     return str2str((const char *)s, CP_UTF8, codepage);
 }
-std::string utf8_to_dbstr(const char *s, int codepage = 1251) {
+std::string utf8_to_dbstr(const char *s, int codepage) {
     return utf8_to_dbstr((const char8_t *)s, codepage);
 }
-std::string utf8_to_dbstr(const std::string &s, int codepage = 1251) {
+std::string utf8_to_dbstr(const std::string &s, int codepage) {
     return utf8_to_dbstr((const char8_t *)s.c_str(), codepage);
 }
 
@@ -149,7 +149,6 @@ struct db2 {
     };
 
     path fn;
-    int codepage{1251};
 
     template <typename T>
     struct file {
@@ -223,9 +222,9 @@ struct db2 {
                     }
                 }
             }
-            void save(const path &fn, int codepage = 1251) {
-                auto s_to_char20 = [&](char20 &dst, const std::string &in, int codepage = 1251) {
-                    auto s = utf8_to_dbstr(in);
+            void save(const path &fn, int codepage) {
+                auto s_to_char20 = [&](char20 &dst, const std::string &in, int codepage) {
+                    auto s = utf8_to_dbstr(in, codepage);
                     if (s.size() + 1 > sizeof(char20)) {
                         throw std::runtime_error{"too long string"};
                     }
@@ -241,7 +240,7 @@ struct db2 {
                 for (auto &&[tn,td] : m) {
                     tab::table &t = tabv;
                     t.id = table_id;
-                    s_to_char20(t.name, tn, 1251); // always 1251
+                    s_to_char20(t.name, tn, 1251); // always 1251, because latin only letters
 
                     for (auto &&[_,fd] : td) {
                         for (auto &&[fn,fv] : fd) {
@@ -255,7 +254,7 @@ struct db2 {
                         f.table_id = table_id;
                         f.type = ft;
                         ft = (field_type)total_fields;
-                        s_to_char20(f.name, fn, 1251); // always 1251 if we have any field in Russian
+                        s_to_char20(f.name, fn, 1251); // always 1251, because latin only letters
                     }
 
                     ++table_id;
@@ -282,7 +281,7 @@ struct db2 {
                             auto sz = visit(fv,
                                 [&](const int &v) { return datv = v; },
                                 [&](const float &v) { return datv = v; },
-                                [&](const std::string &v) { return datv = utf8_to_dbstr(v); });
+                                [&](const std::string &v) { return datv = utf8_to_dbstr(v, codepage); });
                             auto &v = datv.at<dat::field_value_base>(-(sizeof(dat::field_value_base) + sz));
                             v.field_id = (int)fields[tn].find(fn)->second;
                             v.size = sz;
@@ -300,9 +299,9 @@ struct db2 {
 
         // converts string to utf8
         // filters out values with empty name ""
-        auto to_map() const {
-            auto prepare_string = [](auto &&in) {
-                auto s = str2utf8(in);
+        auto to_map(int cp) const {
+            auto prepare_string = [&](auto &&in) {
+                auto s = str2utf8(in, cp);
                 // we have some erroneous table values (records) with spaces
                 // we can trim only field values, but don't do it at the moment
                 //boost::trim(s);

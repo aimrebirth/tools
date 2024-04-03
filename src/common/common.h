@@ -18,11 +18,25 @@
 
 #pragma once
 
-#include <string>
 #include <iostream>
+#include <map>
+#include <string>
 
-std::string str2utf8(const std::string &codepage_str, int cp = 0);
-std::wstring str2utf16(const std::string &codepage_str, int cp = 0);
+// MultiByteToWideChar: https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
+// code pages: https://msdn.microsoft.com/en-us/library/windows/desktop/dd317756(v=vs.85).aspx
+// https://www.ibm.com/docs/en/rational-soft-arch/9.6.1?topic=overview-locales-code-pages-supported
+static const std::map<std::string, int> code_pages
+{
+    { "en", 0 },
+    { "cz", 1250 },
+    { "ru", 1251 },
+    { "ge", 1252 },
+    { "fr", 1252 },
+    { "et", 1257 },
+};
+
+std::string str2utf8(const std::string &codepage_str, int cp);
+std::wstring str2utf16(const std::string &codepage_str, int cp);
 
 std::string str2str(const std::string &codepage_str, int cp_from, int cp_to);
 

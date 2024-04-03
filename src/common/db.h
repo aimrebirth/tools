@@ -107,5 +107,5 @@ struct db
 
     void load(const buffer &b);
     void open(const path &basename);
-    polygon4::tools::db::processed_db process() const;
+    polygon4::tools::db::processed_db process(int cp) const;
 };

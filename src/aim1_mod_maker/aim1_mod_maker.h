@@ -85,7 +85,7 @@ struct mod_maker {
             }
         }
         void write() {
-            m.save(fn);
+            m.save(fn, codepage);
             written = true;
         }
         auto &operator[](this auto &&d, const std::string &s) {
@@ -475,7 +475,7 @@ struct mod_maker {
         if (!aim2_available()) {
             throw std::runtime_error{"aim2 is not available, setup it first"};
         }
-        static auto m2 = db2{aim2_game_dir / "data" / "db", 1251}.open().to_map();
+        static auto m2 = db2{aim2_game_dir / "data" / "db"}.open().to_map(1251);
         return m2;
     }
 
@@ -489,7 +489,7 @@ private:
         if (!aim2_available()) {
             throw std::runtime_error{"aim2 is not available, setup it first"};
         }
-        static auto m2 = db2{aim2_game_dir / "data" / "quest", 1251}.open().to_map();
+        static auto m2 = db2{aim2_game_dir / "data" / "quest"}.open().to_map(1251);
         return m2;
     }
     bool aim2_available() const {
@@ -503,16 +503,16 @@ private:
         return backup;
     }
     db_wrapper open_db(auto &&name, int db_codepage) {
-        auto d = db2{get_data_dir() / name, db_codepage};
+        auto d = db2{get_data_dir() / name};
         auto files = d.open().get_files();
         for (auto &&f : files) {
             backup_or_restore_once(f);
             files_to_distribute.insert(f);
         }
         db_wrapper w;
-        w.m = d.open().to_map();
+        w.m = d.open().to_map(db_codepage);
         w.fn = d.fn;
-        w.codepage = d.codepage;
+        w.codepage = db_codepage;
         return w;
     }
     void backup_or_restore_once(const path &fn) {

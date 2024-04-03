@@ -32,6 +32,7 @@
 int main(int argc, char *argv[])
 {
     cl::opt<path> db_fn(cl::Positional, cl::desc("<db file or json file to backwards conversion>"), cl::Required);
+    cl::opt<int> codepage(cl::Positional, cl::desc("<codepage>"), cl::Required);
 
     cl::ParseCommandLineOptions(argc, argv);
 
@@ -40,12 +41,12 @@ int main(int argc, char *argv[])
     if (fn.extension() != ".json") {
         db2 db{fn};
         auto f = db.open();
-        auto m = f.to_map();
+        auto m = f.to_map(codepage);
         write_file(path{fn} += ".json", m.to_json().dump(1));
     } else {
         db2::files::db2_internal db;
         db.load_from_json(fn);
-        db.save(fn.parent_path() / fn.stem());
+        db.save(fn.parent_path() / fn.stem(), codepage);
     }
 
     return 0;

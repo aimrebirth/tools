@@ -147,11 +147,11 @@ void db::open(const path &p)
         v.load_fields(t, b);
 }
 
-polygon4::tools::db::processed_db db::process() const
+polygon4::tools::db::processed_db db::process(int cp) const
 {
-    auto process_string = [](const std::string &s)
+    auto process_string = [&](const std::string &s)
     {
-        return str2utf8(s.c_str());
+        return str2utf8(s.c_str(), cp);
     };
 
     polygon4::tools::db::processed_db pdb;

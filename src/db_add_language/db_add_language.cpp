@@ -41,15 +41,6 @@
 
 #include <math.h>
 
-// MultiByteToWideChar: https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
-// code pages: https://msdn.microsoft.com/en-us/library/windows/desktop/dd317756(v=vs.85).aspx
-const std::map<std::string, int> code_pages
-{
-    { "en", 0 },
-    { "ru", 1251 },
-    { "et", 1257 },
-};
-
 static int get_cp(const std::string &cp)
 {
     auto i = code_pages.find(cp);
