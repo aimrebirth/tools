@@ -145,11 +145,11 @@ int main(int argc, char *argv[]) {
     // patch note: DB
     auto db = mod.db();
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
-    db[u8"Глайдеры"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
+    db["Р“Р»Р°Р№РґРµСЂС‹"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
     // patch note: copy MOD_GL_S3_PS_FINDER2 model from aim2 (lz)
     // patch note: copy MOD_GL_S3_PS_FINDER2 textures data from aim2 (lz)
     // patch note: double gun for config CFG_NARGOON (double electro discharge) (lz)
-    auto &tblcfg = db[u8"Конфигурации"];
+    auto &tblcfg = db["РљРѕРЅС„РёРіСѓСЂР°С†РёРё"];
     tblcfg["CFG_NARGOON"]["HEAVYGUN1"] = "GUN_ELECTRO_DISCHARGER";
     // patch note: double gun for config CFG_NARGOON1 (double two-barreled atomic gun) (lz)
     tblcfg["CFG_NARGOON1"]["HEAVYGUN1"] = "GUN_DOUBLE_BARRELED_ATOMIC_GUN";
@@ -177,11 +177,11 @@ int main(int argc, char *argv[]) {
     {
         auto quest = mod.quest("ru_RU");
         // patch note: add name for SINIGR armor, it was unnamed before (lz)
-        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = (const char *)u8"Особая нуль-броня";
+        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "РћСЃРѕР±Р°СЏ РЅСѓР»СЊ-Р±СЂРѕРЅСЏ";
     }
     {
         auto quest = mod.quest("en_US");
-        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = (const char *)u8"Special zero armor";
+        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Special zero armor";
     }
     // more known langs: cs_CZ, de_DE, et_EE, fr_FR
     // you can find vanilla dbs here (not sure if it is 1.00 or 1.03, probably 1.00):
@@ -212,13 +212,13 @@ int main(int argc, char *argv[]) {
     // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
     mod.enable_free_camera();
     // patch note dev: make initial reactor (EQP_GLUON_REACTOR_S1) and drive (EQP_ION_DRIVE_S1) more powerful
-    db[u8"Оборудование"]["EQP_GLUON_REACTOR_S1"]["VALUE1"] = 9'000'000.f;
-    db[u8"Оборудование"]["EQP_ION_DRIVE_S1"]["VALUE1"] = 4158000.f;
+    db["РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ"]["EQP_GLUON_REACTOR_S1"]["VALUE1"] = 9'000'000.f;
+    db["РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ"]["EQP_ION_DRIVE_S1"]["VALUE1"] = 4158000.f;
     // patch note dev: make EQP_VACUUM_DRIVE_S4 more powerful
-    db[u8"Оборудование"]["EQP_VACUUM_DRIVE_S4"]["VALUE1"] = 4158000.f;
+    db["РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ"]["EQP_VACUUM_DRIVE_S4"]["VALUE1"] = 4158000.f;
     // end of db changes in dev mode
-    auto m2_gliders = mod.open_aim2_db()[u8"Глайдеры"];
-    for (auto &&[n,_] : db[u8"Глайдеры"]) {
+    auto m2_gliders = mod.open_aim2_db()["Р“Р»Р°Р№РґРµСЂС‹"];
+    for (auto &&[n,_] : db["Р“Р»Р°Р№РґРµСЂС‹"]) {
         m2_gliders.erase(n);
     }
     m2_gliders.erase("GL_BOT");

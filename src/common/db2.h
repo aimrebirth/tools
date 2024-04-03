@@ -187,9 +187,6 @@ struct db2 {
             auto &operator[](this auto &&d, const std::string &s) {
                 return d.m[s];
             }
-            auto &operator[](this auto &&d, const std::u8string &s) {
-                return d.m[(const char *)s.c_str()];
-            }
             auto to_json() const {
                 nlohmann::json ja;
                 for (auto &&[tn,t] : m) {

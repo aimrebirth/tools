@@ -91,9 +91,6 @@ struct mod_maker {
         auto &operator[](this auto &&d, const std::string &s) {
             return d.m[s];
         }
-        auto &operator[](this auto &&d, const std::u8string &s) {
-            return d.m[(const char *)s.c_str()];
-        }
         auto &m2() {
             return *m2_;
         }
@@ -399,11 +396,11 @@ struct mod_maker {
             fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
             run_p4_tool("mod_converter2", copied_fn);
             add_resource(object);
-            db().copy_from_aim2(u8"Модели", path{object}.stem().string());
+            db().copy_from_aim2("РњРѕРґРµР»Рё", path{object}.stem().string());
             auto textures = read_lines(path{copied_fn} += ".textures.txt");
             auto &m2 = open_aim2_db();
             for (auto &&t : textures) {
-                path fn = std::get<std::string>(m2[u8"Текстуры"][t]["FILENAME"]);
+                path fn = std::get<std::string>(m2["РўРµРєСЃС‚СѓСЂС‹"][t]["FILENAME"]);
                 if (fn.empty()) {
                     throw std::runtime_error{"Can't find texture: "s + t};
                 }
@@ -430,7 +427,7 @@ struct mod_maker {
             auto copied_fn = get_data_dir() / path{object}.filename().string();
             fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
             add_resource(path{object}.filename());
-            db().copy_from_aim2(u8"Текстуры", path{object}.stem().string());
+            db().copy_from_aim2("РўРµРєСЃС‚СѓСЂС‹", path{object}.stem().string());
             break;
         }
         default:
@@ -441,7 +438,7 @@ struct mod_maker {
         log("copying glider from aim2: {}", object);
 
         copy_from_aim2("MOD_"s + object);
-        db().copy_from_aim2(u8"Глайдеры", path{object}.stem().string());
+        db().copy_from_aim2("Р“Р»Р°Р№РґРµСЂС‹", path{object}.stem().string());
         // may be absent - try..catch?
         quest("ru_RU").copy_from_aim2("INFORMATION", path{object}.stem().string());
     }
