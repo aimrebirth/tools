@@ -30,7 +30,7 @@ static const std::map<std::string, int> code_pages
     { "en", 0 },
     { "cz", 1250 },
     { "ru", 1251 },
-    { "ge", 1252 },
+    { "de", 1252 },
     { "fr", 1252 },
     { "et", 1257 },
 };

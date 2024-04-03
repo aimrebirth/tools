@@ -186,6 +186,9 @@ struct db2 {
             auto &operator[](this auto &&d, const std::string &s) {
                 return d.m[s];
             }
+            auto &at(this auto &&d, const std::string &s) {
+                return d.m.at(s);
+            }
             auto to_json() const {
                 nlohmann::json ja;
                 for (auto &&[tn,t] : m) {
@@ -222,7 +225,7 @@ struct db2 {
                     }
                 }
             }
-            void save(const path &fn, int codepage) {
+            auto save(const path &fn, int codepage) {
                 auto s_to_char20 = [&](char20 &dst, const std::string &in, int codepage) {
                     auto s = utf8_to_dbstr(in, codepage);
                     if (s.size() + 1 > sizeof(char20)) {
@@ -291,9 +294,15 @@ struct db2 {
                     ++table_id;
                 }
 
-                write_file(path{fn} += ".tab", tabv.d);
-                write_file(path{fn} += ".ind", indv.d);
-                write_file(path{fn} += ".dat", datv.d);
+                std::set<path> files;
+                auto f = [&](auto &&fn, auto &&d) {
+                    write_file(fn, d);
+                    files.insert(fn);
+                };
+                f(path{fn} += ".tab", tabv.d);
+                f(path{fn} += ".ind", indv.d);
+                f(path{fn} += ".dat", datv.d);
+                return files;
             }
         };
 

@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
 
     // patch note: Database Changes
     // patch note: DB
-    auto db = mod.db();
+    auto &db = mod.db();
     // patch note: set glider GL_S3_PS_FINDER2 model to MOD_GL_S3_PS_FINDER2 (lz)
     db["Глайдеры"]["GL_S3_PS_FINDER2"]["MODEL"] = "MOD_GL_S3_PS_FINDER2";
     // patch note: copy MOD_GL_S3_PS_FINDER2 model from aim2 (lz)
@@ -170,24 +170,12 @@ int main(int argc, char *argv[]) {
     // patch note: double gun for config CFG_EYEDSTONE_2: from GUN_FAST_ELECTROMAGNETIC_BEAM to double GUN_FAST_ELECTROMAGNETIC_BEAM (lz)
     tblcfg["CFG_EYEDSTONE_2"]["LIGHTGUN1"] = "GUN_FAST_ELECTROMAGNETIC_BEAM";
     // end of db changes
-#ifdef NDEBUG
-    db.write();
-#endif
+
     // patch note: INFORMATION
-    {
-        auto quest = mod.quest("ru_RU");
-        // patch note: add name for SINIGR armor, it was unnamed before (lz)
-        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Особая нуль-броня";
-    }
-    {
-        auto quest = mod.quest("en_US");
-        quest["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Special zero armor";
-    }
-    // more known langs: cs_CZ, de_DE, et_EE, fr_FR
-    // you can find vanilla dbs here (not sure if it is 1.00 or 1.03, probably 1.00):
-    // Supercluster discord
-    // https://discord.gg/CFFKpTwYZD
-    // https://discord.com/channels/463656710666584064/516316063747538945/615934366593581067
+    auto &quest = mod.quest();
+    // patch note: add name for SINIGR armor, it was unnamed before (lz)
+    quest["ru_RU"]["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Особая нуль-броня";
+    quest["en_US"]["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Special zero armor";
     // patch note:
 
     // patch note: Game Changes
@@ -217,13 +205,12 @@ int main(int argc, char *argv[]) {
     // patch note dev: make EQP_VACUUM_DRIVE_S4 more powerful
     db["Оборудование"]["EQP_VACUUM_DRIVE_S4"]["VALUE1"] = 4158000.f;
     // end of db changes in dev mode
-    auto m2_gliders = mod.open_aim2_db()["Глайдеры"];
+    auto m2_gliders = mod.open_aim2_db().at("Глайдеры");
     for (auto &&[n,_] : db["Глайдеры"]) {
         m2_gliders.erase(n);
     }
     m2_gliders.erase("GL_BOT");
     m2_gliders.erase("GL_RACE1");
-    db.write();
     // patch note dev: copy gliders from m2: GL_M4_C_MASTODON, GL_M4_S_FLASH, GL_M4_A_FORWARD, GL_M4_A_FORWARD_BLACK
     auto add_glider = [&, after = "GL_M1_A_ATTACKER"s](auto &&name) mutable {
         mod.copy_glider_from_aim2(name);

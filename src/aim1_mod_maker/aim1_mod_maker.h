@@ -74,7 +74,7 @@ struct aim_exe_v1_06_constants {
 struct mod_maker {
     struct db_wrapper {
         db2::files::db2_internal m;
-        db2::files::db2_internal *m2_{};
+        db2::files::db2_internal m2;
         path fn;
         int codepage{1251};
         bool written{};
@@ -88,33 +88,56 @@ struct mod_maker {
             m.save(fn, codepage);
             written = true;
         }
+        auto write(const path &fn) {
+            auto files = m.save(fn, codepage);
+            written = true;
+            return files;
+        }
         auto &operator[](this auto &&d, const std::string &s) {
             return d.m[s];
         }
-        auto &m2() {
-            return *m2_;
-        }
         void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
-            auto check_val = [](auto &&m, const std::string &key, auto &&err) {
-                if (auto it = m.find(key); it == m.end()) {
-                    throw std::runtime_error{err};
-                }
-            };
-            check_val(m2().m, (const char *)table_name, "aim2: no such table");
-            check_val(m2()[table_name], value_name, "aim2: no such value");
-            check_val(m2()[table_name][value_name], field_name, "aim2: no such field");
-            m[table_name][value_name][field_name] = m2()[table_name][value_name][field_name];
+            if (m2.empty()) {
+                return;
+            }
+            m[table_name][value_name][field_name] = m2.at(table_name).at(value_name).at(field_name);
         }
         void copy_from_aim2(auto &&table_name, auto &&value_name) {
-            auto check_val = [](auto &&m, const std::string &key, auto &&err) {
-                if (auto it = m.find(key); it == m.end()) {
-                    throw std::runtime_error{err};
-                }
-            };
-            check_val(m2().m, (const char *)table_name, "aim2: no such table");
-            check_val(m2()[table_name], value_name, "aim2: no such value");
-            m[table_name][value_name] = m2()[table_name][value_name];
+            if (m2.empty()) {
+                return;
+            }
+            m[table_name][value_name] = m2.at(table_name).at(value_name);
         }
+        bool empty() const { return m.empty(); }
+    };
+    struct quest_wrapper {
+        std::map<std::string, db_wrapper> m;
+        bool written{};
+
+        quest_wrapper() = default;
+        quest_wrapper(const quest_wrapper &) = delete;
+        auto write(const path &datadir) {
+            std::set<path> files;
+            for (auto &&[fn,v] : m) {
+                files.merge(v.write(datadir / ("quest_" + fn)));
+            }
+            written = true;
+            return files;
+        }
+        auto &operator[](this auto &&d, const std::string &s) {
+            return d.m[s];
+        }
+        void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
+            for (auto &&[_, v] : m) {
+                v.copy_from_aim2(table_name, value_name, field_name);
+            }
+        }
+        void copy_from_aim2(auto &&table_name, auto &&value_name) {
+            for (auto &&[_, v] : m) {
+                v.copy_from_aim2(table_name, value_name);
+            }
+        }
+        bool empty() const { return m.empty(); }
     };
     enum class file_type {
         unknown,
@@ -138,6 +161,8 @@ struct mod_maker {
     std::set<path> restored_files;
     std::set<path> copied_files;
     std::source_location loc;
+    db_wrapper dw;
+    quest_wrapper qw;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
         init(fs::current_path());
@@ -171,6 +196,10 @@ struct mod_maker {
         }
     }
     void apply() {
+        dw.write();
+        auto quest_dbs = qw.write(get_data_dir());
+        files_to_distribute.merge(quest_dbs);
+
         std::vector<std::string> files;
         for (auto &&p : files_to_pak) {
             if (p.filename() == aim_exe) {
@@ -398,9 +427,8 @@ struct mod_maker {
             add_resource(copied_fn);
             db().copy_from_aim2("Модели", path{object}.stem().string());
             auto textures = read_lines(path{copied_fn} += ".textures.txt");
-            auto &m2 = open_aim2_db();
             for (auto &&t : textures) {
-                path fn = std::get<std::string>(m2["Текстуры"][t]["FILENAME"]);
+                path fn = std::get<std::string>(db().m2.at("Текстуры").at(t).at("FILENAME"));
                 if (fn.empty()) {
                     throw std::runtime_error{"Can't find texture: "s + t};
                 }
@@ -437,44 +465,65 @@ struct mod_maker {
 
         copy_from_aim2("MOD_"s + object);
         db().copy_from_aim2("Глайдеры", path{object}.stem().string());
-        // may be absent - try..catch?
-        quest("ru_RU").copy_from_aim2("INFORMATION", path{object}.stem().string());
+        quest().copy_from_aim2("INFORMATION", path{object}.stem().string());
     }
 
-    auto db() {
-        auto w = open_db("db", 1251); // always 1251 probably
-        if (aim2_available()) {
-            w.m2_ = &open_aim2_db();
-        }
-        return w;
-    }
-    auto quest(const std::string &language = {}) {
-        // TODO: check if it's possible to use utf8/16 in aim game
-        // set codepages here until we fix or implement unicode
-        int db_codepage = 1251;
-        if (language == "fr_fr") {
-            // change cp. Also for other langs
-        }
-        if (language.empty()) {
-            auto w = open_db("quest", db_codepage);
+    auto &db() {
+        if (dw.empty()) {
+            auto cp = 1251; // always 1251 or 0 probably for db
+            dw = open_db("db", cp);
             if (aim2_available()) {
-                w.m2_ = &open_aim2_quest();
+                dw.m2 = db2{aim2_game_dir / "data" / "db"}.open().to_map(cp);
             }
-            return w;
-        } else {
-            auto w = open_db("quest_" + language, db_codepage);
-            if (aim2_available()) {
-                w.m2_ = &open_aim2_quest();
-            }
-            return w;
         }
+        return dw;
     }
-    db2::files::db2_internal &open_aim2_db() {
+    auto &quest() {
+        // check if it's possible to use utf8/16 in aim game
+        // | set codepages here until we fix or implement unicode
+        // probably not possible, so use default codepages
+        if (qw.empty()) {
+            // TODO: maybe add vanilla db into translations repository as well?
+            prepare_languages();
+        }
+        return qw;
+    }
+    const auto &open_aim2_db() {
         if (!aim2_available()) {
             throw std::runtime_error{"aim2 is not available, setup it first"};
         }
-        static auto m2 = db2{aim2_game_dir / "data" / "db"}.open().to_map(1251);
-        return m2;
+        return db().m2;
+    }
+    void prepare_languages() {
+        auto trdirname = "translations";
+        auto trdir = get_mod_dir().parent_path() / trdirname;
+        primitives::Command c;
+        c.push_back("git");
+        if (!fs::exists(trdir)) {
+            c.working_directory = get_mod_dir().parent_path();
+            c.push_back("clone");
+            c.push_back("https://github.com/aimrebirth/translations");
+            c.push_back(trdirname);
+        } else {
+            c.working_directory = trdir;
+            c.push_back("pull");
+            c.push_back("origin");
+            c.push_back("master");
+        }
+        run_command(c);
+        for (auto &&p : fs::directory_iterator{trdir / "aim1"}) {
+            if (!fs::is_regular_file(p) || p.path().extension() != ".json") {
+                continue;
+            }
+            auto s = split_string(p.path().stem().string(), "_");
+            auto lang = std::format("{}_{}", s.at(1), s.at(2));
+            qw[lang].m.load_from_json(p);
+            qw[lang].codepage = code_pages.at(s.at(1));
+            auto m2fn = trdir / "aim2" / p.path().filename();
+            if (fs::exists(m2fn)) {
+                qw[lang].m2.load_from_json(m2fn);
+            }
+        }
     }
 
 private:
@@ -482,13 +531,6 @@ private:
         if (auto [_, i] = copied_files.emplace(to); i) {
             fs::copy_file(from, to, fs::copy_options::overwrite_existing);
         }
-    }
-    db2::files::db2_internal &open_aim2_quest() {
-        if (!aim2_available()) {
-            throw std::runtime_error{"aim2 is not available, setup it first"};
-        }
-        static auto m2 = db2{aim2_game_dir / "data" / "quest"}.open().to_map(1251);
-        return m2;
     }
     bool aim2_available() const {
         return !aim2_game_dir.empty();
@@ -871,7 +913,8 @@ FF D7                   ; call    edi
         game_dir = fs::absolute(game_dir).lexically_normal();
     }
     void detect_tools() {
-        //check_in_path("git");
+        // for languages/translations support
+        check_in_path("git");
         // also --self-upgrade?
         check_in_path("sw");
     }
