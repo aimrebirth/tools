@@ -206,12 +206,22 @@ int main(int argc, char *argv[]) {
     // patch note dev: make EQP_VACUUM_DRIVE_S4 more powerful
     db[u8"Оборудование"]["EQP_VACUUM_DRIVE_S4"]["VALUE1"] = 4158000.f;
     // end of db changes in dev mode
+    auto m2_gliders = mod.open_aim2_db()[u8"Глайдеры"];
+    for (auto &&[n,_] : db[u8"Глайдеры"]) {
+        m2_gliders.erase(n);
+    }
+    m2_gliders.erase("GL_BOT");
+    m2_gliders.erase("GL_RACE1");
     db.write();
     // patch note dev: copy gliders from m2: GL_M4_C_MASTODON, GL_M4_S_FLASH, GL_M4_A_FORWARD, GL_M4_A_FORWARD_BLACK
     auto add_glider = [&, after = "GL_M1_A_ATTACKER"s](auto &&name) mutable {
         mod.copy_glider_from_aim2(name);
         after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(name));
     };
+    for (auto &&[n, _] : m2_gliders) {
+        // TODO: cannot escape from glider menu with one of aim2 gliders for some reason
+        //add_glider(n);
+    }
     add_glider("GL_M4_C_MASTODON");
     add_glider("GL_M4_A_FORWARD");
     add_glider("GL_M4_A_FORWARD_BLACK");
