@@ -268,7 +268,7 @@ struct mod_maker {
         auto rfn = find_real_filename(fn);
         fs::resize_file(rfn, fs::file_size(rfn) + data.size());
         primitives::templates2::mmap_file<uint8_t> f{rfn, primitives::templates2::mmap_file<uint8_t>::rw{}};
-        memmove(f.p + offset + data.size(), f.p + offset, f.sz - offset);
+        memmove(f.p + offset + data.size(), f.p + offset, f.sz - offset - data.size());
         ::memcpy(f.p + offset, data.data(), data.size());
         f.close();
     }
