@@ -359,6 +359,7 @@ struct db2 {
                             throw std::logic_error{"duplicate value: "s + vn};
                         }
                     }
+                    jv.erase("DELETED"); // we erase this unused? field (maybe only from quest db?
                     jt[vn] = jv;
                 }
             }
