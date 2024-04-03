@@ -392,12 +392,10 @@ struct mod_maker {
                     throw std::runtime_error{std::format("aim2: model is not found: {}", p.string())};
                 }
             }
-            // TODO: this - fix add_resource()/find_real_filename()
-            // auto copied_fn = get_mod_dir() / object;
-            auto copied_fn = get_data_dir() / object;
+            auto copied_fn = get_mod_dir() / path{object}.filename().string();
             fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
             run_p4_tool("mod_converter2", copied_fn);
-            add_resource(object);
+            add_resource(copied_fn);
             db().copy_from_aim2("Модели", path{object}.stem().string());
             auto textures = read_lines(path{copied_fn} += ".textures.txt");
             auto &m2 = open_aim2_db();
@@ -424,11 +422,9 @@ struct mod_maker {
                     throw std::runtime_error{std::format("aim2: model is not found: {}", p.string())};
                 }
             }
-            // TODO: this - fix add_resource()/find_real_filename()
-            // auto copied_fn = get_mod_dir() / object;
-            auto copied_fn = get_data_dir() / path{object}.filename().string();
+            auto copied_fn = get_mod_dir() / path{object}.filename().string();
             fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
-            add_resource(path{object}.filename());
+            add_resource(copied_fn);
             db().copy_from_aim2("Текстуры", path{object}.stem().string());
             break;
         }
