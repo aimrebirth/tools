@@ -238,6 +238,8 @@ struct mod_maker {
                 c.push_back(f.is_absolute() ? f.lexically_relative(game_dir) : f);
             }
             run_command(c);
+        } else {
+            log("7z not found, skipping archive creation");
         }
     }
 
