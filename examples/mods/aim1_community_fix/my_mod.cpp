@@ -13,6 +13,15 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1.mod_maker-master
  * You can also distribute mod archive (requires 7z program).
  **/
 
+// TODO:
+/*
+make patchnotes from code? not from comments
+for example
+comment(...)
+or
+patch_note(...)
+*/
+
 #define AIM_TYPES_FILE_NAME "aim.exe.h"
 #define INJECTIONS_FILE_NAME "aim.exe.fixes.h"
 
@@ -197,6 +206,8 @@ int main(int argc, char *argv[]) {
 
     // test scripts
 #ifndef NDEBUG
+    // TODO: copy whole sector?
+
     // patch note dev: Developer Mode!!!
     // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
     mod.enable_free_camera();

@@ -438,8 +438,11 @@ struct mod_maker {
         }
     }
     void copy_glider_from_aim2(auto &&object) {
+        log("copying glider from aim2: {}", object);
+
         copy_from_aim2("MOD_"s + object);
         db().copy_from_aim2(u8"Глайдеры", path{object}.stem().string());
+        // may be absent - try..catch?
         quest("ru_RU").copy_from_aim2("INFORMATION", path{object}.stem().string());
     }
 
