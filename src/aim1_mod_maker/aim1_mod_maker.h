@@ -96,16 +96,24 @@ struct mod_maker {
         auto &operator[](this auto &&d, const std::string &s) {
             return d.m[s];
         }
-        void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
+        bool copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
             if (m2.empty()) {
-                return;
+                return false;
             }
+            copy_from_aim2(m2, table_name, value_name, field_name);
+            return true;
+        }
+        void copy_from_aim2(db2::files::db2_internal &m2, auto &&table_name, auto &&value_name, auto &&field_name) {
             m[table_name][value_name][field_name] = m2.at(table_name).at(value_name).at(field_name);
         }
-        void copy_from_aim2(auto &&table_name, auto &&value_name) {
+        bool copy_from_aim2(auto &&table_name, auto &&value_name) {
             if (m2.empty()) {
-                return;
+                return false;
             }
+            copy_from_aim2(m2, table_name, value_name);
+            return true;
+        }
+        void copy_from_aim2(db2::files::db2_internal &m2, auto &&table_name, auto &&value_name) {
             m[table_name][value_name] = m2.at(table_name).at(value_name);
         }
         bool empty() const { return m.empty(); }
@@ -129,12 +137,18 @@ struct mod_maker {
         }
         void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
             for (auto &&[_, v] : m) {
-                v.copy_from_aim2(table_name, value_name, field_name);
+                if (!v.copy_from_aim2(table_name, value_name, field_name)) {
+                    // fallback
+                    v.copy_from_aim2(m["en_US"].m2, table_name, value_name, field_name);
+                }
             }
         }
         void copy_from_aim2(auto &&table_name, auto &&value_name) {
             for (auto &&[_, v] : m) {
-                v.copy_from_aim2(table_name, value_name);
+                if (!v.copy_from_aim2(table_name, value_name)) {
+                    // fallback
+                    v.copy_from_aim2(m["en_US"].m2, table_name, value_name);
+                }
             }
         }
         bool empty() const { return m.empty(); }
