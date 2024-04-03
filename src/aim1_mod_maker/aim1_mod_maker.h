@@ -139,6 +139,7 @@ struct mod_maker {
     std::set<path> files_to_distribute;
     std::set<path> code_files_to_distribute;
     std::set<path> restored_files;
+    std::set<path> copied_files;
     std::source_location loc;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
@@ -161,7 +162,7 @@ struct mod_maker {
                 run_p4_tool("script2txt", p);
             }
             auto dst_txt = get_mod_dir() / txt.filename();
-            fs::copy_file(txt, dst_txt, fs::copy_options::overwrite_existing);
+            copy_file_once(txt, dst_txt);
             txt = dst_txt;
             replace_in_file_raw(txt, from, to);
             run_p4_tool("txt2script", txt);
@@ -264,9 +265,6 @@ struct mod_maker {
     }
     void insert(path fn, uint32_t offset, const byte_array &data) {
         files_to_pak.insert(find_real_filename(fn));
-        if (is_already_inserted(fn, data)) {
-            return;
-        }
 
         log("inserting into {} offset 0x{:08X} {} bytes", fn.string(), offset, data.size());
 
@@ -276,8 +274,6 @@ struct mod_maker {
         memmove(f.p + offset + data.size(), f.p + offset, f.sz - offset);
         ::memcpy(f.p + offset, data.data(), data.size());
         f.close();
-
-        write_file(get_hash_fn(fn, data), ""s);
     }
     std::string add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const mmo_storage2::map_good &mg) {
         byte_array data((uint8_t*)&mg, (uint8_t*)&mg + sizeof(mg));
@@ -286,9 +282,6 @@ struct mod_maker {
     }
     void add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const byte_array &data) {
         files_to_pak.insert(find_real_filename(mmo_fn));
-        if (is_already_inserted(mmo_fn, data)) {
-            return;
-        }
 
         auto fn = find_real_filename(mmo_fn);
         mmo_storage2 m;
@@ -478,14 +471,19 @@ struct mod_maker {
             return w;
         }
     }
-
-private:
     db2::files::db2_internal &open_aim2_db() {
         if (!aim2_available()) {
             throw std::runtime_error{"aim2 is not available, setup it first"};
         }
         static auto m2 = db2{aim2_game_dir / "data" / "db", 1251}.open().to_map();
         return m2;
+    }
+
+private:
+    void copy_file_once(const path &from, const path &to) {
+        if (auto [_, i] = copied_files.emplace(to); i) {
+            fs::copy_file(from, to, fs::copy_options::overwrite_existing);
+        }
     }
     db2::files::db2_internal &open_aim2_quest() {
         if (!aim2_available()) {
@@ -523,22 +521,6 @@ private:
             fs::copy_file(bak, fn, fs::copy_options::overwrite_existing);
             restored_files.insert(fn);
         }
-    }
-    path get_hash_fn(path fn, const byte_array &data) const {
-        return get_mod_dir() / std::format("{:0X}.hash", get_insert_hash(fn, data));
-    }
-    size_t get_insert_hash(path fn, const byte_array &data) const {
-        auto s = fn.wstring();
-        boost::to_lower(s);
-        fn = s;
-
-        size_t hash{};
-        boost::hash_combine(hash, fn);
-        boost::hash_combine(hash, data);
-        return hash;
-    }
-    bool is_already_inserted(path fn, const byte_array &data) const {
-        return fs::exists(get_hash_fn(fn,data));
     }
     void init(const path &dir) {
         read_name();
@@ -706,7 +688,7 @@ FF D7                   ; call    edi
 )"_bin);
         memcpy(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size())));
     }
-    path find_real_filename(path fn) const {
+    path find_real_filename(path fn) {
         auto s = fn.wstring();
         boost::to_lower(s);
         fn = s;
@@ -743,9 +725,7 @@ FF D7                   ; call    edi
                 throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
             }
             auto dst = get_mod_dir() / p.filename();
-            if (!fs::exists(dst)) {
-                fs::copy_file(p, dst);
-            }
+            copy_file_once(p, dst);
             return dst;
         }
         default:
