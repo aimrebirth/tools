@@ -867,11 +867,11 @@ FF D7                   ; call    edi
         auto &old = *(T *)(f.p + offset);
         log("patching {} offset 0x{:08X} from {} to {}", fn.string(), offset, expected, val);
         if (old == expected) {
-            log("success");
+            log("ok");
             old = val;
             return true;
         } else if (old == val) {
-            log("success, already patched");
+            log("ok, already patched");
             return true;
         } else {
             log("old value {} != expected {}", old, expected);

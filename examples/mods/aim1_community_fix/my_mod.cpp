@@ -197,13 +197,26 @@ int main(int argc, char *argv[]) {
     // patch note dev: Developer Mode!!!
     // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
     mod.enable_free_camera();
-    auto add_test_eqp = [&](std::string type, std::string copy_from, float value1) {
+    auto add_test_eqp = [&](std::string type, std::string copy_from
+        , std::optional<float> value1 = {}
+        , std::optional<float> value2 = {}
+        , std::optional<float> value3 = {}
+        ) {
         auto test_name = "EQP_"s + type + "_TEST";
         if (type == "ENGINE") {
             test_name = "EQP_DRIVE_TEST";
         }
         db["Оборудование"][test_name] = db["Оборудование"][copy_from];
-        db["Оборудование"][test_name]["VALUE1"] = value1;
+        db["Оборудование"][test_name]["STANDARD"] = 1;
+        if (value1) {
+            db["Оборудование"][test_name]["VALUE1"] = *value1;
+        }
+        if (value2) {
+            db["Оборудование"][test_name]["VALUE2"] = *value2;
+        }
+        if (value3) {
+            db["Оборудование"][test_name]["VALUE3"] = *value3;
+        }
         db["Конфигурации"]["CFG_STARTUP"][type] = test_name;
     };
     // patch note dev: give glider FLASH
@@ -213,13 +226,19 @@ int main(int argc, char *argv[]) {
     // patch note dev: give powerful engine
     add_test_eqp("ENGINE", "EQP_ION_DRIVE_S1", 4158000.f);
     // patch note dev: give powerful armor
-    add_test_eqp("ARMOR", "EQP_ZERO_ARMOR_S1", 100000.f);
+    add_test_eqp("ARMOR", "EQP_ZERO_ARMOR_S1", 100000.f, {}, 1000.f); // with regen
     // patch note dev: give powerful shield
-    add_test_eqp("SHIELD", "EQP_SHIELD_GENERATOR1_S1", 100000.f);
-    // patch note dev: give MICROWAVE OSCILLATOR
-    db["Конфигурации"]["CFG_STARTUP"]["LIGHTGUN1"] = "GUN_MICROWAVE_OSCILLATOR";
+    add_test_eqp("SHIELD", "EQP_SHIELD_GENERATOR1_S1", 100000.f, {}, 1000.f); // with regen
+    // patch note dev: give powerful weapons
+    db["Оружие"]["GUN_MICROWAVE_OSCILLATOR_TEST"] = db["Оружие"]["GUN_MICROWAVE_OSCILLATOR"];
+    db["Оружие"]["GUN_MICROWAVE_OSCILLATOR_TEST"]["DAMAGE"] = 2500.f;
+    db["Оружие"]["GUN_MICROWAVE_OSCILLATOR_TEST"]["STANDARD"] = 1;
+    db["Конфигурации"]["CFG_STARTUP"]["LIGHTGUN1"] = "GUN_MICROWAVE_OSCILLATOR_TEST";
     // patch note dev: give IMPULSE MEGALAZER
-    db["Конфигурации"]["CFG_STARTUP"]["HEAVYGUN1"] = "GUN_IMPULSE_MEGALAZER";
+    db["Оружие"]["GUN_IMPULSE_MEGALAZER_TEST"] = db["Оружие"]["GUN_IMPULSE_MEGALAZER"];
+    db["Оружие"]["GUN_IMPULSE_MEGALAZER_TEST"]["DAMAGE"] = 40000.f;
+    db["Оружие"]["GUN_IMPULSE_MEGALAZER_TEST"]["STANDARD"] = 1;
+    db["Конфигурации"]["CFG_STARTUP"]["HEAVYGUN1"] = "GUN_IMPULSE_MEGALAZER_TEST";
     // end of db changes in dev mode
     // patch note dev: allow to buy GL_S3_PS_FINDER1 without pre-quest
     mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", mmo_storage2::map_good("GL_S3_PS_FINDER1"));
@@ -234,13 +253,19 @@ int main(int argc, char *argv[]) {
     }
     m2_gliders.erase("GL_BOT");
     m2_gliders.erase("GL_RACE1");
-    auto add_glider = [&, after = "GL_M1_A_ATTACKER"s](auto &&name) mutable {
-        mod.copy_glider_from_aim2(name);
-        after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(name));
-    };
     for (auto &&[n, _] : m2_gliders) {
-        add_glider(n);
+        mod.copy_glider_from_aim2(n);
     }
+    for (auto after = "GL_M1_A_ATTACKER"s; auto &&[n, _] : db["Глайдеры"]) {
+        after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
+    }
+    for (auto after = "GUN_RAY_LAZER"s; auto &&[n, _] : db["Оружие"]) {
+        after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
+    }
+    // does not work, crashes. Maybe different item size
+    /*for (auto after = "EQP_POLYMER_ARMOR_S1"s; auto &&[n, _] : db["Оборудование"]) {
+        after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
+    }*/
     // patch note dev: start money, rating, glider and sector access
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDOBJECT(EQP_TITANIUM_ARMOR_S1)", "//_ADDOBJECT(EQP_TITANIUM_ARMOR_S1)");
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDOBJECT(EQP_SHIELD_GENERATOR1_S1)", "//_ADDOBJECT(EQP_SHIELD_GENERATOR1_S1)");
