@@ -52,11 +52,26 @@ auto operator""_bin(const char *ptr, uint64_t len) {
     return ret;
 }
 
+auto &log_file(const path *p = {}) {
+    static std::ofstream ofile = [&](){
+        if (!p) {
+            throw std::runtime_error{"pass log filename first!"};
+        }
+        return std::ofstream{*p};
+    }();
+    return ofile;
+}
+void log_internal(const std::string &s) {
+    std::cout << s << "\n";
+    log_file() << s << std::endl;
+}
 void log(auto &&format, auto &&arg, auto &&...args) {
-    std::println("{}", std::vformat(format, std::make_format_args(arg, args...)));
+    auto s = std::format("{}", std::vformat(format, std::make_format_args(arg, args...)));
+    log_internal(s);
 }
 void log(auto &&str) {
-    std::println("{}", str);
+    auto s = std::format("{}", str);
+    log_internal(s);
 }
 
 struct aim_exe_v1_06_constants {
@@ -585,6 +600,9 @@ private:
         }
 #endif
         fs::create_directories(get_mod_dir());
+        // can write to mod dir
+        auto logfn = get_mod_dir() / "log.txt";
+        log_file(&logfn);
         auto src_fn = get_mod_dir() / get_full_mod_name() += ".cpp";
         fs::copy_file(loc.file_name(), src_fn, fs::copy_options::overwrite_existing);
         code_files_to_distribute.insert(src_fn);
