@@ -15,7 +15,7 @@ deps: pub.lzwdgc.Polygon4.Tools.aim1.mod_maker-master
 
 // TODO:
 /*
-make patchnotes from code? not from comments
+make doc/patchnotes from code? not from comments
 for example
 comment(...)
 or
@@ -48,6 +48,7 @@ patch_note(...)
 // patch note:
 // patch note: Changes from 0.0.4
 // patch note: fix Finder-2 textures
+// patch note: add more translations. Use language_switcher.exe to change your language.
 // patch note:
 // patch note: Changes from 0.0.3
 // patch note: add locale suffix to all quest databases (localized strings). Example: quest_ru_RU.*
@@ -110,11 +111,8 @@ int main(int argc, char *argv[]) {
 
     // patch note: Hills Sector
     // patch note: allow to buy double heavy weapon Finder-2 glider on Finders base after the second quest. You must start the new game to make it appear (lz)
-    mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", mmo_storage2::map_good("GL_S3_PS_FINDER2"
-#ifdef NDEBUG
-        , "T_L6_IK_F2.COMPLETE"
-#endif
-    ));
+    mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1",
+                     mmo_storage2::map_good("GL_S3_PS_FINDER2", "T_L6_IK_F2.COMPLETE"));
     // patch note: add Finder-2 model and textures from aim2 game (lz)
     mod.copy_from_aim2("MOD_GL_S3_PS_FINDER2");
     // patch note: set correct model for a plant (Streef)
@@ -193,55 +191,79 @@ int main(int argc, char *argv[]) {
     // patch note:
 
     // test scripts
-#ifndef NDEBUG
+#if !defined(NDEBUG)
     // TODO: copy whole sector?
 
     // patch note dev: Developer Mode!!!
     // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
     mod.enable_free_camera();
-    // patch note dev: make initial reactor (EQP_GLUON_REACTOR_S1) and drive (EQP_ION_DRIVE_S1) more powerful
-    db["Оборудование"]["EQP_GLUON_REACTOR_S1"]["VALUE1"] = 9'000'000.f;
-    db["Оборудование"]["EQP_ION_DRIVE_S1"]["VALUE1"] = 4158000.f;
-    // patch note dev: make EQP_VACUUM_DRIVE_S4 more powerful
-    db["Оборудование"]["EQP_VACUUM_DRIVE_S4"]["VALUE1"] = 4158000.f;
+    auto add_test_eqp = [&](std::string type, std::string copy_from, float value1) {
+        auto test_name = "EQP_"s + type + "_TEST";
+        if (type == "ENGINE") {
+            test_name = "EQP_DRIVE_TEST";
+        }
+        db["Оборудование"][test_name] = db["Оборудование"][copy_from];
+        db["Оборудование"][test_name]["VALUE1"] = value1;
+        db["Конфигурации"]["CFG_STARTUP"][type] = test_name;
+    };
+    // patch note dev: give glider FLASH
+    db["Конфигурации"]["CFG_STARTUP"]["GLIDER"] = "GL_M4_S_FLASH";
+    // patch note dev: give powerful reactor
+    add_test_eqp("REACTOR", "EQP_GLUON_REACTOR_S1", 9'000'000.f);
+    // patch note dev: give powerful engine
+    add_test_eqp("ENGINE", "EQP_ION_DRIVE_S1", 4158000.f);
+    // patch note dev: give powerful armor
+    add_test_eqp("ARMOR", "EQP_ZERO_ARMOR_S1", 100000.f);
+    // patch note dev: give powerful shield
+    add_test_eqp("SHIELD", "EQP_SHIELD_GENERATOR1_S1", 100000.f);
+    // patch note dev: give MICROWAVE OSCILLATOR
+    db["Конфигурации"]["CFG_STARTUP"]["LIGHTGUN1"] = "GUN_MICROWAVE_OSCILLATOR";
+    // patch note dev: give IMPULSE MEGALAZER
+    db["Конфигурации"]["CFG_STARTUP"]["HEAVYGUN1"] = "GUN_IMPULSE_MEGALAZER";
     // end of db changes in dev mode
+    // patch note dev: allow to buy GL_S3_PS_FINDER1 without pre-quest
+    mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", mmo_storage2::map_good("GL_S3_PS_FINDER1"));
+    // patch note dev: allow to buy GL_S3_PS_FINDER2 without pre-quest
+    mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER2", mmo_storage2::map_good("GL_S3_PS_FINDER2"));
+    // patch note dev: allow to buy GL_M3_PA_EYEDSTONE without joining the clan
+    mod.add_map_good("location4.mmo", "B_L4_TRAIN_STONES", "GL_M3_PA_EYEDSTONE", mmo_storage2::map_good("GL_M3_PA_EYEDSTONE"));
+    // patch note dev: copy all new gliders from AIM2
     auto m2_gliders = mod.open_aim2_db().at("Глайдеры");
     for (auto &&[n,_] : db["Глайдеры"]) {
         m2_gliders.erase(n);
     }
     m2_gliders.erase("GL_BOT");
     m2_gliders.erase("GL_RACE1");
-    // patch note dev: copy gliders from m2: GL_M4_C_MASTODON, GL_M4_S_FLASH, GL_M4_A_FORWARD, GL_M4_A_FORWARD_BLACK
     auto add_glider = [&, after = "GL_M1_A_ATTACKER"s](auto &&name) mutable {
         mod.copy_glider_from_aim2(name);
         after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(name));
     };
     for (auto &&[n, _] : m2_gliders) {
-        // TODO: cannot escape from glider menu with one of aim2 gliders for some reason
-        //add_glider(n);
+        add_glider(n);
     }
-    add_glider("GL_M4_C_MASTODON");
-    add_glider("GL_M4_A_FORWARD");
-    add_glider("GL_M4_A_FORWARD_BLACK");
-    add_glider("GL_M4_S_FLASH");
     // patch note dev: start money, rating, glider and sector access
+    mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDOBJECT(EQP_TITANIUM_ARMOR_S1)", "//_ADDOBJECT(EQP_TITANIUM_ARMOR_S1)");
+    mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDOBJECT(EQP_SHIELD_GENERATOR1_S1)", "//_ADDOBJECT(EQP_SHIELD_GENERATOR1_S1)");
+    mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDOBJECT(GUN_PULSE_LAZER)", "//_ADDOBJECT(GUN_PULSE_LAZER)");
+    mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDOBJECT(AMM_FAST_BOMB,5)", "//_ADDOBJECT(AMM_FAST_BOMB,5)");
+    //
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
-    _ADDBALANCE(300 )
+    _ADDBALANCE(300)
 
     //_ADDOBJECT(GL_S3_PS_FINDER1)
     //_ADDOBJECT(EQP_VACUUM_DRIVE_S3)
     //_ADDOBJECT(EQP_ZERO_ARMOR_S3)
     //_ADDOBJECT(EQP_SHIELD_GENERATOR4_S3)
 
-    _ADDOBJECT(GL_M4_S_FIRST2)
-    _ADDOBJECT(EQP_VACUUM_DRIVE_S4)
+    //_ADDOBJECT(GL_M4_S_FIRST2)
+    //_ADDOBJECT(EQP_VACUUM_DRIVE_S4)
     //_ADDOBJECT(EQP_MEZON_REACTOR_S4)
     //_ADDOBJECT(EQP_GLUON_REACTOR_S1)
-    _ADDOBJECT(EQP_ZERO_ARMOR_S4)
-    _ADDOBJECT(EQP_SHIELD_GENERATOR4_S4)
-    _ADDOBJECT(GUN_MICROWAVE_OSCILLATOR)
+    //_ADDOBJECT(EQP_ZERO_ARMOR_S4)
+    //_ADDOBJECT(EQP_SHIELD_GENERATOR4_S4)
+    //_ADDOBJECT(GUN_MICROWAVE_OSCILLATOR)
     //_ADDOBJECT(GUN_RAILGUN)
-    _ADDOBJECT(GUN_IMPULSE_MEGALAZER)
+    //_ADDOBJECT(GUN_IMPULSE_MEGALAZER)
 
     _ADDOBJECT(EQP_ANALYZER)
     _ADDOBJECT(EQP_QUANTUM_TRANSLATOR)
