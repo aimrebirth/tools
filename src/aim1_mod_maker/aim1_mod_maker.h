@@ -668,6 +668,13 @@ private:
         contents += "}\n";
         write_file(get_mod_dir() / "sw.cpp", contents);
 
+        // when you enable debug build, you cannot distribute this dll,
+        // because user systems does not have debug dll dependencies!!!
+        auto conf = "d"s;
+#if 1 || defined(NDEBUG)
+        conf = "r";
+#endif
+
         primitives::Command c;
         c.working_directory = get_mod_dir();
         c.push_back("sw");
@@ -675,12 +682,12 @@ private:
         c.push_back("-platform");
         c.push_back("x86");
         c.push_back("-config");
-        c.push_back("r");
+        c.push_back(conf);
         c.push_back("-config-name");
-        c.push_back("r");
+        c.push_back(conf);
         run_command(c);
 
-        auto dllname = get_mod_dir() / ".sw" / "out" / "r" / get_sw_dll_name();
+        auto dllname = get_mod_dir() / ".sw" / "out" / conf / get_sw_dll_name();
         fs::copy_file(dllname, game_dir / get_dll_name(), fs::copy_options::overwrite_existing);
         files_to_distribute.insert(get_dll_name());
     }
@@ -706,7 +713,7 @@ private:
         ::memcpy(p + off, to.data(), to.size());
     }
     void prepare_injections() {
-#ifdef NDEBUG
+#if 1 || defined(NDEBUG)
         make_injected_dll();
 #endif
         files_to_distribute.insert(aim_exe);
@@ -722,7 +729,7 @@ private:
         };
 
         auto push_dll_name = make_insn_with_address("68"_bin, our_data); // push
-#ifdef NDEBUG
+#if 1 || defined(NDEBUG)
         strcpy(get_sw_dll_name());
 #else
         strcpy("h:\\Games\\AIM\\1\\.sw\\out\\d\\aim_fixes-0.0.1.dll"s);
