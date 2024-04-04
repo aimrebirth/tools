@@ -48,13 +48,10 @@ auto get_model_manager() {
     auto p = (CModelManager **)0x00677DF8;
     return *p;
 }
-
-enum class glider_id : uint32_t {
-    nargoon = 0x7,
-    eyedstone = 0xe,
-    finder1 = 0x19,
-    finder2 = 0x1A,
-};
+auto get_gliders_loaded() {
+    auto p = (array_of_strings *)0x00676C18;
+    return p;
+}
 
 bool __stdcall strequ(const char *s1, const char *s2) {
     do {
@@ -111,36 +108,33 @@ __declspec(naked) void fix_script_function__ISGLIDER() {
     }
 }
 
-bool is_double_light_weapons_glider() {
+std::string_view get_glider_name(int id) {
+    return &get_gliders_loaded()->strings[get_gliders_loaded()->string_starts[id]];
+}
+bool is_double_light_weapons_glider(int id) {
     return false
-        || get_player_ptr()->glider_name.idx == (int)glider_id::nargoon
-        || get_player_ptr()->glider_name.idx == (int)glider_id::finder1
+        || get_glider_name(id) == "GL_M2_PA_NARGOON"sv
+        || get_glider_name(id) == "GL_S3_PS_FINDER1"sv
         ;
 }
-bool is_double_heavy_weapons_glider() {
+bool is_double_heavy_weapons_glider(int id) {
     return false
-        || get_player_ptr()->glider_name.idx == (int)glider_id::eyedstone
-        || get_player_ptr()->glider_name.idx == (int)glider_id::finder2
+        || get_glider_name(id) == "GL_M3_PA_EYEDSTONE"sv
+        || get_glider_name(id) == "GL_S3_PS_FINDER2"sv
         ;
+}
+bool is_special_glider(int id) {
+    return is_double_light_weapons_glider(id) || is_double_heavy_weapons_glider(id);
+}
+
+bool is_double_light_weapons_glider() {
+    return is_double_light_weapons_glider(get_player_ptr()->glider_name.idx);
+}
+bool is_double_heavy_weapons_glider() {
+    return is_double_heavy_weapons_glider(get_player_ptr()->glider_name.idx);
 }
 bool is_special_glider() {
     return is_double_light_weapons_glider() || is_double_heavy_weapons_glider();
-}
-
-bool is_double_light_weapons_glider(glider_id id) {
-    return false
-        || id == glider_id::nargoon
-        || id == glider_id::finder1
-        ;
-}
-bool is_double_heavy_weapons_glider(glider_id id) {
-    return false
-        || id == glider_id::eyedstone
-        || id == glider_id::finder2
-        ;
-}
-bool is_special_glider(glider_id id) {
-    return is_double_light_weapons_glider(id) || is_double_heavy_weapons_glider(id);
 }
 
 uint32_t fix_trade_actions_weapon_checks_ret = 0x00407308;
@@ -211,13 +205,13 @@ __declspec(naked) void fix_trade_actions_weapon_checks() {
     }
 }
 
-bool can_have_light_weapon_slot(glider *obj, glider_id id, int special) {
+bool can_have_light_weapon_slot(glider *obj, int id, int special) {
     if (is_special_glider(id)) {
         return true;
     }
     return ((special >> 1) & 0x1) == 0;
 }
-bool can_have_heavy_weapon_slot(glider *obj, glider_id id, int special) {
+bool can_have_heavy_weapon_slot(glider *obj, int id, int special) {
     if (is_special_glider(id)) {
         return true;
     }
@@ -225,8 +219,8 @@ bool can_have_heavy_weapon_slot(glider *obj, glider_id id, int special) {
 }
 void __stdcall can_have_weapon_slots(glider *gliders, glider *obj, int special) {
     auto id = obj - gliders;
-    obj->can_have_light_weap = can_have_light_weapon_slot(obj, (glider_id)id, special);
-    obj->can_have_heavy_weap = can_have_heavy_weapon_slot(obj, (glider_id)id, special);
+    obj->can_have_light_weap = can_have_light_weapon_slot(obj, id, special);
+    obj->can_have_heavy_weap = can_have_heavy_weapon_slot(obj, id, special);
 }
 __declspec(naked) void fix_can_have_weapon_slots_for_a_glider() {
     __asm {
