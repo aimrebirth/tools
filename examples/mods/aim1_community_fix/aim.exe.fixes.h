@@ -1,5 +1,9 @@
 #include <stdint.h>
 
+#ifdef DONT_OPTIMIZE
+#pragma optimize("", off)
+#endif
+
 // public enums
 enum aim1_fix : uint32_t {
     script_function__ISGLIDER = 0x0043A1F6,
@@ -443,4 +447,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
     }
     return TRUE;
 }
+#endif
+
+#ifdef DONT_OPTIMIZE
+#pragma optimize("", on)
 #endif

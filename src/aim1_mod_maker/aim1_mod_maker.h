@@ -657,21 +657,25 @@ private:
         //fs::copy_file(fn, get_mod_dir() / fn.filename(), fs::copy_options::overwrite_existing);
         std::string contents;
         contents += "void build(Solution &s) {\n";
-        contents += "auto &t = s.addSharedLibrary(\"" + name + "\"";
+        contents += "    auto &t = s.addSharedLibrary(\"" + name + "\"";
         if (!version.empty()) {
             contents += ", \"" + version + "\"";
         }
         contents += ");\n";
-        contents += "t += cpp23;\n";
-        contents += "t += \"" + boost::replace_all_copy(fn.string(), "\\", "/") + "\";\n";
-        contents += "t += \"INJECTED_DLL\"_def;\n";
+        contents += "    t += cpp23;\n";
+        contents += "    t += \"" + boost::replace_all_copy(fn.string(), "\\", "/") + "\";\n";
+        contents += "    t += \"INJECTED_DLL\"_def;\n";
+#if !defined(NDEBUG)
+        contents += "    t += \"DONT_OPTIMIZE\"_def;\n";
+#endif
         contents += "}\n";
         write_file(get_mod_dir() / "sw.cpp", contents);
 
         // when you enable debug build, you cannot distribute this dll,
         // because user systems does not have debug dll dependencies!!!
-        auto conf = "d"s;
-#if 1 || defined(NDEBUG)
+        // so we use rwdi
+        auto conf = "rwdi"s;
+#if defined(NDEBUG)
         conf = "r";
 #endif
 
