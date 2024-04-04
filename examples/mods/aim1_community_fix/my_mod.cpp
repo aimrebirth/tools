@@ -263,7 +263,16 @@ int main(int argc, char *argv[]) {
         after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
     }
     // does not work, crashes. Maybe different item size
+    // or maybe too many goods
     /*for (auto after = "EQP_POLYMER_ARMOR_S1"s; auto &&[n, _] : db["Оборудование"]) {
+        if (!(false
+            || n.contains("_DRIVE_")
+            || n.contains("_REACTOR_")
+            || n.contains("_ARMOR_")
+            || n.contains("_SHIELD_G")
+            )) {
+            continue;
+        }
         after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
     }*/
     // patch note dev: start money, rating, glider and sector access

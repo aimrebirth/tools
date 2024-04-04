@@ -332,7 +332,13 @@ struct mod_maker {
         ::memcpy(f.p + offset, data.data(), data.size());
         f.close();
     }
-    std::string add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const mmo_storage2::map_good &mg) {
+    std::string add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name,
+                             const mmo_storage2::map_good &mg) {
+        log("adding map good to {} after {}: ", building_name, after_good_name, std::string{mg.name});
+        if (!std::string{mg.cond}.empty()) {
+            log("cond: {}", std::string{mg.cond});
+        }
+
         byte_array data((uint8_t*)&mg, (uint8_t*)&mg + sizeof(mg));
         add_map_good(mmo_fn, building_name, after_good_name, data);
         return mg.name;
