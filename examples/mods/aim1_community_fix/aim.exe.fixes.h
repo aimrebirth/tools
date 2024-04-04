@@ -4,6 +4,8 @@
 #pragma optimize("", off)
 #endif
 
+constexpr auto call_command_length = 5;
+
 // public enums
 enum aim1_fix : uint32_t {
     script_function__ISGLIDER = 0x0043A1F6,
@@ -17,7 +19,6 @@ enum aim1_fix : uint32_t {
 };
 // set different size if your injection takes more than default 5 bytes
 uint32_t get_injection_size(uint32_t key) {
-    constexpr auto call_command_length = 5;
     switch (key) {
     case aim1_fix::script_function__ISGLIDER: return 10;
     case aim1_fix::can_leave_trade_window: return 6;
@@ -39,8 +40,6 @@ uint32_t get_injection_size(uint32_t key) {
 #undef __unaligned
 
 using namespace std::literals;
-
-constexpr auto call_command_length = 5;
 
 uint32_t known_caller;
 auto player_ptr = (Player **)0x005B7B38;
@@ -121,21 +120,21 @@ bool is_double_light_weapons_glider(int id) {
         || get_glider_name(id) == "GL_S3_PS_FINDER1"sv
         ;
 }
-bool is_double_heavy_weapons_glider(int id) {
-    return false
-        || get_glider_name(id) == "GL_M3_PA_EYEDSTONE"sv
-        || get_glider_name(id) == "GL_S3_PS_FINDER2"sv
-        ;
-}
-bool is_special_glider(int id) {
-    return is_double_light_weapons_glider(id) || is_double_heavy_weapons_glider(id);
-}
-
 bool is_double_light_weapons_glider() {
     return is_double_light_weapons_glider(get_player_ptr()->glider_name.idx);
 }
+bool is_double_heavy_weapons_glider(int id) {
+    return false
+        || get_glider_name(id) == "GL_M3_PA_EYEDSTONE"sv
+        //|| get_glider_name(id) == "GL_M3_PA_EYESTONE"sv
+        || get_glider_name(id) == "GL_S3_PS_FINDER2"sv
+        ;
+}
 bool is_double_heavy_weapons_glider() {
     return is_double_heavy_weapons_glider(get_player_ptr()->glider_name.idx);
+}
+bool is_special_glider(int id) {
+    return is_double_light_weapons_glider(id) || is_double_heavy_weapons_glider(id);
 }
 bool is_special_glider() {
     return is_double_light_weapons_glider() || is_double_heavy_weapons_glider();
