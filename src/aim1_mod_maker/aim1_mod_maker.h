@@ -192,6 +192,7 @@ struct mod_maker {
     std::source_location loc;
     db_wrapper dw;
     quest_wrapper qw;
+    bool injections_prepared{};
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
         init(fs::current_path());
@@ -382,11 +383,16 @@ struct mod_maker {
 
     // all you need is to provide injection address (virtual) with size
     // handle the call instruction in 'dispatcher' symbol (naked) of your dll
+#ifdef INJECTIONS_FILE_NAME
     constexpr static inline auto call_command_length = 5;
     void make_injection(uint32_t virtual_address) {
         make_injection(virtual_address, get_injection_size(virtual_address));
     }
     void make_injection(uint32_t virtual_address, uint32_t size) {
+        if (!injections_prepared) {
+            prepare_injections();
+            injections_prepared = true;
+        }
         uint32_t len = size;
         if (len < call_command_length) {
             throw std::runtime_error{"jumppad must be 5 bytes atleast"};
@@ -400,6 +406,7 @@ struct mod_maker {
         log("making injection on the virtual address 0x{:0X} (real address 0x{:0X}), size {}", virtual_address, ptr - f.p,
                      size);
     }
+#endif
 
 #define ENABLE_DISABLE_FUNC(name, enable, disable) \
     void enable_##name() { name(enable); } \
@@ -420,7 +427,11 @@ struct mod_maker {
         fn = find_real_filename(fn);
         files_to_pak.insert(fn);
     }
-    void setup_aim2_path() {
+    void setup_aim2_path(const path &p = {}) {
+        if (!p.empty()) {
+            aim2_game_dir = p;
+            return;
+        }
         try {
             aim2_game_dir = read_file(game_dir / "aim2_path.txt");
             if (!fs::exists(aim2_game_dir)) {
@@ -614,7 +625,6 @@ private:
         code_files_to_distribute.insert(src_fn);
         detect_tools();
         create_backup_exe_file();
-        prepare_injections();
 #ifndef NDEBUG
         enable_win_key();
 #endif
