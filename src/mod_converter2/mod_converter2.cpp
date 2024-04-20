@@ -17,7 +17,7 @@
  */
 
 #include "mmap.h"
-#include "../model/model.h"
+#include "model.h"
 
 #include <primitives/sw/main.h>
 #include <primitives/sw/settings.h>

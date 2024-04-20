@@ -59,7 +59,6 @@ void build(Solution &s)
     add_exe_with_common("tm_converter");
     add_exe("name_generator");
     add_exe_with_common("save_loader");
-    add_exe_with_common("mod_converter2");
     add_exe_with_common("bms_converter");
     add_exe_with_common("rgb_converter");
     add_exe_with_common("unpaker") +=
@@ -79,6 +78,8 @@ void build(Solution &s)
             "pub.egorpugin.primitives.sw.settings"_dep
             ;
     }
+
+    add_exe_with_common("mod_converter2") += model;
 
     auto &language_switcher = tools.addExecutable("aim1.language_switcher");
     {
