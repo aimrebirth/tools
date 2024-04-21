@@ -124,11 +124,12 @@ void create_sql(path p, const polygon4::tools::db::processed_db &db)
 int main(int argc, char *argv[])
 {
     cl::opt<path> db_fn(cl::Positional, cl::desc("<db file>"), cl::Required);
+    cl::opt<int> codepage(cl::Positional, cl::desc("<codepage>"), cl::Required);
 
     cl::ParseCommandLineOptions(argc, argv);
 
     db db;
     db.open(db_fn);
-    create_sql(db_fn, db.process());
+    create_sql(db_fn, db.process(codepage));
     return 0;
 }
