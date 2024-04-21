@@ -82,17 +82,6 @@ int main(int argc, char *argv[]) {
     mod.setup_aim2_path();
     mod.files_to_distribute.insert("language_switcher.exe");
 
-    mod.copy_weapon_from_aim2("GUN_DRAINER");
-    mod.copy_weapon_from_aim2("GUN_GRAVITON");
-    mod.add_map_good("location1.mmo", "B_L1_BASE1", "GL_M1_A_ATTACKER"s, mmo_storage2::map_good("GUN_DRAINER"));
-    mod.add_map_good("location1.mmo", "B_L1_BASE1", "GUN_DRAINER"s, mmo_storage2::map_good("GUN_GRAVITON"));
-    {
-        auto &db = mod.db();
-        db["Оборудование"]["EQP_GLUON_REACTOR_S1"]["VALUE1"] = 9'000'000.f;
-    }
-    mod.apply();
-    return 0;
-
     // patch note: === LIST OF CHANGES ===
     // patch note:
     // patch note: General Notes
@@ -267,12 +256,20 @@ int main(int argc, char *argv[]) {
     for (auto &&[n, _] : m2_gliders) {
         mod.copy_glider_from_aim2(n);
     }
-    for (auto after = "GL_M1_A_ATTACKER"s; auto &&[n, _] : db["Глайдеры"]) {
+    std::string after;
+    for (after = "GL_M1_A_ATTACKER"s; auto &&[n, _] : db["Глайдеры"]) {
         after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
     }
-    for (auto after = "GUN_RAY_LAZER"s; auto &&[n, _] : db["Оружие"]) {
+    for (after = "GUN_RAY_LAZER"s; auto &&[n, _] : db["Оружие"]) {
         after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
     }
+    // patch note dev: copy GUN_DRAINER and GUN_GRAVITON from AIM2. They crash frequently while in F2 mode. Some does not have fx.
+    // TODO: check in debug why they crash
+    mod.copy_weapon_from_aim2("GUN_DRAINER");
+    after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_DRAINER"));
+    mod.copy_weapon_from_aim2("GUN_GRAVITON");
+    after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_GRAVITON"));
+
     // does not work, crashes. Maybe different item size
     // or maybe too many goods
     /*for (auto after = "EQP_POLYMER_ARMOR_S1"s; auto &&[n, _] : db["Оборудование"]) {
