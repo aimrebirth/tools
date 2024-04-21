@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
         "IF(_ISGLIDER(GL_S2_PA_SINYGR)|_ISGLIDER(GL_S4_S_SINYGR))");
 
     // patch note: * _ISGLIDER() function can check exact glider name now, for example _ISGLIDER(GL_M3_A_FIRST1) (lz)
-    mod.make_injection(aim1_fix::script_function__ISGLIDER);
+    mod.make_script_engine_injections();
     // end of scripts section
     // patch note:
 
@@ -181,13 +181,7 @@ int main(int argc, char *argv[]) {
     // patch note:    double light weapons: GL_M2_PA_NARGOON and GL_S3_PS_FINDER1
     // patch note:    double heavy weapons: GL_M3_PA_EYEDSTONE and GL_S3_PS_FINDER2
     // patch note:    (still have many bugs related)
-    mod.make_injection(aim1_fix::trade_actions_weapon_checks);
-    mod.make_injection(aim1_fix::setup_proper_weapon_slots_for_a_glider);
-    mod.make_injection(aim1_fix::put_weapon_into_the_right_slot_after_purchase);
-    mod.make_injection(aim1_fix::sell_correct_weapon);
-    mod.make_injection(aim1_fix::empty_light_weapon_message);
-    mod.make_injection(aim1_fix::empty_heavy_weapon_message);
-    mod.make_injection(aim1_fix::can_leave_trade_window);
+    mod.make_double_weapon_injections();
     // patch note:
 
     // test scripts

@@ -419,6 +419,18 @@ struct mod_maker {
         log("making injection on the virtual address 0x{:0X} (real address 0x{:0X}), size {}", virtual_address, ptr - f.p,
                      size);
     }
+    void make_double_weapon_injections() {
+        make_injection(aim1_fix::trade_actions_weapon_checks);
+        make_injection(aim1_fix::setup_proper_weapon_slots_for_a_glider);
+        make_injection(aim1_fix::put_weapon_into_the_right_slot_after_purchase);
+        make_injection(aim1_fix::sell_correct_weapon);
+        make_injection(aim1_fix::empty_light_weapon_message);
+        make_injection(aim1_fix::empty_heavy_weapon_message);
+        make_injection(aim1_fix::can_leave_trade_window);
+    }
+    void make_script_engine_injections() {
+        make_injection(aim1_fix::script_function__ISGLIDER);
+    }
 #endif
 
 #define ENABLE_DISABLE_FUNC(name, enable, disable) \
