@@ -24,6 +24,10 @@
 #include "color.h"
 #include "mat.h"
 
+// https://en.wikipedia.org/wiki/S3_Texture_Compression
+// decompressor https://github.com/Benjamin-Dobell/s3tc-dxt-decompression
+// compressor https://github.com/nothings/stb/blob/master/stb_dxt.h
+// or modified https://github.com/Cyan4973/RygsDXTc/blob/master/stb_dxt.h
 struct dxt5_block
 {
     union
@@ -99,7 +103,7 @@ struct dxt5_block
             pixels[p].a = a[(alpha_part >> (16 + p * 3)) & 0b111];
         }
     }
-    color interpolate(color c0, color c1, float m)
+    static color interpolate(color c0, color c1, float m)
     {
         color r;
         for (int i = 0; i < 4; i++)
