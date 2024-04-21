@@ -82,6 +82,17 @@ int main(int argc, char *argv[]) {
     mod.setup_aim2_path();
     mod.files_to_distribute.insert("language_switcher.exe");
 
+    mod.copy_weapon_from_aim2("GUN_DRAINER");
+    mod.copy_weapon_from_aim2("GUN_GRAVITON");
+    mod.add_map_good("location1.mmo", "B_L1_BASE1", "GL_M1_A_ATTACKER"s, mmo_storage2::map_good("GUN_DRAINER"));
+    mod.add_map_good("location1.mmo", "B_L1_BASE1", "GUN_DRAINER"s, mmo_storage2::map_good("GUN_GRAVITON"));
+    {
+        auto &db = mod.db();
+        db["Оборудование"]["EQP_GLUON_REACTOR_S1"]["VALUE1"] = 9'000'000.f;
+    }
+    mod.apply();
+    return 0;
+
     // patch note: === LIST OF CHANGES ===
     // patch note:
     // patch note: General Notes

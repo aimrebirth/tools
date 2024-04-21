@@ -175,7 +175,19 @@ struct db2 {
         }
 
         struct db2_internal {
-            using db2_memory_value = std::variant<std::string, int, float>;
+            struct db2_memory_value : std::variant<std::string, int, float> {
+                using base = std::variant<std::string, int, float>;
+                using base::base;
+                operator path() const {
+                    return std::get<std::string>(*this);
+                }
+                operator const std::string &() const {
+                    return std::get<std::string>(*this);
+                }
+                bool empty() const {
+                    return std::get<std::string>(*this).empty();
+                }
+            };
             using db2_memory = std::map<std::string, std::map<std::string, std::map<std::string, db2_memory_value>>>;
 
             db2_memory m;

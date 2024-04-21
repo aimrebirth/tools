@@ -88,6 +88,7 @@ struct aim_exe_v1_06_constants {
 
 struct mod_maker {
     struct db_wrapper {
+        mod_maker &mm;
         db2::files::db2_internal m;
         db2::files::db2_internal m2;
         path fn;
@@ -111,34 +112,33 @@ struct mod_maker {
         auto &operator[](this auto &&d, const std::string &s) {
             return d.m[s];
         }
-        bool copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
-            if (m2.empty()) {
-                return false;
+        auto &copy_from_aim2(db2::files::db2_internal &other_db, auto &&table_name, auto &&value_name, auto &&field_name) {
+            m[table_name][value_name][field_name] = other_db.at(table_name).at(value_name).at(field_name);
+            return m[table_name][value_name][field_name];
+        }
+        auto &copy_from_aim2(db2::files::db2_internal &other_db, auto &&table_name, auto &&value_name) {
+            m[table_name][value_name] = other_db.at(table_name).at(value_name);
+            return m[table_name][value_name];
+        }
+        void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
+            if (!mm.aim2_available()) {
+                return;
             }
             copy_from_aim2(m2, table_name, value_name, field_name);
-            return true;
         }
-        void copy_from_aim2(db2::files::db2_internal &m2, auto &&table_name, auto &&value_name, auto &&field_name) {
-            m[table_name][value_name][field_name] = m2.at(table_name).at(value_name).at(field_name);
-        }
-        bool copy_from_aim2(auto &&table_name, auto &&value_name) {
-            if (m2.empty()) {
-                return false;
+        void copy_from_aim2(auto &&table_name, auto &&value_name) {
+            if (!mm.aim2_available()) {
+                return;
             }
             copy_from_aim2(m2, table_name, value_name);
-            return true;
-        }
-        void copy_from_aim2(db2::files::db2_internal &m2, auto &&table_name, auto &&value_name) {
-            m[table_name][value_name] = m2.at(table_name).at(value_name);
         }
         bool empty() const { return m.empty(); }
     };
     struct quest_wrapper {
+        mod_maker &mm;
         std::map<std::string, db_wrapper> m;
         bool written{};
 
-        quest_wrapper() = default;
-        quest_wrapper(const quest_wrapper &) = delete;
         auto write(const path &datadir) {
             std::set<path> files;
             for (auto &&[fn,v] : m) {
@@ -148,21 +148,34 @@ struct mod_maker {
             return files;
         }
         auto &operator[](this auto &&d, const std::string &s) {
-            return d.m[s];
+            if (!d.m.contains(s)) {
+                d.m.emplace(s, db_wrapper{d.mm});
+            }
+            return d.m.find(s)->second;
         }
         void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
+            if (!mm.aim2_available()) {
+                return;
+            }
             for (auto &&[_, v] : m) {
-                if (!v.copy_from_aim2(table_name, value_name, field_name)) {
+                if (!v.m2.empty()) {
+                    v.copy_from_aim2(table_name, value_name, field_name);
+                } else {
                     // fallback
-                    v.copy_from_aim2(m["en_US"].m2, table_name, value_name, field_name);
+                    v.copy_from_aim2(this->operator[]("en_US").m2, table_name, value_name, field_name);
                 }
             }
         }
         void copy_from_aim2(auto &&table_name, auto &&value_name) {
+            if (!mm.aim2_available()) {
+                return;
+            }
             for (auto &&[_, v] : m) {
-                if (!v.copy_from_aim2(table_name, value_name)) {
+                if (!v.m2.empty()) {
+                    v.copy_from_aim2(table_name, value_name);
+                } else {
                     // fallback
-                    v.copy_from_aim2(m["en_US"].m2, table_name, value_name);
+                    v.copy_from_aim2(this->operator[]("en_US").m2, table_name, value_name);
                 }
             }
         }
@@ -190,8 +203,8 @@ struct mod_maker {
     std::set<path> restored_files;
     std::set<path> copied_files;
     std::source_location loc;
-    db_wrapper dw;
-    quest_wrapper qw;
+    db_wrapper dw{*this};
+    quest_wrapper qw{*this};
     bool injections_prepared{};
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
@@ -448,7 +461,11 @@ struct mod_maker {
                             e.what())};
         }
     }
-    void copy_from_aim2(auto &&object) {
+    void copy_from_aim2(const path &object, bool can_absent = false) {
+        if (object.empty()) {
+            return;
+        }
+
         log("copying from aim2: {}", path{object}.filename().string());
 
         auto ft = detect_file_type(object);
@@ -493,7 +510,7 @@ struct mod_maker {
                 p /= "tm";
                 p /= object;
                 if (!fs::exists(p)) {
-                    throw std::runtime_error{std::format("aim2: model is not found: {}", p.string())};
+                    throw std::runtime_error{std::format("aim2: texture is not found: {}", p.string())};
                 }
             }
             auto copied_fn = get_mod_dir() / path{object}.filename().string();
@@ -502,22 +519,117 @@ struct mod_maker {
             db().copy_from_aim2("Текстуры", path{object}.stem().string());
             break;
         }
+        case file_type::sound: {
+            auto p = aim2_game_dir / object;
+            if (!fs::exists(p)) {
+                if (can_absent) {
+                    return;
+                }
+                throw std::runtime_error{std::format("aim2: sound is not found: {}", p.string())};
+            }
+            auto copied_fn = get_mod_dir() / object;
+            fs::create_directories(copied_fn.parent_path());
+            fs::copy_file(p, copied_fn, fs::copy_options::overwrite_existing);
+            files_to_pak.insert(copied_fn.string() + "="s + object.string());
+            break;
+        }
         default:
             SW_UNIMPLEMENTED;
         }
     }
-    void copy_glider_from_aim2(auto &&object) {
+    void copy_glider_from_aim2(const std::string &object) {
         log("copying glider from aim2: {}", object);
 
-        copy_from_aim2("MOD_"s + object);
-        db().copy_from_aim2("Глайдеры", path{object}.stem().string());
-        quest().copy_from_aim2("INFORMATION", path{object}.stem().string());
+        db().copy_from_aim2("Глайдеры", object);
+        quest().copy_from_aim2("INFORMATION", object);
+        copy_from_aim2(db()["Глайдеры"][object]["MODEL"]);
+    }
+    void copy_explosion_from_aim2(const std::string &object) {
+        log("copying explosion from aim2: {}", object);
+
+        db().copy_from_aim2("Взрывы", object);
+        for (int i = 0; i < 8; ++i) {
+            std::string s = db()["Взрывы"][object]["MODEL" + std::to_string(i)];
+            if (s == "_DEFAULT_") {
+                continue;
+            }
+            copy_from_aim2(s);
+        }
+        for (int i = 0; i < 8; ++i) {
+            std::string s = db()["Взрывы"][object]["TEXTURE" + std::to_string(i)];
+            if (s == "_DEFAULT_") {
+                continue;
+            }
+            copy_from_aim2(s + ".tm");
+        }
+    }
+    void copy_sound_from_aim2(const std::string &object, bool can_absent = false) {
+        log("copying sound from aim2: {}", object);
+
+        db().copy_from_aim2("Звуки", object);
+        copy_from_aim2(db()["Звуки"][object]["FILENAME"], can_absent);
+    }
+    void copy_missile_from_aim2(const std::string &object, bool can_absent = false) {
+        log("copying sound from aim2: {}", object);
+
+        db().copy_from_aim2("Снаряды", object);
+        auto &mis = db()["Снаряды"][object];
+        if (mis.contains("EXPLO")) {
+            copy_explosion_from_aim2(mis["EXPLO"]);
+        }
+        if (mis.contains("MODEL") && !mis["MODEL"].empty()) {
+            copy_from_aim2(mis["MODEL"]);
+        }
+        if (mis.contains("TAIL_MODEL") && !mis["TAIL_MODEL"].empty()) {
+            copy_from_aim2(mis["TAIL_MODEL"]);
+        }
+        if (mis.contains("TEXTURE") && !mis["TEXTURE"].empty()) {
+            std::string s = mis["TEXTURE"];
+            copy_from_aim2(s + ".tm");
+        }
+        if (mis.contains("TEXTURE2") && !mis["TEXTURE2"].empty()) {
+            std::string s = mis["TEXTURE2"];
+            copy_from_aim2(s + ".tm");
+        }
+        if (mis.contains("SUBMISSILE") && !mis["SUBMISSILE"].empty()) {
+            copy_missile_from_aim2(mis["SUBMISSILE"]);
+        }
+    }
+    void copy_weapon_from_aim2(const std::string &object) {
+        log("copying weapon from aim2: {}", object);
+
+        db().copy_from_aim2("Оружие", object);
+        quest().copy_from_aim2("INFORMATION", object);
+        auto &db_ = this->db();
+        auto &gun = db_["Оружие"][object];
+        auto copy_if_not = [&](auto &&table, auto &&field) {
+            if (!db_[table].contains(gun[field])) {
+                db_.copy_from_aim2(table, gun[field]);
+            }
+        };
+        copy_explosion_from_aim2(gun["EXPLO"]);
+        copy_from_aim2(gun["FXMODEL"]);
+        copy_from_aim2(gun["FXMODEL2"]);
+        copy_sound_from_aim2(gun["IDSOUND"]);
+        copy_sound_from_aim2(gun["IDSOUNDEND"], true);
+        if (gun.contains("MISSILE") && !gun["MISSILE"].empty()) {
+            copy_missile_from_aim2(gun["MISSILE"]);
+        }
+        copy_from_aim2(gun["MODEL"]);
+        if (gun.contains("SHOOTTEX") && !gun["SHOOTTEX"].empty()) {
+            std::string s = gun["SHOOTTEX"];
+            copy_from_aim2(s + ".tm");
+        }
+        if (gun.contains("SHOOTTEX1") && !gun["SHOOTTEX1"].empty()) {
+            std::string s = gun["SHOOTTEX1"];
+            copy_from_aim2(s + ".tm");
+        }
     }
 
     auto &db() {
         if (dw.empty()) {
             auto cp = 1251; // always 1251 or 0 probably for db
-            dw = open_db("db", cp);
+            open_db("db", cp);
             if (aim2_available()) {
                 dw.m2 = db2{aim2_game_dir / "data" / "db"}.open().to_map(cp);
             }
@@ -588,18 +700,17 @@ private:
         }
         return backup;
     }
-    db_wrapper open_db(auto &&name, int db_codepage) {
+    void open_db(auto &&name, int db_codepage) {
         auto d = db2{get_data_dir() / name};
         auto files = d.open().get_files();
         for (auto &&f : files) {
             backup_or_restore_once(f);
             files_to_distribute.insert(f);
         }
-        db_wrapper w;
+        auto &w = dw;
         w.m = d.open().to_map(db_codepage);
         w.fn = d.fn;
         w.codepage = db_codepage;
-        return w;
     }
     void backup_or_restore_once(const path &fn) {
         auto bak = make_bak_file(fn);
