@@ -24,6 +24,7 @@ void build(Solution &s)
         t.PackageDefinitions = true;
         t += cppstd;
         t.setRootDirectory("src/" + dirname);
+        t += ".*"_rr; // to take .natvis files explicitly
         return t;
     };
     auto add_exe = [&](const String &name, const String &dirname = {}) -> decltype(auto)
