@@ -57,6 +57,10 @@ void build(Solution &s)
     add_exe_with_common("script2txt");
     add_exe_with_common("txt2script");
     add_exe_with_common("tm_converter");
+    add_exe_with_common("tm_converter2") +=
+        "org.sw.demo.BenjaminDobell.s3tc_dxt_decompression-master"_dep,
+        "org.sw.demo.intel.opencv.highgui"_dep
+        ;
     add_exe("name_generator");
     add_exe_with_common("save_loader");
     add_exe_with_common("bms_converter");
