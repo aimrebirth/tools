@@ -22,13 +22,6 @@ or
 patch_note(...)
 */
 
-#define AIM_TYPES_FILE_NAME "aim.exe.h"
-#define INJECTIONS_FILE_NAME "aim.exe.fixes.h"
-
-#include INJECTIONS_FILE_NAME
-#ifndef INJECTED_DLL
-#include "aim1_mod_maker.h"
-
 // patch note: Authors and Credits
 // patch note: lz, Solant, Streef
 // patch note:
@@ -76,8 +69,6 @@ int main(int argc, char *argv[]) {
 #endif
         + "-0.0.5"s
     );
-    mod.add_code_file_for_archive(INJECTIONS_FILE_NAME);
-    mod.add_code_file_for_archive(AIM_TYPES_FILE_NAME);
     // this mod uses aim2 files (copy finder from there), so we must set up its path
     mod.setup_aim2_path();
     mod.files_to_distribute.insert("language_switcher.exe");
@@ -245,8 +236,6 @@ int main(int argc, char *argv[]) {
     for (auto &&[n,_] : db["Глайдеры"]) {
         m2_gliders.erase(n);
     }
-    m2_gliders.erase("GL_BOT");
-    m2_gliders.erase("GL_RACE1");
     for (auto &&[n, _] : m2_gliders) {
         mod.copy_glider_from_aim2(n);
     }
@@ -354,4 +343,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-#endif
+

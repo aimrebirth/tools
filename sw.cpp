@@ -103,6 +103,11 @@ void build(Solution &s)
     auto &aim1_mod_maker = add_exe_with_common("aim1.mod_maker", "aim1_mod_maker"); // actually a library
     aim1_mod_maker.Public += "pub.egorpugin.primitives.command"_dep;
     aim1_mod_maker.Public += "org.sw.demo.nlohmann.json.natvis"_dep;
+    aim1_mod_maker.Interface.ForceIncludeFiles.push_back("aim1_mod_maker.h");
+
+    auto &aim1_mod_maker_injections = aim1_mod_maker.addStaticLibrary("injections");
+    aim1_mod_maker_injections.setRootDirectory("src/aim1_mod_maker");
+    aim1_mod_maker_injections += "aim\\.exe\\..*\\.h"_rr;
 
     auto &aim1_community_fix = tools.addExecutable("examples.mods.aim1.community_fix");
     {

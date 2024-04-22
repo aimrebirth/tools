@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aim.exe.injections.h"
+
 #include <db2.h>
 #include <mmo2.h>
 
@@ -158,13 +160,13 @@ struct mod_maker {
                 return;
             }
             for (auto &&[_, v] : m) {
-                if (!v.m2.empty()) {
+                    if (!v.m2.empty()) {
                     v.copy_from_aim2(table_name, value_name, field_name);
-                } else {
-                    // fallback
+                    } else {
+                        // fallback
                     v.copy_from_aim2(this->operator[]("en_US").m2, table_name, value_name, field_name);
                 }
-            }
+                    }
         }
         void copy_from_aim2(auto &&table_name, auto &&value_name) {
             if (!mm.aim2_available()) {
@@ -396,7 +398,6 @@ struct mod_maker {
 
     // all you need is to provide injection address (virtual) with size
     // handle the call instruction in 'dispatcher' symbol (naked) of your dll
-#ifdef INJECTIONS_FILE_NAME
     constexpr static inline auto call_command_length = 5;
     void make_injection(uint32_t virtual_address) {
         make_injection(virtual_address, get_injection_size(virtual_address));
@@ -431,7 +432,6 @@ struct mod_maker {
     void make_script_engine_injections() {
         make_injection(aim1_fix::script_function__ISGLIDER);
     }
-#endif
 
 #define ENABLE_DISABLE_FUNC(name, enable, disable) \
     void enable_##name() { name(enable); } \
@@ -810,7 +810,8 @@ private:
     void make_injected_dll() {
         log("making injected dll");
 
-        path fn = loc.file_name();
+        auto fn = get_mod_dir() / "inject.cpp";
+        write_file(fn, R"(#include <aim.exe.fixes.h>)");
         //fs::copy_file(fn, get_mod_dir() / fn.filename(), fs::copy_options::overwrite_existing);
         std::string contents;
         contents += "void build(Solution &s) {\n";
@@ -821,10 +822,11 @@ private:
         contents += ");\n";
         contents += "    t += cpp23;\n";
         contents += "    t += \"" + boost::replace_all_copy(fn.string(), "\\", "/") + "\";\n";
-        contents += "    t += \"INJECTED_DLL\"_def;\n";
+        //contents += "    t += \"INJECTED_DLL\"_def;\n";
 #if !defined(NDEBUG)
         contents += "    t += \"DONT_OPTIMIZE\"_def;\n";
 #endif
+        contents += "t += \"pub.lzwdgc.polygon4.tools.aim1.mod_maker.injections-master\"_dep;\n";
         contents += "}\n";
         write_file(get_mod_dir() / "sw.cpp", contents);
 
