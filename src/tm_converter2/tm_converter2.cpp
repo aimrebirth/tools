@@ -77,8 +77,13 @@ struct tm_file {
 };
 #pragma pack(pop)
 
-void convert(const path &fn)
-{
+struct kt_icons {
+    // width 64
+    // height 32
+    // icons in column 16
+};
+
+void convert(const path &fn) {
     primitives::templates2::mmap_file<uint8_t> f{fn};
     stream s{f};
     tm_file tm = s;
@@ -141,6 +146,9 @@ void convert(const path &fn)
                 *dst++ = (lo << 4) | lo;
                 *dst++ = (hi << 4) | hi;
             }
+
+            // extract icons
+            //cv::Mat m2(m,cv::Rect(0,0,64,32));
         }
         // opencv can't save to tga directly
         cv::imwrite((path(fn) += sub + ".png"s).string(), m);
