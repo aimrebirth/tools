@@ -796,7 +796,7 @@ private:
         log("making injected dll");
 
         auto fn = get_mod_dir() / "inject.cpp";
-        write_file(fn, R"(#include <aim.exe.fixes.h>)");
+        write_file_if_different(fn, R"(#include <aim.exe.fixes.h>)");
         //fs::copy_file(fn, get_mod_dir() / fn.filename(), fs::copy_options::overwrite_existing);
         std::string contents;
         contents += "void build(Solution &s) {\n";
@@ -813,7 +813,7 @@ private:
 #endif
         contents += "t += \"pub.lzwdgc.polygon4.tools.aim1.mod_maker.injections-master\"_dep;\n";
         contents += "}\n";
-        write_file(get_mod_dir() / "sw.cpp", contents);
+        write_file_if_different(get_mod_dir() / "sw.cpp", contents);
 
         // when you enable debug build, you cannot distribute this dll,
         // because user systems does not have debug dll dependencies!!!
