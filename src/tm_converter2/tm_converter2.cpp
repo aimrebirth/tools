@@ -104,7 +104,7 @@ void convert(const path &fn)
     }
 
     auto save = [&](auto &&sub) {
-        cv::Mat m(tm.width, tm.height, CV_8UC4);
+        cv::Mat m(tm.height, tm.width, CV_8UC4);
         if (tm.dxt5_compression) {
             // this have some one off results
             // probaby we did different rounding in current (v1) impl
