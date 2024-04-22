@@ -122,17 +122,11 @@ struct mod_maker {
             m[table_name][value_name] = other_db.at(table_name).at(value_name);
             return m[table_name][value_name];
         }
-        void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
+        void copy_from_aim2(auto && ... args) {
             if (!mm.aim2_available()) {
                 return;
             }
-            copy_from_aim2(m2, table_name, value_name, field_name);
-        }
-        void copy_from_aim2(auto &&table_name, auto &&value_name) {
-            if (!mm.aim2_available()) {
-                return;
-            }
-            copy_from_aim2(m2, table_name, value_name);
+            copy_from_aim2(m2, args...);
         }
         bool empty() const { return m.empty(); }
     };
@@ -155,29 +149,20 @@ struct mod_maker {
             }
             return d.m.find(s)->second;
         }
-        void copy_from_aim2(auto &&table_name, auto &&value_name, auto &&field_name) {
+        void copy_from_aim2(auto && ... args) {
             if (!mm.aim2_available()) {
                 return;
             }
             for (auto &&[_, v] : m) {
+                try {
                     if (!v.m2.empty()) {
-                    v.copy_from_aim2(table_name, value_name, field_name);
+                        v.copy_from_aim2(args...);
                     } else {
                         // fallback
-                    v.copy_from_aim2(this->operator[]("en_US").m2, table_name, value_name, field_name);
-                }
+                        v.copy_from_aim2(this->operator[]("en_US").m2, args...);
                     }
-        }
-        void copy_from_aim2(auto &&table_name, auto &&value_name) {
-            if (!mm.aim2_available()) {
-                return;
-            }
-            for (auto &&[_, v] : m) {
-                if (!v.m2.empty()) {
-                    v.copy_from_aim2(table_name, value_name);
-                } else {
-                    // fallback
-                    v.copy_from_aim2(this->operator[]("en_US").m2, table_name, value_name);
+                } catch (std::exception &e) {
+                    // can be missing
                 }
             }
         }
