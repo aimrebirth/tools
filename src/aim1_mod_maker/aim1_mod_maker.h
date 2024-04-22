@@ -300,6 +300,7 @@ struct mod_maker {
         } else {
             log("7z not found, skipping archive creation");
         }
+        log("Done! Your mod {} is ready!", get_full_mod_name());
     }
 
     template <typename T>
