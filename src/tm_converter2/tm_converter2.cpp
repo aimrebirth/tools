@@ -142,7 +142,7 @@ void convert(const path &fn)
             }
         }
         // opencv can't save to tga directly
-        cv::imwrite((path(fn) += sub + ".bmp"s).string(), m);
+        cv::imwrite((path(fn) += sub + ".png"s).string(), m);
     };
     save("");
     // not sure how to parse rest, probably dx8 generated texture levels
