@@ -107,7 +107,7 @@ void build(Solution &s)
 
     auto &aim1_mod_maker_injections = aim1_mod_maker.addStaticLibrary("injections");
     aim1_mod_maker_injections.setRootDirectory("src/aim1_mod_maker");
-    aim1_mod_maker_injections += "aim\\.exe\\..*\\.h"_rr;
+    aim1_mod_maker_injections += "aim\\.exe.*"_rr;
 
     auto &aim1_community_fix = tools.addExecutable("examples.mods.aim1.community_fix");
     {
