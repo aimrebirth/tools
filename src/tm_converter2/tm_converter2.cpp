@@ -120,7 +120,8 @@ void convert(const path &fn)
             });
             if (tm.d3dformat == D3DFMT_X8R8G8B8) {
                 // and shrink if possible
-                cv::cvtColor(m, m, cv::COLOR_BGRA2BGR);
+                // dont shrink? we need alpha for compression again?
+                //cv::cvtColor(m, m, cv::COLOR_BGRA2BGR);
             }
         }
         else
