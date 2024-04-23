@@ -111,7 +111,9 @@ int main(int argc, char *argv[]) {
     p.n_files = files.size();
     p.n_blocks = nsegs;
 
-    fs::create_directories(name.parent_path());
+    if (!name.parent_path().empty()) {
+        fs::create_directories(name.parent_path());
+    }
     std::ofstream{name};
     fs::resize_file(name, total);
     primitives::templates2::mmap_file<uint8_t> f{name, primitives::templates2::mmap_file<uint8_t>::rw{}};
