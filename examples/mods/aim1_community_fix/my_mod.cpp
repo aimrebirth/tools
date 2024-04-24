@@ -204,8 +204,10 @@ int main(int argc, char *argv[]) {
         }
         db["Конфигурации"]["CFG_STARTUP"][type] = test_name;
     };
-    // patch note dev: give glider FLASH
-    db["Конфигурации"]["CFG_STARTUP"]["GLIDER"] = "GL_M4_S_FLASH";
+    // patch note dev: give powerful glider based on FLASH
+    db["Глайдеры"]["GL_M4_S_TEST"] = db["Глайдеры"]["GL_M4_S_FIRST2"];
+    db["Глайдеры"]["GL_M4_S_TEST"]["MAXWEIGHT"] = 1'000'000.f;
+    db["Конфигурации"]["CFG_STARTUP"]["GLIDER"] = "GL_M4_S_TEST";
     // patch note dev: give powerful reactor
     add_test_eqp("REACTOR", "EQP_GLUON_REACTOR_S1", 9'000'000.f);
     // patch note dev: give powerful engine
@@ -314,7 +316,26 @@ int main(int argc, char *argv[]) {
     _SETEVENT(SECTOR7.ACCESS)
     //_SETEVENT(SECTOR8.VISIT)
     _SETEVENT(SECTOR8.ACCESS)
+
+    //_SETEVENT(SECTOR9.VISIT)
+    //_SETEVENT(SECTOR9.ACCESS)
+
+    //_INFO(SECTOR2_TEST)
+    //_INFO(SECTOR3_TEST)
+    //_INFO(SECTOR9_TEST)
+    //_INFO(SECTOR10_TEST)
 )");
+    /*mod.copy_sector_from_aim1(1, 3);
+    mod.copy_sector_from_aim1(1);
+    mod.copy_sector_from_aim1(2);
+    quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["NAME"] = "test";
+    quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["TEXT"] = "<link: войти 2=LINKJUMPTO location2.mmp>";
+    quest["ru_RU"]["INFORMATION"]["SECTOR3_TEST"]["NAME"] = "test";
+    quest["ru_RU"]["INFORMATION"]["SECTOR3_TEST"]["TEXT"] = "<link: войти 3=LINKJUMPTO location3.mmp>";
+    quest["ru_RU"]["INFORMATION"]["SECTOR9_TEST"]["NAME"] = "test";
+    quest["ru_RU"]["INFORMATION"]["SECTOR9_TEST"]["TEXT"] = "<link: войти 9=LINKJUMPTO location9.mmp>";
+    quest["ru_RU"]["INFORMATION"]["SECTOR10_TEST"]["NAME"] = "test";
+    quest["ru_RU"]["INFORMATION"]["SECTOR10_TEST"]["TEXT"] = "<link: войти 10=LINKJUMPTO location10.mmp>";*/
     // patch note dev:
 #endif
 

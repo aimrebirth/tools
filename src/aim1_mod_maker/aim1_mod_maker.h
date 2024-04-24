@@ -193,6 +193,7 @@ struct mod_maker {
     db_wrapper dw{*this};
     quest_wrapper qw{*this};
     bool injections_prepared{};
+    int next_sector_id{9};
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
         init(fs::current_path());
@@ -623,6 +624,27 @@ struct mod_maker {
             copy_from_aim2(s + ".tm");
         }
     }
+    void copy_sector_from_aim1(int id_from) {
+        copy_sector_from_aim1(id_from, next_sector_id++);
+    }
+    void copy_sector_from_aim1(int id_from, int id_to) {
+        auto from = std::format("location{}", id_from);
+        auto to = std::format("location{}", id_to);
+        auto mmp = find_real_filename(from + ".mmp");
+        auto mmo = find_real_filename(from + ".mmo");
+        auto mmm = find_real_filename(from + ".mmm");
+        fs::copy_file(mmp, get_mod_dir() / (to + ".mmp"), fs::copy_options::update_existing);
+        fs::copy_file(mmo, get_mod_dir() / (to + ".mmo"), fs::copy_options::update_existing);
+        fs::copy_file(mmm, get_mod_dir() / (to + ".mmm"), fs::copy_options::update_existing);
+        files_to_pak.insert(get_mod_dir() / (to + ".mmp"));
+        files_to_pak.insert(get_mod_dir() / (to + ".mmo"));
+        files_to_pak.insert(get_mod_dir() / (to + ".mmm"));
+        quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(to)] = quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(from)];
+        std::string s = quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(to)]["NAME"];
+        s += " Copy";
+        quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(to)]["NAME"] = s;
+        quest()["ru_RU"]["INFORMATION"][std::format("INFO_SECTOR{}", id_to)] = quest()["ru_RU"]["INFORMATION"][std::format("INFO_SECTOR{}", id_from)];
+    }
 
     auto &db() {
         if (dw.empty()) {
@@ -931,6 +953,24 @@ FF D7                   ; call    edi
         }
         case file_type::mmo: {
             auto p = find_file_in_paks(fn, "res3.pak", "maps2.pak", "maps.pak");
+            if (!fs::exists(p)) {
+                throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
+            }
+            auto dst = get_mod_dir() / p.filename();
+            copy_file_once(p, dst);
+            return dst;
+        }
+        case file_type::mmp: {
+            auto p = find_file_in_paks(fn, "maps2.pak", "maps.pak");
+            if (!fs::exists(p)) {
+                throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
+            }
+            auto dst = get_mod_dir() / p.filename();
+            copy_file_once(p, dst);
+            return dst;
+        }
+        case file_type::mmm: {
+            auto p = find_file_in_paks(fn, "minimaps.pak");
             if (!fs::exists(p)) {
                 throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
             }
