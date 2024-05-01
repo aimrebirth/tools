@@ -67,9 +67,11 @@ struct mmo_storage2 {
         // mech_groups
         {
             sections.mech_groups.offset = s.p - f.p;
-            uint32_t n_mechs = s;
+            uint32_t n_mech_groups = s;
+            // two ints
+            // and ten more ints?
             s.skip(0x30);
-            while (n_mechs--) {
+            while (n_mech_groups--) {
                 mech_group o = s;
 
                 switch (o.type) {
@@ -94,7 +96,7 @@ struct mmo_storage2 {
 
                 while (o.n_mechs--) {
                     struct mech {
-                        char name[0x20];
+                        char cfg_name[0x20];
                     };
                     mech m = s;
                 }

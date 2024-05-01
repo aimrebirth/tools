@@ -255,6 +255,9 @@ int main(int argc, char *argv[]) {
     mod.copy_weapon_from_aim2("GUN_GRAVITON");
     after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_GRAVITON"));
 
+    //
+    mod.replace("under.scr", "_ADDSENSOR(T_L4_BASE_2)", "_ADDSENSOR(T_L4_BASE_2 )\n_MARK(T_L4_BASE_2)");
+
     // does not work, crashes. Maybe different item size
     // or maybe too many goods
     /*for (auto after = "EQP_POLYMER_ARMOR_S1"s; auto &&[n, _] : db["Оборудование"]) {

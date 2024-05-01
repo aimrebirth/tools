@@ -601,16 +601,21 @@ struct mod_maker {
         quest().copy_from_aim2("INFORMATION", object);
         auto &db_ = this->db();
         auto &gun = db_["Оружие"][object];
-        auto copy_if_not = [&](auto &&table, auto &&field) {
-            if (!db_[table].contains(gun[field])) {
-                db_.copy_from_aim2(table, gun[field]);
-            }
-        };
-        copy_explosion_from_aim2(gun["EXPLO"]);
-        copy_from_aim2(gun["FXMODEL"]);
-        copy_from_aim2(gun["FXMODEL2"]);
-        copy_sound_from_aim2(gun["IDSOUND"]);
-        copy_sound_from_aim2(gun["IDSOUNDEND"], true);
+        if (gun.contains("EXPLO")) {
+            copy_explosion_from_aim2(gun["EXPLO"]);
+        }
+        if (gun.contains("FXMODEL")) {
+            copy_from_aim2(gun["FXMODEL"]);
+        }
+        if (gun.contains("FXMODEL2")) {
+            copy_from_aim2(gun["FXMODEL2"]);
+        }
+        if (gun.contains("IDSOUND")) {
+            copy_sound_from_aim2(gun["IDSOUND"]);
+        }
+        if (gun.contains("IDSOUNDEND")) {
+            copy_sound_from_aim2(gun["IDSOUNDEND"], true);
+        }
         if (gun.contains("MISSILE") && !gun["MISSILE"].empty()) {
             copy_missile_from_aim2(gun["MISSILE"]);
         }
