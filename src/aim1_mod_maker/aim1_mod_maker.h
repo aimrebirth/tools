@@ -460,11 +460,10 @@ struct mod_maker {
                             e.what())};
         }
     }
-    void copy_from_aim2(const path &object, bool can_absent = false) {
+    void copy_from_aim2(const path &object) {
         if (object.empty()) {
             return;
         }
-
         log("copying from aim2: {}", path{object}.filename().string());
 
         auto ft = detect_file_type(object);
@@ -490,11 +489,17 @@ struct mod_maker {
             db().copy_from_aim2("Модели", path{object}.stem().string());
             auto textures = read_lines(path{copied_fn} += ".textures.txt");
             for (auto &&t : textures) {
-                path fn = std::get<std::string>(db().m2.at("Текстуры").at(t).at("FILENAME"));
-                if (fn.empty()) {
-                    throw std::runtime_error{"Can't find texture: "s + t};
+                try {
+                    // m2 TEX_GUN_X-PARTICLE_ACCELERATORÑ.TM has bad letter C in it
+                    // should be TEX_GUN_X-PARTICLE_ACCELERATORC.TM
+                    path fn = std::get<std::string>(db().m2.at("Текстуры").at(t).at("FILENAME"));
+                    if (fn.empty()) {
+                        throw std::runtime_error{"Can't find texture: "s + t};
+                    }
+                    copy_from_aim2(fn);
+                } catch (std::exception &) {
+                    log("Can't find texture: "s + t);
                 }
-                copy_from_aim2(fn);
             }
             break;
         }
@@ -521,10 +526,8 @@ struct mod_maker {
         case file_type::sound: {
             auto p = aim2_game_dir / object;
             if (!fs::exists(p)) {
-                if (can_absent) {
-                    return;
-                }
-                throw std::runtime_error{std::format("aim2: sound is not found: {}", p.string())};
+                log("aim2: sound is not found: {}", p.string());
+                return;
             }
             auto copied_fn = get_mod_dir() / object;
             fs::create_directories(copied_fn.parent_path());
@@ -537,97 +540,84 @@ struct mod_maker {
         }
     }
     void copy_glider_from_aim2(const std::string &object) {
+        if (object.empty()) {
+            return;
+        }
         log("copying glider from aim2: {}", object);
 
         db().copy_from_aim2("Глайдеры", object);
         quest().copy_from_aim2("INFORMATION", object);
         copy_from_aim2(db()["Глайдеры"][object]["MODEL"]);
     }
+    void copy_texture_from_aim2(const std::string &object) {
+        if (object.empty() || object == "_DEFAULT_"s) {
+            return;
+        }
+        log("copying texture from aim2: {}", object);
+        copy_from_aim2(object + ".tm");
+    }
     void copy_explosion_from_aim2(const std::string &object) {
+        if (object.empty()) {
+            return;
+        }
         log("copying explosion from aim2: {}", object);
 
         db().copy_from_aim2("Взрывы", object);
         for (int i = 0; i < 8; ++i) {
             std::string s = db()["Взрывы"][object]["MODEL" + std::to_string(i)];
-            if (s == "_DEFAULT_") {
+            if (s.empty() || s == "_DEFAULT_") {
                 continue;
             }
             copy_from_aim2(s);
         }
         for (int i = 0; i < 8; ++i) {
             std::string s = db()["Взрывы"][object]["TEXTURE" + std::to_string(i)];
-            if (s == "_DEFAULT_") {
-                continue;
-            }
-            copy_from_aim2(s + ".tm");
+            copy_texture_from_aim2(s);
         }
     }
-    void copy_sound_from_aim2(const std::string &object, bool can_absent = false) {
+    void copy_sound_from_aim2(const std::string &object) {
+        if (object.empty()) {
+            return;
+        }
         log("copying sound from aim2: {}", object);
 
         db().copy_from_aim2("Звуки", object);
-        copy_from_aim2(db()["Звуки"][object]["FILENAME"], can_absent);
+        copy_from_aim2(db()["Звуки"][object]["FILENAME"]);
     }
-    void copy_missile_from_aim2(const std::string &object, bool can_absent = false) {
+    void copy_missile_from_aim2(const std::string &object) {
+        if (object.empty()) {
+            return;
+        }
         log("copying sound from aim2: {}", object);
 
         db().copy_from_aim2("Снаряды", object);
         auto &mis = db()["Снаряды"][object];
-        if (mis.contains("EXPLO")) {
-            copy_explosion_from_aim2(mis["EXPLO"]);
-        }
-        if (mis.contains("MODEL") && !mis["MODEL"].empty()) {
-            copy_from_aim2(mis["MODEL"]);
-        }
-        if (mis.contains("TAIL_MODEL") && !mis["TAIL_MODEL"].empty()) {
-            copy_from_aim2(mis["TAIL_MODEL"]);
-        }
-        if (mis.contains("TEXTURE") && !mis["TEXTURE"].empty()) {
-            std::string s = mis["TEXTURE"];
-            copy_from_aim2(s + ".tm");
-        }
-        if (mis.contains("TEXTURE2") && !mis["TEXTURE2"].empty()) {
-            std::string s = mis["TEXTURE2"];
-            copy_from_aim2(s + ".tm");
-        }
-        if (mis.contains("SUBMISSILE") && !mis["SUBMISSILE"].empty()) {
-            copy_missile_from_aim2(mis["SUBMISSILE"]);
-        }
+        copy_explosion_from_aim2(mis["EXPLO"]);
+        copy_from_aim2(mis["MODEL"]);
+        copy_from_aim2(mis["TAIL_MODEL"]);
+        copy_texture_from_aim2(mis["TEXTURE"]);
+        copy_texture_from_aim2(mis["TEXTURE2"]);
+        copy_missile_from_aim2(mis["SUBMISSILE"]);
     }
     void copy_weapon_from_aim2(const std::string &object) {
+        if (object.empty()) {
+            return;
+        }
         log("copying weapon from aim2: {}", object);
 
         db().copy_from_aim2("Оружие", object);
         quest().copy_from_aim2("INFORMATION", object);
         auto &db_ = this->db();
         auto &gun = db_["Оружие"][object];
-        if (gun.contains("EXPLO")) {
-            copy_explosion_from_aim2(gun["EXPLO"]);
-        }
-        if (gun.contains("FXMODEL")) {
-            copy_from_aim2(gun["FXMODEL"]);
-        }
-        if (gun.contains("FXMODEL2")) {
-            copy_from_aim2(gun["FXMODEL2"]);
-        }
-        if (gun.contains("IDSOUND")) {
-            copy_sound_from_aim2(gun["IDSOUND"]);
-        }
-        if (gun.contains("IDSOUNDEND")) {
-            copy_sound_from_aim2(gun["IDSOUNDEND"], true);
-        }
-        if (gun.contains("MISSILE") && !gun["MISSILE"].empty()) {
-            copy_missile_from_aim2(gun["MISSILE"]);
-        }
+        copy_explosion_from_aim2(gun["EXPLO"]);
+        copy_from_aim2(gun["FXMODEL"]);
+        copy_from_aim2(gun["FXMODEL2"]);
+        copy_sound_from_aim2(gun["IDSOUND"]);
+        copy_sound_from_aim2(gun["IDSOUNDEND"]);
+        copy_missile_from_aim2(gun["MISSILE"]);
         copy_from_aim2(gun["MODEL"]);
-        if (gun.contains("SHOOTTEX") && !gun["SHOOTTEX"].empty()) {
-            std::string s = gun["SHOOTTEX"];
-            copy_from_aim2(s + ".tm");
-        }
-        if (gun.contains("SHOOTTEX1") && !gun["SHOOTTEX1"].empty()) {
-            std::string s = gun["SHOOTTEX1"];
-            copy_from_aim2(s + ".tm");
-        }
+        copy_texture_from_aim2(gun["SHOOTTEX"]);
+        copy_texture_from_aim2(gun["SHOOTTEX1"]);
     }
     void copy_sector_from_aim1(int id_from) {
         copy_sector_from_aim1(id_from, next_sector_id++);
