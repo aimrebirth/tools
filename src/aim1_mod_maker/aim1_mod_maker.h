@@ -186,7 +186,9 @@ struct mod_maker {
             }
         }
         void write() {
-            m.save(fn, codepage);
+            if (!fn.empty()) {
+                m.save(fn, codepage);
+            }
             written = true;
         }
         auto write(const path &fn) {
