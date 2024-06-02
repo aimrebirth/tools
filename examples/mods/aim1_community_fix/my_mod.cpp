@@ -238,25 +238,43 @@ int main(int argc, char *argv[]) {
     for (auto &&[n,_] : db["Глайдеры"]) {
         m2_gliders.erase(n);
     }
-    for (auto &&[n, _] : m2_gliders) {
-        mod.copy_glider_from_aim2(n);
-    }
+    //mod.copy_glider_from_aim2("GL_M4_S_FLASH");
+    //m2_gliders.erase("GL_M4_S_FLASH");
+    //for (auto &&[n, _] : m2_gliders) {
+    //    mod.copy_glider_from_aim2(n);
+    //}
     std::string after;
     for (after = "GL_M1_A_ATTACKER"s; auto &&[n, _] : db["Глайдеры"]) {
-        after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
+        //after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
     }
     for (after = "GUN_RAY_LAZER"s; auto &&[n, _] : db["Оружие"]) {
-        after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
+        //after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good(n));
     }
     // patch note dev: copy GUN_DRAINER and GUN_GRAVITON from AIM2. They crash frequently while in F2 mode. Some does not have fx.
     // TODO: check in debug why they crash
-    mod.copy_weapon_from_aim2("GUN_DRAINER");
-    after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_DRAINER"));
-    mod.copy_weapon_from_aim2("GUN_GRAVITON");
-    after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_GRAVITON"));
+    //mod.copy_weapon_from_aim2("GUN_DRAINER");
+    //after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_DRAINER"));
+    //mod.copy_weapon_from_aim2("GUN_GRAVITON");
+    //after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_GRAVITON"));
 
     //
     mod.replace("under.scr", "_ADDSENSOR(T_L4_BASE_2)", "_ADDSENSOR(T_L4_BASE_2 )\n_MARK(T_L4_BASE_2)");
+
+    //
+    mod.clone_mechmind_group("location1.mmo", "MINVACH-6", "MINVACH-666");
+    mod.update_mechmind_group_configurations("location1.mmo", "MINVACH-666",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1",
+        "CFG_INVADER_1"
+    );
+    mod.set_mechmind_organization("location1.mmo", "MINVACH-666", "ORG_PLAYER");
 
     // does not work, crashes. Maybe different item size
     // or maybe too many goods

@@ -473,6 +473,97 @@ struct mod_maker {
         // increase number of goods
         ++*(uint32_t *)(f.p + it->second.offset);
     }
+    void clone_mechmind_group(path mmo_fn, const std::string &name, const std::string &newname) {
+        auto fn = find_real_filename(mmo_fn);
+        files_to_pak.insert(fn);
+
+        mmo_storage2 m{fn};
+        m.load();
+
+        auto it = m.mechs.find(name);
+        if (it == m.mechs.end()) {
+            throw std::runtime_error{"no such mechmind or group: " + name};
+        }
+        if (newname.size() > 0x20-1) {
+            throw std::runtime_error{"too long name: " + newname};
+        }
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto &n = *(uint32_t*)(f.p + m.n_mech_groups_offset);
+        ++n;
+        std::string data{f.p + it->second.offset, f.p + it->second.offset + it->second.size};
+        strcpy(data.data(), newname.data());
+        f.close();
+        bin_patcher::insert(fn, m.mech_groups_offset, data);
+    }
+    bool set_mechmind_organization(path mmo_fn, const std::string &name, const std::string &orgname) {
+        auto fn = find_real_filename(mmo_fn);
+        files_to_pak.insert(fn);
+
+        mmo_storage2 m{fn};
+        m.load();
+
+        auto it = m.mechs.find(name);
+        if (it == m.mechs.end()) {
+            throw std::runtime_error{"no such mechmind or group: " + name};
+        }
+        if (orgname.size() > 0x20-1) {
+            throw std::runtime_error{"too long organization name: " + orgname};
+        }
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        memcpy(f.p + it->second.name_offset + 0x20, orgname.data(), orgname.size() + 1);
+        return true;
+    }
+    bool rename_mechmind_group(path mmo_fn, const std::string &name, const std::string &newname) {
+        auto fn = find_real_filename(mmo_fn);
+        files_to_pak.insert(fn);
+
+        mmo_storage2 m{fn};
+        m.load();
+
+        auto it = m.mechs.find(name);
+        if (it == m.mechs.end()) {
+            return false;
+        }
+        if (newname.size() > 0x20-1) {
+            throw std::runtime_error{"too long name: " + newname};
+        }
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        memcpy(f.p + it->second.name_offset, newname.data(), newname.size() + 1);
+        return true;
+    }
+    void update_mechmind_group_configurations(path mmo_fn, const std::string &name, auto &&cfg, auto &&...cfgs) {
+        auto fn = find_real_filename(mmo_fn);
+        files_to_pak.insert(fn);
+
+        mmo_storage2 m{fn};
+        m.load();
+
+        auto it = m.mechs.find(name);
+        if (it == m.mechs.end()) {
+            throw std::runtime_error{"no such mechmind or group: " + name};
+        }
+        auto new_n = 1 + sizeof...(cfgs);
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto &n = *(uint32_t*)(f.p + it->second.n_mechs_offset);
+        auto oldn = n;
+        n = new_n;
+        f.close();
+
+        bin_patcher::erase(fn, it->second.mechs_offset, oldn * 0x20);
+        std::string newcfgs;
+        newcfgs.resize(0x20 * new_n);
+        auto p = newcfgs.data();
+        auto add = [&](const std::string &cfg) {
+            if (cfg.size() > 0x20-1) {
+                throw std::runtime_error{"too long config name: " + cfg};
+            }
+            strcpy(p, cfg.data());
+            p += 0x20;
+        };
+        add(cfg);
+        (add(cfgs),...);
+        bin_patcher::insert(fn, it->second.mechs_offset, newcfgs);
+    }
 
     // all you need is to provide injection address (virtual) with size
     // handle the call instruction in 'dispatcher' symbol (naked) of your dll
