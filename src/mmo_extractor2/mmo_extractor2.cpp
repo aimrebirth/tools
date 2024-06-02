@@ -24,8 +24,8 @@
 
 void read_mmo(const path &fn)
 {
-    mmo_storage2 s;
-    s.load(fn);
+    mmo_storage2 s{fn};
+    s.load();
 }
 
 int main(int argc, char *argv[])

@@ -18,7 +18,7 @@ struct mmo_storage2 {
         // in the other mech cargo
         uint32_t type;
         uint32_t n_mechs;
-        char comment[0x70];
+        char comment[0x70]; // icon????
     };
     struct map_good {
         char name[0x20];
@@ -38,7 +38,12 @@ struct mmo_storage2 {
 
     // our own data
     struct section {
-        uint32_t offset;
+        uint32_t offset{};
+        uint32_t size{};
+
+        void end(auto v) {
+            size = v - offset;
+        }
     };
     struct {
         section objects;
@@ -50,9 +55,25 @@ struct mmo_storage2 {
         uint32_t offset;
         std::map<std::string, uint32_t> building_goods;
     };
+    struct mech {
+        std::string name;
+        std::string org;
+        std::string comment;
+        uint32_t name_offset;
+        uint32_t n_mechs_offset;
+        uint32_t mechs_offset;
+        uint32_t offset;
+        uint32_t size;
+    };
+    path fn;
+    uint32_t n_mech_groups_offset;
+    uint32_t mech_groups_offset;
+    std::map<std::string, mech> mechs;
     std::map<std::string, map_building> map_building_goods;
 
-    void load(auto &&fn) {
+    mmo_storage2(const path &fn) : fn{fn} {
+    }
+    void load() {
         primitives::templates2::mmap_file<uint8_t> f{fn};
         stream s{f};
         // objects
@@ -63,22 +84,45 @@ struct mmo_storage2 {
                 object o = s;
                 s.skip(o.size);
             }
+            sections.objects.end(s.p - f.p);
         }
         // mech_groups
         {
             sections.mech_groups.offset = s.p - f.p;
+            n_mech_groups_offset = s.p - f.p;
             uint32_t n_mech_groups = s;
             // two ints
             // and ten more ints?
             s.skip(0x30);
+            mech_groups_offset = s.p - f.p;
             while (n_mech_groups--) {
-                mech_group o = s;
+                auto start = s.p - f.p;
+                mech_group &o = s;
+
+                auto &m = mechs[o.name];
+                m.name = o.name;
+                m.org = o.org;
+                m.comment = o.comment;
+                m.name_offset = (uint8_t*)o.name - f.p;
+                m.n_mechs_offset = (uint8_t*)&o.n_mechs - f.p;
+
+                if (strcmp(o.name, "MINVACH-6") == 0) {
+                    int a = 5;
+                    a++;
+                }
+                if (strcmp(o.name, "DEKON") == 0) {
+                    int a = 5;
+                    a++;
+                }
 
                 switch (o.type) {
                 case 0: // alive
                 case 1: {
-                    uint32_t sector_id = s; // road id? or sector id
+                    uint32_t sector_id = s; // road id? or map sector id
                     float height = s;    // height?
+
+                    int a = 5;
+                    a++;
                 } break;
                 case 2: {
                     std::vector<uint32_t> t; // current path?
@@ -87,21 +131,35 @@ struct mmo_storage2 {
                     s.read(t);
                 } break;
                 case 3: // 3 = free mechanoids only?
+                {
+                    int a = 5;
+                    a++;
+                }
                 case 4: {
+                    // dead in other mech id?
+                    // object id? base id?
                     uint32_t t = s; // other mech id?
+
+                    int a = 5;
+                    a++;
                 } break;
                 default:
                     assert(false);
                 }
 
-                while (o.n_mechs--) {
+                auto n = o.n_mechs;
+                m.mechs_offset = s.p - f.p;
+                while (n--) {
                     struct mech {
                         char cfg_name[0x20];
                     };
                     mech m = s;
                 }
                 bool hidden = s;
+                m.offset = start;
+                m.size = (s.p - f.p) - start;
             }
+            sections.mech_groups.end(s.p - f.p);
         }
         // map goods
         {
@@ -122,12 +180,14 @@ struct mmo_storage2 {
                     map_building_goods[b.name].building_goods[g.name] = s.p - f.p;
                 }
             }
+            sections.map_goods.end(s.p - f.p);
         }
         // music & sounds section
         {
             sections.music_and_sounds.offset = s.p - f.p;
             uint32_t size = s;
             s.skip(size);
+            sections.music_and_sounds.end(s.p - f.p);
         }
     }
 };
