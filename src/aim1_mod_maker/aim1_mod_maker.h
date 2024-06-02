@@ -543,6 +543,9 @@ struct mod_maker {
             throw std::runtime_error{"no such mechmind or group: " + name};
         }
         auto new_n = 1 + sizeof...(cfgs);
+        if (new_n > 10) {
+            throw std::runtime_error{"aim1 allows only 10 mechminds in a group max"};
+        }
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         auto &n = *(uint32_t*)(f.p + it->second.n_mechs_offset);
         auto oldn = n;
@@ -556,6 +559,9 @@ struct mod_maker {
         auto add = [&](const std::string &cfg) {
             if (cfg.size() > 0x20-1) {
                 throw std::runtime_error{"too long config name: " + cfg};
+            }
+            if (!db()["Конфигурации"].contains(cfg)) {
+                throw std::runtime_error{"there is no such configuration in the database: " + cfg};
             }
             strcpy(p, cfg.data());
             p += 0x20;
