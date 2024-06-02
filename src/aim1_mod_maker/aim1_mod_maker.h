@@ -88,6 +88,89 @@ struct aim_exe_v1_06_constants {
     };
 };
 
+struct bin_patcher {
+    enum return_code {
+        ok,
+        error,
+        already_patched,
+        pattern_not_found,
+    };
+
+    template <typename T>
+    static return_code patch(const path &fn, uint32_t offset, T val, T *in_old = nullptr) {
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto &old = *(T *)(f.p + offset);
+        if (in_old) {
+            *in_old = old;
+        }
+        old = val;
+        return ok;
+    }
+    template <typename T>
+    static return_code patch(const path &fn, uint32_t offset, T expected, T val, T *in_old = nullptr) {
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto &old = *(T *)(f.p + offset);
+        if (in_old) {
+            *in_old = old;
+        }
+        if (old == expected) {
+            old = val;
+            return ok;
+        } else if (old == val) {
+            return already_patched;
+        } else {
+            return error;
+        }
+    }
+    template <typename T>
+    static return_code patch_after_pattern(const path &fn, const std::string &pattern, uint32_t offset, T expected, T val) {
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto p = memmem(f.p, f.sz, pattern);
+        if (!p) {
+            //return pattern_not_found;
+            throw std::runtime_error{"pattern not found"};
+        }
+        f.close();
+        return patch<T>(fn, p - f.p + offset, expected, val);
+    }
+    static void insert(const path &fn, uint32_t offset, auto &&data) {
+        fs::resize_file(fn, fs::file_size(fn) + data.size());
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        memmove(f.p + offset + data.size(), f.p + offset, f.sz - offset - data.size());
+        memcpy(f.p + offset, data.data(), data.size());
+        f.close();
+    }
+    static void erase(const path &fn, uint32_t offset, uint32_t amount) {
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        memmove(f.p + offset, f.p + offset + amount, f.sz - (offset + amount));
+        f.close();
+        fs::resize_file(fn, fs::file_size(fn) - amount);
+    }
+    static auto memmem(auto ptr, auto sz, auto &&bytes) -> decltype(ptr) {
+        sz -= bytes.size();
+        for (int i = 0; i < sz; ++i) {
+            if (memcmp(ptr + i, bytes.data(), bytes.size()) == 0) {
+                return ptr + i;
+            }
+        }
+        return nullptr;
+    }
+    static auto memreplace(auto base, auto sz, const byte_array &from, const byte_array &to) {
+        if (from.size() != to.size()) {
+            throw std::runtime_error{"size mismatch"};
+        }
+        auto ptr = memmem(base, sz, from);
+        if (!ptr) {
+            throw std::runtime_error{"oldmem not found"};
+        }
+        byte_array old;
+        old.resize(from.size());
+        memcpy(old.data(), ptr, old.size());
+        memcpy(ptr, to.data(), to.size());
+        return std::tuple{ptr, old};
+    }
+};
+
 struct mod_maker {
     struct db_wrapper {
         mod_maker &mm;
@@ -308,20 +391,33 @@ struct mod_maker {
     void patch_after_pattern(path fn, const std::string &pattern, uint32_t offset, T oldval, T val) {
         fn = find_real_filename(fn);
         files_to_pak.insert(fn);
-        patch_raw(fn, pattern, offset, oldval, val);
+        log("patching {} offset 0x{:X} after pattern {} from {} to {}", fn.string(), offset, pattern, oldval, val);
+        auto r = bin_patcher::patch_after_pattern(fn, pattern, offset, oldval, val);
     }
     template <typename T>
     void patch(path fn, uint32_t offset, T val) {
         fn = find_real_filename(fn);
         files_to_pak.insert(fn);
-        patch_raw(fn, offset, val);
+        log("patching {} offset 0x{:08X} to {}", fn.string(), offset, val);
+        auto old = val;
+        auto r = bin_patcher::patch(fn, offset, val, &old);
+        log("patched {} offset 0x{:08X} to {} (old value: {})", fn.string(), offset, val, old);
     }
     // this one checks for old value as well, so incorrect positions (files) won't be patched
     template <typename T>
-    bool patch(path fn, uint32_t offset, T oldval, T val) {
+    void patch(path fn, uint32_t offset, T oldval, T val) {
         fn = find_real_filename(fn);
         files_to_pak.insert(fn);
-        return patch_raw(fn, offset, oldval, val);
+        auto old = val;
+        auto r = bin_patcher::patch(fn, offset, oldval, val, &old);
+        if (r == bin_patcher::ok) {
+        log("patching {} offset 0x{:08X} from {} to {}", fn.string(), offset, oldval, val);
+            log("ok");
+        } else if (r == bin_patcher::already_patched) {
+            log("ok, already patched");
+        } else {
+            log("old value {} != expected {}", old, oldval);
+        }
     }
     void insert(path fn, uint32_t offset, const byte_array &data) {
         files_to_pak.insert(find_real_filename(fn));
@@ -329,14 +425,9 @@ struct mod_maker {
         log("inserting into {} offset 0x{:08X} {} bytes", fn.string(), offset, data.size());
 
         auto rfn = find_real_filename(fn);
-        fs::resize_file(rfn, fs::file_size(rfn) + data.size());
-        primitives::templates2::mmap_file<uint8_t> f{rfn, primitives::templates2::mmap_file<uint8_t>::rw{}};
-        memmove(f.p + offset + data.size(), f.p + offset, f.sz - offset - data.size());
-        ::memcpy(f.p + offset, data.data(), data.size());
-        f.close();
+        bin_patcher::insert(rfn, offset, data);
     }
-    std::string add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name,
-                             const mmo_storage2::map_good &mg) {
+    std::string add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const mmo_storage2::map_good &mg) {
         log("adding map good to {} after {}: ", building_name, after_good_name, std::string{mg.name});
         if (!std::string{mg.cond}.empty()) {
             log("cond: {}", std::string{mg.cond});
@@ -347,11 +438,11 @@ struct mod_maker {
         return mg.name;
     }
     void add_map_good(path mmo_fn, const std::string &building_name, const std::string &after_good_name, const byte_array &data) {
-        files_to_pak.insert(find_real_filename(mmo_fn));
-
         auto fn = find_real_filename(mmo_fn);
-        mmo_storage2 m;
-        m.load(fn);
+        files_to_pak.insert(fn);
+
+        mmo_storage2 m{fn};
+        m.load();
 
         auto it = m.map_building_goods.find(building_name);
         if (it == m.map_building_goods.end()) {
@@ -401,9 +492,9 @@ struct mod_maker {
         primitives::templates2::mmap_file<uint8_t> f{find_real_filename(aim_exe),
                                                      primitives::templates2::mmap_file<uint8_t>::rw{}};
         auto ptr = f.p + virtual_address - aim_exe_v1_06_constants::our_code_start_virtual + aim_exe_v1_06_constants::trampoline_target_real;
-        memcpy(ptr, make_insn_with_address("e8"_bin, aim_exe_v1_06_constants::free_data_base_virtual -
+        memcpy_and_move_ptr(ptr, make_insn_with_address("e8"_bin, aim_exe_v1_06_constants::free_data_base_virtual -
                                                          (virtual_address + call_command_length)));
-        memcpy(ptr, make_nops(len - call_command_length));
+        memcpy_and_move_ptr(ptr, make_nops(len - call_command_length));
         log("making injection on the virtual address 0x{:0X} (real address 0x{:0X}), size {}", virtual_address, ptr - f.p,
                      size);
     }
@@ -773,36 +864,13 @@ private:
         }
         return s;
     }
-    static void memcpy(auto &ptr, const byte_array &data) {
-        ::memcpy(ptr, data.data(), data.size());
+    static void memcpy_and_move_ptr(auto &ptr, const byte_array &data) {
+        memcpy(ptr, data.data(), data.size());
         ptr += data.size();
-    }
-    static auto memmem(auto ptr, auto sz, auto &&bytes) -> decltype(ptr) {
-        sz -= bytes.size();
-        for (int i = 0; i < sz; ++i) {
-            if (memcmp(ptr + i, bytes.data(), bytes.size()) == 0) {
-                return ptr + i;
-            }
-        }
-        return nullptr;
-    }
-    static auto memreplace(auto base, auto sz, const byte_array &from, const byte_array &to) {
-        if (from.size() != to.size()) {
-            throw std::runtime_error{"size mismatch"};
-        }
-        auto ptr = memmem(base, sz, from);
-        if (!ptr) {
-            throw std::runtime_error{"oldmem not found"};
-        }
-        byte_array old;
-        old.resize(from.size());
-        ::memcpy(old.data(), ptr, old.size());
-        ::memcpy(ptr, to.data(), to.size());
-        return std::tuple{ptr, old};
     }
     static auto make_insn_with_address(auto &&insn, uint32_t addr) {
         byte_array arr(insn.size() + sizeof(addr));
-        ::memcpy(arr.data(), insn.data(), insn.size());
+        memcpy(arr.data(), insn.data(), insn.size());
         *(uint32_t *)(&arr[insn.size()]) = addr;
         return arr;
     }
@@ -876,7 +944,7 @@ private:
         if (memcmp(p + off, to.data(), to.size()) == 0) {
             return; // ok, already patched
         }
-        ::memcpy(p + off, to.data(), to.size());
+        memcpy(p + off, to.data(), to.size());
     }
     void prepare_injections() {
 #if 1 || defined(NDEBUG)
@@ -903,17 +971,17 @@ private:
         const auto jumppad = "68 30 B8 51 00"_bin; // push    offset SEH_425100
         uint32_t jump_offset = ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size() * 2;
         patch(f.p, virtual_to_real(0x00425105), jumppad, make_insn_with_address("e9"_bin, jump_offset));
-        memcpy(ptr, jumppad); // put our removed insn
-        memcpy(ptr, R"(
+        memcpy_and_move_ptr(ptr, jumppad); // put our removed insn
+        memcpy_and_move_ptr(ptr, R"(
 60                      ; pusha
 )"_bin);
-        memcpy(ptr, push_dll_name);
-        memcpy(ptr, R"(
+        memcpy_and_move_ptr(ptr, push_dll_name);
+        memcpy_and_move_ptr(ptr, R"(
 8B 3D D8 10 52 00       ; mov     edi, ds:LoadLibraryA
 FF D7                   ; call    edi
 61                      ; popa
 )"_bin);
-        memcpy(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size())));
+        memcpy_and_move_ptr(ptr, make_insn_with_address("e9"_bin, -(ptr - f.p - aim_exe_v1_06_constants::trampoline_base_real - jumppad.size())));
     }
     path find_real_filename(path fn) {
         auto s = fn.wstring();
@@ -1015,41 +1083,6 @@ FF D7                   ; call    edi
         if (fs::exists(bak)) {
             fs::copy_file(bak, fn, fs::copy_options::overwrite_existing);
         }
-    }
-    template <typename T>
-    void patch_raw(path fn, uint32_t offset, T val) const {
-        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
-        auto &old = *(T *)(f.p + offset);
-        log("patching {} offset 0x{:08X} to {} (old value: {})", fn.string(), offset, val, old);
-        old = val;
-    }
-    template <typename T>
-    bool patch_raw(path fn, uint32_t offset, T expected, T val) const {
-        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
-        auto &old = *(T *)(f.p + offset);
-        log("patching {} offset 0x{:08X} from {} to {}", fn.string(), offset, expected, val);
-        if (old == expected) {
-            log("ok");
-            old = val;
-            return true;
-        } else if (old == val) {
-            log("ok, already patched");
-            return true;
-        } else {
-            log("old value {} != expected {}", old, expected);
-            return false;
-        }
-    }
-    template <typename T>
-    bool patch_raw(path fn, const std::string &pattern, uint32_t offset, T expected, T val) const {
-        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
-        auto p = memmem(f.p, f.sz, pattern);
-        if (!p) {
-            throw std::runtime_error{"pattern not found"};
-        }
-        f.close();
-        log("patching {} offset 0x{:X} after pattern {} from {} to {}", fn.string(), offset, pattern, expected, val);
-        return patch_raw<T>(fn, p - f.p + offset, expected, val);
     }
     path get_mod_dir() const {
         return get_data_dir() / "mods" / get_full_mod_name();
