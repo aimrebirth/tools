@@ -207,6 +207,7 @@ int main(int argc, char *argv[]) {
     // patch note dev: give powerful glider based on FLASH
     db["Глайдеры"]["GL_M4_S_TEST"] = db["Глайдеры"]["GL_M4_S_FIRST2"];
     db["Глайдеры"]["GL_M4_S_TEST"]["MAXWEIGHT"] = 1'000'000.f;
+    db["Глайдеры"]["GL_M4_S_TEST"]["ROTATESPEED"] = 75.f;
     db["Конфигурации"]["CFG_STARTUP"]["GLIDER"] = "GL_M4_S_TEST";
     // patch note dev: give powerful reactor
     add_test_eqp("REACTOR", "EQP_GLUON_REACTOR_S1", 9'000'000.f);
@@ -226,6 +227,11 @@ int main(int argc, char *argv[]) {
     db["Оружие"]["GUN_IMPULSE_MEGALAZER_TEST"]["DAMAGE"] = 40000.f;
     db["Оружие"]["GUN_IMPULSE_MEGALAZER_TEST"]["STANDARD"] = 1;
     db["Конфигурации"]["CFG_STARTUP"]["HEAVYGUN1"] = "GUN_IMPULSE_MEGALAZER_TEST";
+    //
+    db["Конфигурации"]["CFG_STARTUP"]["EQP_ANALYZER"] = 1;
+    db["Конфигурации"]["CFG_STARTUP"]["EQP_QUANTUM_TRANSLATOR"] = 1;
+    db["Конфигурации"]["CFG_STARTUP"]["EQP_INVISIBILITY_SHIELD"] = 1;
+    db["Конфигурации"]["CFG_STARTUP"]["EQP_UNIVERSAL_SHIELD"] = 1;
     // end of db changes in dev mode
     // patch note dev: allow to buy GL_S3_PS_FINDER1 without pre-quest
     mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", mmo_storage2::map_good("GL_S3_PS_FINDER1"));
@@ -262,19 +268,39 @@ int main(int argc, char *argv[]) {
 
     //
     mod.clone_mechmind_group("location1.mmo", "MINVACH-6", "MINVACH-666");
-    mod.update_mechmind_group_configurations("location1.mmo", "MINVACH-666",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1",
-        "CFG_INVADER_1"
-    );
-    mod.set_mechmind_organization("location1.mmo", "MINVACH-666", "ORG_PLAYER");
+    auto cfg = "CFG_TEST";
+    db["Конфигурации"][cfg] = db["Конфигурации"]["CFG_STARTUP"];
+    db["Конфигурации"][cfg]["ENGINE"] = "EQP_VACUUM_DRIVE_S4";
+    auto make = [&](auto name, int road) {
+        mod.clone_mechmind_group("location1.mmo", "MINVACH-6", name);
+        mod.update_mechmind_group_configurations("location1.mmo", name, cfg);
+        mod.set_mechmind_group_type("location1.mmo", name, 1, road);
+    };
+    for (int i = 0; i < 20; ++i) {
+        make(std::format("MINVACH-6{}", i), 1000 / 20 * i + 20);
+    }
+    /*mod.update_mechmind_group_configurations("location1.mmo", "MINVACH-666",
+        cfg,
+        cfg,
+        cfg,
+        cfg,
+        cfg,
+
+        cfg,
+        cfg,
+        cfg,
+        cfg,
+        cfg
+    );*/
+    //mod.set_mechmind_group_organization("location1.mmo", "MINVACH-666", "ORG_PLAYER");
+    //mod.set_mechmind_group_type("location1.mmo", "MINVACH-666", 1);
+    /*mod.hide_mechmind_group("location1.mmo", "MINVACH-666");
+    mod.delete_mechmind_group("location1.mmo", "MINVACH-6");
+    for (auto &&[n,_] : mod.get_mmo_storage("location1.mmo").mechs) {
+        if (n != "SHUN-2") {
+            mod.delete_mechmind_group("location1.mmo", n);
+        }
+    }*/
 
     // does not work, crashes. Maybe different item size
     // or maybe too many goods
@@ -313,10 +339,10 @@ int main(int argc, char *argv[]) {
     //_ADDOBJECT(GUN_RAILGUN)
     //_ADDOBJECT(GUN_IMPULSE_MEGALAZER)
 
-    _ADDOBJECT(EQP_ANALYZER)
-    _ADDOBJECT(EQP_QUANTUM_TRANSLATOR)
-    _ADDOBJECT(EQP_INVISIBILITY_SHIELD)
-    _ADDOBJECT(EQP_UNIVERSAL_SHIELD)
+    //_ADDOBJECT(EQP_ANALYZER)
+    //_ADDOBJECT(EQP_QUANTUM_TRANSLATOR)
+    //_ADDOBJECT(EQP_INVISIBILITY_SHIELD)
+    //_ADDOBJECT(EQP_UNIVERSAL_SHIELD)
 
     _ADDRATING(300000000)
     _ADDBALANCE(30000000)
@@ -346,6 +372,11 @@ int main(int argc, char *argv[]) {
     //_INFO(SECTOR9_TEST)
     //_INFO(SECTOR10_TEST)
 )");
+    //mod.copy_sector_from_aim1(2, 2);
+    //quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["NAME"] = "test";
+    //quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["TEXT"] = "<link: войти 2=LINKJUMPTO location2.mmp>";
+    //mod.copy_sector_from_aim1(1, 1);
+    //mod.copy_sector_from_aim1(2, 2);
     /*mod.copy_sector_from_aim1(1, 3);
     mod.copy_sector_from_aim1(1);
     mod.copy_sector_from_aim1(2);

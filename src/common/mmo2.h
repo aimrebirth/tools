@@ -62,6 +62,7 @@ struct mmo_storage2 {
         uint32_t name_offset;
         uint32_t n_mechs_offset;
         uint32_t mechs_offset;
+        uint32_t post_comment_offset;
         uint32_t offset;
         uint32_t size;
     };
@@ -105,6 +106,7 @@ struct mmo_storage2 {
                 m.comment = o.comment;
                 m.name_offset = (uint8_t*)o.name - f.p;
                 m.n_mechs_offset = (uint8_t*)&o.n_mechs - f.p;
+                m.post_comment_offset = (uint8_t*)s.p - f.p;
 
                 if (strcmp(o.name, "MINVACH-6") == 0) {
                     int a = 5;
@@ -114,16 +116,46 @@ struct mmo_storage2 {
                     int a = 5;
                     a++;
                 }
+                if (strcmp(o.name, "ETRANNA-1") == 0) {
+                    int a = 5;
+                    a++;
+                }
+                if (strcmp(o.name, "SHUN-2") == 0) {
+                    int a = 5;
+                    a++;
+                }
 
+                // mech are spawned on random path when leaving the base
+                // probably far from player
+                //
+                // 0 = stationary
+                // 0 = CGuardMechGroup?
+                // 1 = roaming between bases (and trading?)
+                // 1 = CTransMechGroup!
+                // 2 = patrol? or roaming and killing?
+                // 2 = CHunterMechGroup!
+                // 3 = ? free mechs? spawn pos? flag? free roaming? always 0 except single ORG_FREE mob in location5
+                // 3 = CPeopleMechGroup
+                // 4 = ? platforms? spawn pos? probably only single appearence in the game - location2 GL_PLATFORM
+                // 4 = CGuardMechGroup?
                 switch (o.type) {
                 case 0: // alive
-                case 1: {
+                {
                     uint32_t sector_id = s; // road id? or map sector id
                     float height = s;    // height?
 
                     int a = 5;
                     a++;
                 } break;
+                case 1: {
+                    uint32_t road_id = s; // road id? or map sector id
+                    float unused_guessed = s;    // height?
+
+                    int a = 5;
+                    a++;
+                } break;
+                // patrol? because transes have type '1'
+                // and seems pathes are generated ingame between bases
                 case 2: {
                     std::vector<uint32_t> t; // current path?
                     uint32_t len = s;
@@ -132,9 +164,17 @@ struct mmo_storage2 {
                 } break;
                 case 3: // 3 = free mechanoids only?
                 {
+                    // dead in other mech id?
+                    // object id? base id?
+                    uint32_t t = s; // other mech id?
+                    if (t != 0) {
+                        int a = 5;
+                        a++;
+                    }
+
                     int a = 5;
                     a++;
-                }
+                } break;
                 case 4: {
                     // dead in other mech id?
                     // object id? base id?
