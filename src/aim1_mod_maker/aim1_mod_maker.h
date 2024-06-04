@@ -280,6 +280,7 @@ struct mod_maker {
     path game_dir;
     path aim2_game_dir;
     std::set<path> files_to_pak;
+    std::set<path> files_to_pak_mmp;
     std::set<path> files_to_distribute;
     std::set<path> code_files_to_distribute;
     std::set<path> restored_files;
@@ -326,17 +327,23 @@ struct mod_maker {
         auto quest_dbs = qw.write(get_data_dir());
         files_to_distribute.merge(quest_dbs);
 
+        auto do_pak = [&](auto &&in_files, auto &&in_fn) {
         std::vector<std::string> files;
-        for (auto &&p : files_to_pak) {
+            for (auto &&p : in_files) {
             if (p.filename() == aim_exe) {
                 continue;
             }
             files.push_back(p.string());
         }
-        auto fn = get_mod_dir() / get_full_mod_name() += ".pak"s;
+            auto fn = get_mod_dir() / in_fn += ".pak"s;
+            if (!files.empty()) {
         run_p4_tool("paker", fn, files);
         fs::copy_file(fn, get_data_dir() / fn.filename(), fs::copy_options::overwrite_existing);
         files_to_distribute.insert(path{"data"} / fn.filename());
+            }
+        };
+        do_pak(files_to_pak, get_full_mod_name());
+        do_pak(files_to_pak_mmp, get_full_mod_name() += "_mmp");
         // make patch notes
         auto patchnotes_fn = path{game_dir / get_full_mod_name()} += ".README.txt";
         files_to_distribute.insert(patchnotes_fn.filename());
@@ -919,7 +926,7 @@ struct mod_maker {
         fs::copy_file(mmo, get_mod_dir() / (to + ".mmo"), fs::copy_options::update_existing);
         if (mmm != get_mod_dir() / (to + ".mmm"))
         fs::copy_file(mmm, get_mod_dir() / (to + ".mmm"), fs::copy_options::update_existing);
-        files_to_pak.insert(get_mod_dir() / (to + ".mmp"));
+        files_to_pak_mmp.insert(get_mod_dir() / (to + ".mmp"));
         files_to_pak.insert(get_mod_dir() / (to + ".mmo"));
         files_to_pak.insert(get_mod_dir() / (to + ".mmm"));
         quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(to)] = quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(from)];
