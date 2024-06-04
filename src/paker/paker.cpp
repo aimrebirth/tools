@@ -39,6 +39,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
     cl::opt<path> name(cl::Positional, cl::desc("<pack name>"), cl::Required);
+    // game produces warnings on empty .pak files
     cl::list<String> in_files(cl::Positional, cl::desc("<files to pack>"), cl::Required, cl::OneOrMore);
 
     cl::ParseCommandLineOptions(argc, argv);
@@ -85,8 +86,15 @@ int main(int argc, char *argv[]) {
     }
 
     size_t total{};
+    auto aligned_size = [](auto sz) {
+        // align like 0x4000 does not work
+        // neither align works
+        //constexpr auto align = 128;
+        //return (sz + align - 1) / align * align;
+        return sz;
+    };
     for (auto &[f,_] : files) {
-        total += fs::file_size(f);
+        total += aligned_size(fs::file_size(f));
     }
     uint32_t block_size = pak::default_block_size;
     uint32_t block_size_len = sizeof(block_size);
@@ -117,18 +125,18 @@ int main(int argc, char *argv[]) {
     std::ofstream{name};
     fs::resize_file(name, total);
     primitives::templates2::mmap_file<uint8_t> f{name, primitives::templates2::mmap_file<uint8_t>::rw{}};
-    //f.alloc_raw(total);
+    memset(f.p, 0, f.sz);
 
     stream s{f};
     s = p;
     size_t offset = 0;
     for (auto &[name,alias] : files) {
-        pak::file_description d;
+        pak::file_description d{};
         auto str = alias.empty() ? name.string() : alias;
         strcpy(d.name, str.c_str());
         d.size = fs::file_size(name);
         d.offset = offset;
-        offset += d.size;
+        offset += aligned_size(d.size);
         s = d;
     }
     for (int i = 0; i < nsegs; ++i) {
@@ -137,6 +145,7 @@ int main(int argc, char *argv[]) {
         seg.offset = sizeof(pak) + files.size() * sizeof(pak::file_description) + nsegs * sizeof(pak::segment) + i * block_size;
         s = seg;
     }
+    // each data segment starts with its size
     s = block_size_minus_len; // for single seg
     for (auto &[name,_] : files) {
         std::cout << "processing: " << name << "\n";
