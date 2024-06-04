@@ -169,6 +169,16 @@ struct bin_patcher {
         memcpy(ptr, to.data(), to.size());
         return std::tuple{ptr, old};
     }
+    template <typename T>
+    static void xor_(const path &fn, uint32_t offset, T value, bool enable) {
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        auto &v = *(T *)(f.p + offset);
+        if (enable && ((v & value) == value)) {
+            return;
+        }
+        v ^= value;
+    }
+};
 };
 
 struct mod_maker {
@@ -697,6 +707,7 @@ struct mod_maker {
 #define ENABLE_DISABLE_FUNC(name, enable, disable) \
     void enable_##name() { name(enable); } \
     void disable_##name() { name(disable); }
+    ENABLE_DISABLE_FUNC(large_address_aware, 1, 0)
     ENABLE_DISABLE_FUNC(free_camera, 1, 0)
     ENABLE_DISABLE_FUNC(win_key, 0x00, 0x10)
 #undef ENABLE_DISABLE_FUNC
@@ -1259,6 +1270,9 @@ FF D7                   ; call    edi
     // from https://github.com/Solant/aim-patches
     void free_camera(uint8_t val) {
         patch(aim_exe, 0x1F805, val);
+    }
+    void large_address_aware(uint8_t val) {
+        bin_patcher::xor_(aim_exe, 0x136, (uint8_t)0x20, val);
     }
     void win_key(uint8_t val) {
         patch(aim_exe, 0x4A40D, val);
