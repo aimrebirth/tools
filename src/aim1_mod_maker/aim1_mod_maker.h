@@ -179,6 +179,105 @@ struct bin_patcher {
         v ^= value;
     }
 };
+
+struct politics {
+    struct org {
+        int aggressiveness{};
+        int authority{};
+        std::map<std::string, int> relation;
+
+        auto &operator[](const std::string &s) {
+            return relation[s];
+        }
+    };
+    path fn;
+    std::map<std::string, org> relation;
+
+    auto &operator[](const std::string &s) {
+        if (!relation.contains(s)) {
+            relation[s];
+            for (auto &[n,o] : relation) {
+                o[s];
+                relation[s][n];
+            }
+        }
+        return relation[s];
+    }
+
+    void init(auto &&fn) {
+        this->fn = fn;
+        auto lines = read_lines(fn);
+        constexpr auto service_lines = 3;
+        auto n_records = lines.size() - service_lines;
+        auto title_vals = split_string(lines.at(0), ";", true);
+        if (title_vals.size() - 1 != n_records) {
+            throw std::runtime_error{"malformed title line"};
+        }
+        for (int other_org{1}; auto &&val : split_string(lines.at(1), ";", true) | std::views::drop(1)) {
+            auto s = boost::trim_copy(val);
+            if (s.empty()) {
+                throw std::runtime_error{"empty aggressiveness"};
+            }
+            relation[title_vals[other_org]].aggressiveness = std::stoi(s);
+            ++other_org;
+        }
+        for (int other_org{1}; auto &&val : split_string(lines.at(2), ";", true) | std::views::drop(1)) {
+            auto s = boost::trim_copy(val);
+            if (s.empty()) {
+                throw std::runtime_error{"empty authority"};
+            }
+            relation[title_vals[other_org]].authority = std::stoi(s);
+            ++other_org;
+        }
+        for (int norg{1}; auto &&line : lines | std::views::drop(service_lines)) {
+            auto vals = split_string(line, ";", true);
+            if (vals.size() - 1 > n_records) {
+                throw std::runtime_error{"malformed line"};
+            }
+            vals.resize(n_records + 1);
+            if (vals[0] != title_vals[norg]) {
+                throw std::runtime_error{"bad org header"};
+            }
+            for (int other_org{1}; auto &&val : vals | std::views::drop(1)) {
+                auto s = boost::trim_copy(val);
+                if (s.empty()) {
+                    s = "0";
+                }
+                relation[vals[0]].relation[title_vals[other_org]] = std::stoi(s);
+                ++other_org;
+            }
+            ++norg;
+        }
+    }
+    void write() {
+        if (relation.empty()) {
+            return;
+        }
+        std::string s;
+        s += "organization relations";
+        for (auto &&[n,_] : relation) {
+            s += std::format(";{}", n);
+        }
+        s += "\n";
+        s += "aggressiveness";
+        for (auto &&[_,o] : relation) {
+            s += std::format(";{}", o.aggressiveness);
+        }
+        s += "\n";
+        s += "authority";
+        for (auto &&[_,o] : relation) {
+            s += std::format(";{}", o.authority);
+        }
+        s += "\n";
+        for (auto &&[n,o] : relation) {
+            s += n;
+            for (auto &&[n2,o2] : o.relation) {
+                s += std::format(";{}", o2);
+            }
+            s += "\n";
+        }
+        write_file(fn, s);
+    }
 };
 
 struct mod_maker {
@@ -290,6 +389,7 @@ struct mod_maker {
     quest_wrapper qw{*this};
     bool injections_prepared{};
     int next_sector_id{9};
+    politics pol;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
         init(fs::current_path());
@@ -301,6 +401,14 @@ struct mod_maker {
         init(dir);
     }
 
+    auto &politics() {
+        auto f = get_data_dir() / "startpolitics.csv";
+        backup_or_restore_once(f);
+        files_to_distribute.insert(f);
+        pol = decltype(pol){};
+        pol.init(f);
+        return pol;
+    }
     void replace(const path &fn, const std::string &from, const std::string &to) {
         auto ft = check_file_type(fn);
         switch (ft) {
@@ -323,23 +431,24 @@ struct mod_maker {
         }
     }
     void apply() {
+        pol.write();
         dw.write();
         auto quest_dbs = qw.write(get_data_dir());
         files_to_distribute.merge(quest_dbs);
 
         auto do_pak = [&](auto &&in_files, auto &&in_fn) {
-        std::vector<std::string> files;
+            std::vector<std::string> files;
             for (auto &&p : in_files) {
-            if (p.filename() == aim_exe) {
-                continue;
+                if (p.filename() == aim_exe) {
+                    continue;
+                }
+                files.push_back(p.string());
             }
-            files.push_back(p.string());
-        }
             auto fn = get_mod_dir() / in_fn += ".pak"s;
             if (!files.empty()) {
-        run_p4_tool("paker", fn, files);
-        fs::copy_file(fn, get_data_dir() / fn.filename(), fs::copy_options::overwrite_existing);
-        files_to_distribute.insert(path{"data"} / fn.filename());
+                run_p4_tool("paker", fn, files);
+                fs::copy_file(fn, get_data_dir() / fn.filename(), fs::copy_options::overwrite_existing);
+                files_to_distribute.insert(path{"data"} / fn.filename());
             }
         };
         do_pak(files_to_pak, get_full_mod_name());
