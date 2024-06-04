@@ -182,6 +182,8 @@ int main(int argc, char *argv[]) {
     // patch note dev: Developer Mode!!!
     // patch note dev: enabled developer mode (free camera - F3 key, time shift - N key) (lz, Solant)
     mod.enable_free_camera();
+    // may cause runtime issues?
+    //mod.enable_large_address_aware();
     auto add_test_eqp = [&](std::string type, std::string copy_from
         , std::optional<float> value1 = {}
         , std::optional<float> value2 = {}
@@ -279,6 +281,13 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < 20; ++i) {
         make(std::format("MINVACH-6{}", i), 1000 / 20 * i + 20);
     }
+    auto &pol = mod.politics();
+    pol["ORG_INVADERS"].aggressiveness = 1000;
+    pol["ORG_INVADERS"].authority = 1000;
+    pol["ORG_INVADERS"]["ORG_TRANSES"] = -1000;
+    pol["ORG_INVADERS"]["ORG_HUNTERS"] = -1000;
+    pol["ORG_INVADERS"]["ORG_FREE"] = -1000;
+    pol["ORG_INVADERS"]["ORG_INVADERS"] = 1000;
     /*mod.update_mechmind_group_configurations("location1.mmo", "MINVACH-666",
         cfg,
         cfg,
@@ -324,25 +333,13 @@ int main(int argc, char *argv[]) {
     mod.replace("Script/bin/B_L1_BASE1.scr", "_ADDBALANCE(300)", R"(
     _ADDBALANCE(300)
 
-    //_ADDOBJECT(GL_S3_PS_FINDER1)
-    //_ADDOBJECT(EQP_VACUUM_DRIVE_S3)
-    //_ADDOBJECT(EQP_ZERO_ARMOR_S3)
-    //_ADDOBJECT(EQP_SHIELD_GENERATOR4_S3)
-
-    //_ADDOBJECT(GL_M4_S_FIRST2)
-    //_ADDOBJECT(EQP_VACUUM_DRIVE_S4)
     //_ADDOBJECT(EQP_MEZON_REACTOR_S4)
     //_ADDOBJECT(EQP_GLUON_REACTOR_S1)
-    //_ADDOBJECT(EQP_ZERO_ARMOR_S4)
-    //_ADDOBJECT(EQP_SHIELD_GENERATOR4_S4)
-    //_ADDOBJECT(GUN_MICROWAVE_OSCILLATOR)
-    //_ADDOBJECT(GUN_RAILGUN)
-    //_ADDOBJECT(GUN_IMPULSE_MEGALAZER)
 
-    //_ADDOBJECT(EQP_ANALYZER)
-    //_ADDOBJECT(EQP_QUANTUM_TRANSLATOR)
-    //_ADDOBJECT(EQP_INVISIBILITY_SHIELD)
-    //_ADDOBJECT(EQP_UNIVERSAL_SHIELD)
+    // you can't get these from db
+    _ADDOBJECT(EQP_ANALYZER)
+    _ADDOBJECT(EQP_QUANTUM_TRANSLATOR)
+    _ADDOBJECT(EQP_UNIVERSAL_SHIELD)
 
     _ADDRATING(300000000)
     _ADDBALANCE(30000000)
@@ -367,12 +364,26 @@ int main(int argc, char *argv[]) {
     //_SETEVENT(SECTOR9.VISIT)
     //_SETEVENT(SECTOR9.ACCESS)
 
-    //_INFO(SECTOR2_TEST)
+    _INFO(SECTOR2_TEST)
     //_INFO(SECTOR3_TEST)
     //_INFO(SECTOR9_TEST)
     //_INFO(SECTOR10_TEST)
 )");
-    //mod.copy_sector_from_aim1(2, 2);
+    quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["NAME"] = "test";
+    quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["TEXT"] = R"(
+<link: войти 1=LINKJUMPTO location1.mmp>
+<br>
+<link: войти 2=LINKJUMPTO location2.mmp>
+<br>
+<link: войти 9=LINKJUMPTO location9.mmp>
+<br>
+<link: войти 10=LINKJUMPTO location10.mmp>
+<br>
+<link: войти 11=LINKJUMPTO location11.mmp>
+)";
+    //mod.copy_sector_from_aim1(1, 9);
+    //mod.copy_sector_from_aim1(1, 10);
+    //mod.copy_sector_from_aim1(1, 11);
     //quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["NAME"] = "test";
     //quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["TEXT"] = "<link: войти 2=LINKJUMPTO location2.mmp>";
     //mod.copy_sector_from_aim1(1, 1);
