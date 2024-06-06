@@ -9,6 +9,16 @@ struct mmo_storage2 {
         uint32_t n_objects;
     };
     struct mech_group {
+        enum type {
+            stationary, // or default or guard?
+            guard = stationary,
+            trader,
+            hunter,
+            free,
+            people = free,
+            companion,
+        };
+
         char name[0x20];
         char org[0x20];
         // probably state
@@ -19,6 +29,7 @@ struct mmo_storage2 {
         uint32_t type;
         uint32_t n_mechs;
         char comment[0x70]; // icon????
+        uint32_t value1;
     };
     struct map_good {
         char name[0x20];
@@ -62,7 +73,7 @@ struct mmo_storage2 {
         uint32_t name_offset;
         uint32_t n_mechs_offset;
         uint32_t mechs_offset;
-        uint32_t post_comment_offset;
+        uint32_t post_base_offset;
         uint32_t offset;
         uint32_t size;
     };
@@ -106,7 +117,7 @@ struct mmo_storage2 {
                 m.comment = o.comment;
                 m.name_offset = (uint8_t*)o.name - f.p;
                 m.n_mechs_offset = (uint8_t*)&o.n_mechs - f.p;
-                m.post_comment_offset = (uint8_t*)s.p - f.p;
+                m.post_base_offset = (uint8_t*)s.p - f.p;
 
                 if (strcmp(o.name, "MINVACH-6") == 0) {
                     int a = 5;
@@ -139,50 +150,29 @@ struct mmo_storage2 {
                 // 4 = ? platforms? spawn pos? probably only single appearence in the game - location2 GL_PLATFORM
                 // 4 = CGuardMechGroup?
                 switch (o.type) {
-                case 0: // alive
+                case mech_group::stationary: // alive
                 {
-                    uint32_t sector_id = s; // road id? or map sector id
                     float height = s;    // height?
 
                     int a = 5;
                     a++;
                 } break;
-                case 1: {
-                    uint32_t road_id = s; // road id? or map sector id
-                    float unused_guessed = s;    // height?
+                case mech_group::trader: {
+                    float unused_guessed = s; // height?
 
                     int a = 5;
                     a++;
                 } break;
-                // patrol? because transes have type '1'
                 // and seems pathes are generated ingame between bases
-                case 2: {
-                    std::vector<uint32_t> t; // current path?
-                    uint32_t len = s;
-                    t.resize(len);
+                case mech_group::hunter: {
+                    std::vector<uint32_t> t; // road path
+                    t.resize(o.value1);
                     s.read(t);
                 } break;
-                case 3: // 3 = free mechanoids only?
-                {
-                    // dead in other mech id?
-                    // object id? base id?
-                    uint32_t t = s; // other mech id?
-                    if (t != 0) {
-                        int a = 5;
-                        a++;
-                    }
-
-                    int a = 5;
-                    a++;
-                } break;
-                case 4: {
-                    // dead in other mech id?
-                    // object id? base id?
-                    uint32_t t = s; // other mech id?
-
-                    int a = 5;
-                    a++;
-                } break;
+                case mech_group::people:
+                    break;
+                case mech_group::companion:
+                    break;
                 default:
                     assert(false);
                 }
