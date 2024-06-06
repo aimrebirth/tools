@@ -16,7 +16,7 @@
 #include <source_location>
 #include <print>
 
-constexpr auto aim_exe = "aim.exe"sv;
+inline const path aim_exe = "aim.exe";
 
 using byte_array = std::vector<uint8_t>;
 
@@ -292,8 +292,8 @@ struct politics {
 struct mod_maker {
     struct db_wrapper {
         mod_maker &mm;
-        db2::files::db2_internal m;
-        db2::files::db2_internal m2;
+        db2::files_type::db2_internal m;
+        db2::files_type::db2_internal m2;
         path fn;
         int codepage{1251};
         bool written{};
@@ -317,11 +317,11 @@ struct mod_maker {
         auto &operator[](this auto &&d, const std::string &s) {
             return d.m[s];
         }
-        auto &copy_from_aim2(db2::files::db2_internal &other_db, auto &&table_name, auto &&value_name, auto &&field_name) {
+        auto &copy_from_aim2(db2::files_type::db2_internal &other_db, auto &&table_name, auto &&value_name, auto &&field_name) {
             m[table_name][value_name][field_name] = other_db.at(table_name).at(value_name).at(field_name);
             return m[table_name][value_name][field_name];
         }
-        auto &copy_from_aim2(db2::files::db2_internal &other_db, auto &&table_name, auto &&value_name) {
+        auto &copy_from_aim2(db2::files_type::db2_internal &other_db, auto &&table_name, auto &&value_name) {
             m[table_name][value_name] = other_db.at(table_name).at(value_name);
             return m[table_name][value_name];
         }
@@ -390,6 +390,7 @@ struct mod_maker {
     std::set<path> files_to_pak;
     std::set<path> files_to_pak_mmp;
     std::set<path> files_to_distribute;
+    //std::map<path, path> files_to_distribute2;
     std::set<path> code_files_to_distribute;
     std::set<path> restored_files;
     std::set<path> copied_files;
@@ -397,7 +398,7 @@ struct mod_maker {
     db_wrapper dw{*this};
     quest_wrapper qw{*this};
     bool injections_prepared{};
-    int next_sector_id{9};
+    uint8_t number_of_sectors{8};
     politics pol;
 
     mod_maker(std::source_location loc = std::source_location::current()) : loc{loc} {
@@ -1032,7 +1033,9 @@ struct mod_maker {
         copy_texture_from_aim2(gun["SHOOTTEX1"]);
     }
     void copy_sector_from_aim1(int id_from) {
-        copy_sector_from_aim1(id_from, next_sector_id++);
+        ++number_of_sectors;
+        copy_sector_from_aim1(id_from, number_of_sectors);
+        //patch<uint8_t>(aim_exe, 0x12CC2, number_of_sectors - 1, number_of_sectors);
     }
     void copy_sector_from_aim1(int id_from, int id_to) {
         auto from = std::format("location{}", id_from);
@@ -1040,13 +1043,16 @@ struct mod_maker {
         auto mmp = find_real_filename(from + ".mmp");
         auto mmo = find_real_filename(from + ".mmo");
         auto mmm = find_real_filename(from + ".mmm");
-        if (mmp != get_mod_dir() / (to + ".mmp"))
-        fs::copy_file(mmp, get_mod_dir() / (to + ".mmp"), fs::copy_options::update_existing);
+        //auto mmp_dest = get_mod_dir() / (to + ".mmp");
+        auto mmp_dest = game_dir / (to + ".mmp");
+        if (mmp != mmp_dest)
+        fs::copy_file(mmp, mmp_dest, fs::copy_options::update_existing);
         if (mmo != get_mod_dir() / (to + ".mmo"))
         fs::copy_file(mmo, get_mod_dir() / (to + ".mmo"), fs::copy_options::update_existing);
         if (mmm != get_mod_dir() / (to + ".mmm"))
         fs::copy_file(mmm, get_mod_dir() / (to + ".mmm"), fs::copy_options::update_existing);
-        files_to_pak_mmp.insert(get_mod_dir() / (to + ".mmp"));
+        files_to_distribute.insert(mmp_dest);
+        //files_to_pak_mmp.insert(get_mod_dir() / (to + ".mmp")); // we cannot pack .mmp properly now
         files_to_pak.insert(get_mod_dir() / (to + ".mmo"));
         files_to_pak.insert(get_mod_dir() / (to + ".mmm"));
         quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(to)] = quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(from)];
@@ -1054,6 +1060,26 @@ struct mod_maker {
         s += " Copy";
         quest()["ru_RU"]["INFORMATION"][boost::to_upper_copy(to)]["NAME"] = s;
         quest()["ru_RU"]["INFORMATION"][std::format("INFO_SECTOR{}", id_to)] = quest()["ru_RU"]["INFORMATION"][std::format("INFO_SECTOR{}", id_from)];
+
+        auto var = "INFO_LET_JUMP_NEW_SECTORS"s;
+        // Здесь ты можешь совершить Переход в новые Сектора.
+        s.clear();
+        for (int i = 9; i <= number_of_sectors; ++i) {
+            s += std::format("<link: Enter Sector {0}=LINKJUMPTO location{0}.mmp><br>", i);
+        }
+
+        quest()["ru_RU"]["INFORMATION"][var]["NAME"] = "Совершить Переход в новые Сектора";
+        quest()["ru_RU"]["INFORMATION"][var]["TEXT"] = s;
+
+        quest()["en_US"]["INFORMATION"][var]["NAME"] = "Go through the Passage into new Sectors";
+        quest()["en_US"]["INFORMATION"][var]["TEXT"] = s;
+
+        static std::once_flag o;
+        std::call_once(o, [&]() {
+            for (int i = 1; i <= 7; ++i) {
+                replace(std::format("Script/bin/B_L{}_TUNNEL.scr", i), "_INFO(INFO_LET_JUMP)", "_INFO(INFO_LET_JUMP)\n_INFO(" + var + ")");
+            }
+        });
     }
 
     auto &db() {
@@ -1061,7 +1087,9 @@ struct mod_maker {
             auto cp = 1251; // always 1251 or 0 probably for db
             open_db("db", cp);
             if (aim2_available()) {
-                dw.m2 = db2{aim2_game_dir / "data" / "db"}.open().to_map(cp);
+                auto f = db2{aim2_game_dir / "data" / "db"}.create();
+                f.open();
+                dw.m2 = f.to_map(cp);
             }
         }
         return dw;
@@ -1132,13 +1160,15 @@ private:
     }
     void open_db(auto &&name, int db_codepage) {
         auto d = db2{get_data_dir() / name};
-        auto files = d.open().get_files();
+        auto files = d.create().get_files();
         for (auto &&f : files) {
             backup_or_restore_once(f);
             files_to_distribute.insert(f);
         }
         auto &w = dw;
-        w.m = d.open().to_map(db_codepage);
+        auto f = d.create();
+        f.open();
+        w.m = f.to_map(db_codepage);
         w.fn = d.fn;
         w.codepage = db_codepage;
     }

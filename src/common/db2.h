@@ -158,20 +158,27 @@ struct db2 {
         primitives::templates2::mmap_file<uint8_t> f;
         T *data;
 
-        file(auto &&base) : fn{path{base} += "."s} {
+        file(const path &base) : fn{path{base} += "."s} {
             fn += type_name<T>();
+        }
+        void open() {
             f.open(fn, primitives::templates2::mmap_file<uint8_t>::ro{});
             data = (T *)f.p;
         }
     };
     // actual db
-    struct files {
+    struct files_type {
         db2 &db;
         file<tab> tab_;
         file<ind> ind_;
         file<dat> dat_;
 
-        files(auto &&db, auto &&base) : db{db}, tab_{base}, ind_{base}, dat_{base} {}
+        files_type(auto &&db, auto &&base) : db{db}, tab_{base}, ind_{base}, dat_{base} {}
+        void open() {
+            tab_.open();
+            ind_.open();
+            dat_.open();
+        }
         auto get_files() const {
             return std::set<path>{tab_.fn,ind_.fn,dat_.fn};
         }
@@ -386,7 +393,10 @@ struct db2 {
         }
     };
 
-    auto open() {
-        return files{*this, fn};
+    auto files() {
+        return files_type{*this, fn}.get_files();
+    }
+    auto create() {
+        return files_type{*this, fn};
     }
 };

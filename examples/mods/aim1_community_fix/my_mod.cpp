@@ -288,48 +288,30 @@ int main(int argc, char *argv[]) {
     //mod.replace("under.scr", "_ADDSENSOR(T_L4_BASE_2)", "_ADDSENSOR(T_L4_BASE_2)\n_MARK(T_L4_BASE_2)");
 
     //
-    mod.clone_mech_group("location1.mmo", "MINVACH-6", "MINVACH-666");
+    /*mod.clone_mech_group("location1.mmo", "MINVACH-6", "MINVACH-666_1");
+    mod.clone_mech_group("location1.mmo", "MINVACH-6", "MINVACH-666_2");
+    mod.update_mech_group_configurations("location1.mmo", "MINVACH-666_1", "CFG_INVADER_1");
+    mod.update_mech_group_configurations("location1.mmo", "MINVACH-666_2", "CFG_INVADER_1", "CFG_TEST");
     auto cfg = "CFG_TEST";
     db["Конфигурации"][cfg] = db["Конфигурации"]["CFG_STARTUP"];
     db["Конфигурации"][cfg]["ENGINE"] = "EQP_VACUUM_DRIVE_S4";
+    db["Конфигурации"][cfg]["RATING"] = "10";
     auto make = [&](auto name, int road) {
         mod.clone_mech_group("location1.mmo", "MINVACH-6", name);
         mod.update_mech_group_configurations("location1.mmo", name, cfg);
         mod.set_mech_group_type("location1.mmo", name, 1, road);
-    };
+    };*/
     for (int i = 0; i < 20; ++i) {
         //make(std::format("MINVACH-6{}", i), 1000 / 20 * i + 20);
     }
-    auto &pol = mod.politics();
+    /*auto &pol = mod.politics();
     pol["ORG_INVADERS"].aggressiveness = 1000;
     pol["ORG_INVADERS"].authority = 1000;
     pol["ORG_INVADERS"]["ORG_TRANSES"] = -1000;
     pol["ORG_INVADERS"]["ORG_HUNTERS"] = -1000;
     pol["ORG_INVADERS"]["ORG_FREE"] = -1000;
-    pol["ORG_INVADERS"]["ORG_INVADERS"] = 1000;
+    pol["ORG_INVADERS"]["ORG_INVADERS"] = 1000;*/
     //pol["ORG_INVADERS"]["ORG_PLAYER"] = 1000; // does not work
-    /*mod.update_mechmind_group_configurations("location1.mmo", "MINVACH-666",
-        cfg,
-        cfg,
-        cfg,
-        cfg,
-        cfg,
-
-        cfg,
-        cfg,
-        cfg,
-        cfg,
-        cfg
-    );*/
-    //mod.set_mechmind_group_organization("location1.mmo", "MINVACH-666", "ORG_PLAYER");
-    //mod.set_mechmind_group_type("location1.mmo", "MINVACH-666", 1);
-    /*mod.hide_mechmind_group("location1.mmo", "MINVACH-666");
-    mod.delete_mechmind_group("location1.mmo", "MINVACH-6");
-    for (auto &&[n,_] : mod.get_mmo_storage("location1.mmo").mechs) {
-        if (n != "SHUN-2") {
-            mod.delete_mechmind_group("location1.mmo", n);
-        }
-    }*/
 
     // does not work, crashes. Maybe different item size
     // or maybe too many goods
@@ -384,7 +366,7 @@ int main(int argc, char *argv[]) {
     //_SETEVENT(SECTOR9.VISIT)
     //_SETEVENT(SECTOR9.ACCESS)
 
-    _INFO(SECTOR2_TEST)
+    //_INFO(SECTOR2_TEST)
     //_INFO(SECTOR3_TEST)
     //_INFO(SECTOR9_TEST)
     //_INFO(SECTOR10_TEST)
@@ -401,9 +383,9 @@ int main(int argc, char *argv[]) {
 <br>
 <link: войти 11=LINKJUMPTO location11.mmp>
 )";
-    //mod.copy_sector_from_aim1(1, 9);
-    //mod.copy_sector_from_aim1(1, 10);
-    //mod.copy_sector_from_aim1(1, 11);
+    //mod.copy_sector_from_aim1(1);
+    //mod.copy_sector_from_aim1(2);
+    //mod.copy_sector_from_aim1(3);
     //quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["NAME"] = "test";
     //quest["ru_RU"]["INFORMATION"]["SECTOR2_TEST"]["TEXT"] = "<link: войти 2=LINKJUMPTO location2.mmp>";
     //mod.copy_sector_from_aim1(1, 1);
