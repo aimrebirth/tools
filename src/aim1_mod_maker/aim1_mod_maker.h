@@ -1401,6 +1401,10 @@ FF D7                   ; call    edi
             }
             auto p = find_file_in_paks(fn, "res3.pak", "res2.pak", "res0.pak");
             if (!fs::exists(p)) {
+                auto dst = get_mod_dir() / p.filename();
+                if (fs::exists(dst)) {
+                    return dst;
+                }
                 throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
             }
             auto dst = get_mod_dir() / p.filename();
