@@ -3,7 +3,7 @@
 
     <Type Name="MapObject">
         <DisplayString>
-            {name1}
+            {name1} - {name2}
         </DisplayString>
     </Type>
 
