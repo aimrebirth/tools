@@ -178,9 +178,12 @@ struct bin_patcher {
         }
         v ^= value;
     }
-    static void replace_bin_in_file_raw(const path &fn, const std::string &from, const std::string &to) {
+    static void replace_bin_in_file_raw(const path &fn, const std::string &from, std::string to) {
+        if (to.size() > from.size()) {
+            throw std::runtime_error{"replacement string is larger than original"};
+        }
         if (from.size() != to.size()) {
-            throw std::runtime_error{"mismatched size"};
+            to.resize(from.size(), '\0');
         }
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         while (auto p = memmem(f.p, f.sz, from)) {
