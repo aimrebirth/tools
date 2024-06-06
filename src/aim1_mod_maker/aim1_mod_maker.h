@@ -607,8 +607,8 @@ struct mod_maker {
         m.load();
         return m;
     }
-    void hide_mechmind_group(path mmo_fn, const std::string &name) {
-        log("hiding mechmind group {} in loc {}", name, mmo_fn.string());
+    void hide_mech_group(path mmo_fn, const std::string &name) {
+        log("hiding mech group {} in loc {}", name, mmo_fn.string());
 
         auto fn = find_real_filename(mmo_fn);
         files_to_pak.insert(fn);
@@ -618,15 +618,15 @@ struct mod_maker {
 
         auto it = m.mechs.find(name);
         if (it == m.mechs.end()) {
-            throw std::runtime_error{"no such mechmind or group: " + name};
+            throw std::runtime_error{"no such mechanoid or group: " + name};
         }
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         auto n = *(uint32_t*)(f.p + it->second.n_mechs_offset);
         auto &hidden = *(uint8_t*)(f.p + it->second.mechs_offset + n * 0x20);
         hidden = 1;
     }
-    void delete_mechmind_group(path mmo_fn, const std::string &name) {
-        log("deleting mechmind group {} in loc {}", name, mmo_fn.string());
+    void delete_mech_group(path mmo_fn, const std::string &name) {
+        log("deleting mech group {} in loc {}", name, mmo_fn.string());
 
         auto fn = find_real_filename(mmo_fn);
         files_to_pak.insert(fn);
@@ -636,7 +636,7 @@ struct mod_maker {
 
         auto it = m.mechs.find(name);
         if (it == m.mechs.end()) {
-            throw std::runtime_error{"no such mechmind or group: " + name};
+            throw std::runtime_error{"no such mechanoid or group: " + name};
         }
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         auto &n = *(uint32_t*)(f.p + m.n_mech_groups_offset);
@@ -644,8 +644,8 @@ struct mod_maker {
         f.close();
         bin_patcher::erase(fn, it->second.offset, it->second.size);
     }
-    void clone_mechmind_group(path mmo_fn, const std::string &name, const std::string &newname) {
-        log("cloninig mechmind group {} in loc {}, new name {}", name, mmo_fn.string(), newname);
+    void clone_mech_group(path mmo_fn, const std::string &name, const std::string &newname) {
+        log("cloninig mech group {} in loc {}, new name {}", name, mmo_fn.string(), newname);
 
         auto fn = find_real_filename(mmo_fn);
         files_to_pak.insert(fn);
@@ -655,7 +655,7 @@ struct mod_maker {
 
         auto it = m.mechs.find(name);
         if (it == m.mechs.end()) {
-            throw std::runtime_error{"no such mechmind or group: " + name};
+            throw std::runtime_error{"no such mechanoid or group: " + name};
         }
         if (newname.size() > 0x20-1) {
             throw std::runtime_error{"too long name: " + newname};
@@ -668,12 +668,8 @@ struct mod_maker {
         f.close();
         bin_patcher::insert(fn, m.mech_groups_offset, data);
     }
-    bool set_mechmind_organization(path mmo_fn, const std::string &name, const std::string &orgname) {
-        // deprecated, for api stability
-        return set_mechmind_group_organization(mmo_fn, name, orgname);
-    }
-    bool set_mechmind_group_organization(path mmo_fn, const std::string &name, const std::string &orgname) {
-        log("setting mechmind group {} organization {} in loc {}", name, orgname, mmo_fn.string());
+    bool set_mech_group_organization(path mmo_fn, const std::string &name, const std::string &orgname) {
+        log("setting mech group {} organization {} in loc {}", name, orgname, mmo_fn.string());
 
         auto fn = find_real_filename(mmo_fn);
         files_to_pak.insert(fn);
@@ -683,7 +679,7 @@ struct mod_maker {
 
         auto it = m.mechs.find(name);
         if (it == m.mechs.end()) {
-            throw std::runtime_error{"no such mechmind or group: " + name};
+            throw std::runtime_error{"no such mechanoid or group: " + name};
         }
         if (orgname.size() > 0x20-1) {
             throw std::runtime_error{"too long organization name: " + orgname};
@@ -692,8 +688,8 @@ struct mod_maker {
         memcpy(f.p + it->second.name_offset + 0x20, orgname.data(), orgname.size() + 1);
         return true;
     }
-    void set_mechmind_group_type(path mmo_fn, const std::string &name, int newtype, int new_road_id = 100) {
-        log("setting mechmind group {} in loc {} to {}", name, mmo_fn.string(), newtype);
+    void set_mech_group_type(path mmo_fn, const std::string &name, int newtype, int new_road_id = 100) {
+        log("setting mech group {} in loc {} to {}", name, mmo_fn.string(), newtype);
 
         auto fn = find_real_filename(mmo_fn);
         files_to_pak.insert(fn);
@@ -703,20 +699,19 @@ struct mod_maker {
 
         auto it = m.mechs.find(name);
         if (it == m.mechs.end()) {
-            throw std::runtime_error{"no such mechmind or group: " + name};
+            throw std::runtime_error{"no such mechanoid or group: " + name};
         }
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
-        auto &type = *(uint32_t*)(f.p + it->second.offset + 0x20 + 0x20);
-        type = newtype;
-        auto &road_id = *(uint32_t*)(f.p + it->second.post_comment_offset);
-        road_id = new_road_id;
+        auto &mg = *(mmo_storage2::mech_group*)(f.p + it->second.offset);
+        mg.type = newtype;
+        mg.value1 = new_road_id;
         if (newtype == 1) {
-            auto &unk = *(float*)(f.p + it->second.post_comment_offset + 4);
+            auto &unk = *(float*)(f.p + it->second.post_base_offset);
             unk = 0;
         }
     }
-    bool rename_mechmind_group(path mmo_fn, const std::string &name, const std::string &newname) {
-        log("renaming mechmind group {} in loc {} to {}", name, mmo_fn.string(), newname);
+    bool rename_mech_group(path mmo_fn, const std::string &name, const std::string &newname) {
+        log("renaming mech group {} in loc {} to {}", name, mmo_fn.string(), newname);
 
         auto fn = find_real_filename(mmo_fn);
         files_to_pak.insert(fn);
@@ -735,14 +730,14 @@ struct mod_maker {
         memcpy(f.p + it->second.name_offset, newname.data(), newname.size() + 1);
         return true;
     }
-    void update_mechmind_group_configurations(path mmo_fn, const std::string &name, auto &&cfg, auto &&...cfgs) {
+    void update_mech_group_configurations(path mmo_fn, const std::string &name, auto &&cfg, auto &&...cfgs) {
         std::string format;
         auto addname = [&](const std::string &cfg) {
             format += cfg + ",";
         };
         addname(cfg);
         (addname(cfgs),...);
-        log("updating mechmind group {} configurations in loc {} to {}", name, mmo_fn.string(), format);
+        log("updating mech group {} configurations in loc {} to {}", name, mmo_fn.string(), format);
 
         auto fn = find_real_filename(mmo_fn);
         files_to_pak.insert(fn);
@@ -752,11 +747,11 @@ struct mod_maker {
 
         auto it = m.mechs.find(name);
         if (it == m.mechs.end()) {
-            throw std::runtime_error{"no such mechmind or group: " + name};
+            throw std::runtime_error{"no such mechanoid or group: " + name};
         }
         auto new_n = 1 + sizeof...(cfgs);
         if (new_n > 10) {
-            throw std::runtime_error{"aim1 allows only 10 mechminds in a group max"};
+            throw std::runtime_error{"aim1 allows only 10 mechanoids in a group max"};
         }
         primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
         auto &n = *(uint32_t*)(f.p + it->second.n_mechs_offset);
