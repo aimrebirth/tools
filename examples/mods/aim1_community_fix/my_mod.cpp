@@ -104,8 +104,6 @@ int main(int argc, char *argv[]) {
     // patch note: allow to buy double heavy weapon Finder-2 glider on Finders base after the second quest. You must start the new game to make it appear (lz)
     mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1",
                      mmo_storage2::map_good("GL_S3_PS_FINDER2", "T_L6_IK_F2.COMPLETE"));
-    // patch note: add Finder-2 model and textures from aim2 game (lz)
-    mod.copy_from_aim2("MOD_GL_S3_PS_FINDER2");
     // patch note: set correct model for a plant (Streef)
     mod.patch<uint8_t>("location6.mmo", 0x0005775D, 'R', 'F');
     // patch note: fix 'TOV_POLYMER_PLATE' spawn (Streef)
@@ -165,6 +163,14 @@ int main(int argc, char *argv[]) {
     // patch note: add name for SINIGR armor, it was unnamed before (lz)
     quest["ru_RU"]["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Особая нуль-броня";
     quest["en_US"]["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Special zero armor";
+    // patch note:
+
+    // patch note: MODELS
+    // patch note: add Finder-2 model and textures from aim2 game (lz)
+    mod.copy_from_aim2("MOD_GL_S3_PS_FINDER2");
+    // patch note: fix MOD_GL_M1_C_TRANS model to make engine fires visible (lz)
+    mod.replace("MOD_GL_M1_C_TRANS", "FIREa"s, "FIRE\0"s);
+    mod.replace("MOD_GL_M1_C_TRANS", "FIREb"s, "FIRE1"s);
     // patch note:
 
     // patch note: Game Changes
@@ -230,10 +236,10 @@ int main(int argc, char *argv[]) {
     db["Оружие"]["GUN_IMPULSE_MEGALAZER_TEST"]["STANDARD"] = 1;
     db["Конфигурации"]["CFG_STARTUP"]["HEAVYGUN1"] = "GUN_IMPULSE_MEGALAZER_TEST";
     //
-    db["Конфигурации"]["CFG_STARTUP"]["EQP_ANALYZER"] = 1;
-    db["Конфигурации"]["CFG_STARTUP"]["EQP_QUANTUM_TRANSLATOR"] = 1;
+    //db["Конфигурации"]["CFG_STARTUP"]["EQP_ANALYZER"] = 1;
+    //db["Конфигурации"]["CFG_STARTUP"]["EQP_QUANTUM_TRANSLATOR"] = 1;
     db["Конфигурации"]["CFG_STARTUP"]["EQP_INVISIBILITY_SHIELD"] = 1;
-    db["Конфигурации"]["CFG_STARTUP"]["EQP_UNIVERSAL_SHIELD"] = 1;
+    //db["Конфигурации"]["CFG_STARTUP"]["EQP_UNIVERSAL_SHIELD"] = 1;
     // end of db changes in dev mode
     // patch note dev: allow to buy GL_S3_PS_FINDER1 without pre-quest
     mod.add_map_good("location6.mmo", "B_L6_IK_FINDER", "GL_S3_PS_FINDER1", mmo_storage2::map_good("GL_S3_PS_FINDER1"));
@@ -265,21 +271,21 @@ int main(int argc, char *argv[]) {
     //mod.copy_weapon_from_aim2("GUN_GRAVITON");
     //after = mod.add_map_good("location1.mmo", "B_L1_BASE1", after, mmo_storage2::map_good("GUN_GRAVITON"));
 
-    //
-    mod.replace("under.scr", "_ADDSENSOR(T_L4_BASE_2)", "_ADDSENSOR(T_L4_BASE_2 )\n_MARK(T_L4_BASE_2)");
+    // works in ru
+    //mod.replace("under.scr", "_ADDSENSOR(T_L4_BASE_2)", "_ADDSENSOR(T_L4_BASE_2)\n_MARK(T_L4_BASE_2)");
 
     //
-    mod.clone_mechmind_group("location1.mmo", "MINVACH-6", "MINVACH-666");
+    mod.clone_mech_group("location1.mmo", "MINVACH-6", "MINVACH-666");
     auto cfg = "CFG_TEST";
     db["Конфигурации"][cfg] = db["Конфигурации"]["CFG_STARTUP"];
     db["Конфигурации"][cfg]["ENGINE"] = "EQP_VACUUM_DRIVE_S4";
     auto make = [&](auto name, int road) {
-        mod.clone_mechmind_group("location1.mmo", "MINVACH-6", name);
-        mod.update_mechmind_group_configurations("location1.mmo", name, cfg);
-        mod.set_mechmind_group_type("location1.mmo", name, 1, road);
+        mod.clone_mech_group("location1.mmo", "MINVACH-6", name);
+        mod.update_mech_group_configurations("location1.mmo", name, cfg);
+        mod.set_mech_group_type("location1.mmo", name, 1, road);
     };
     for (int i = 0; i < 20; ++i) {
-        make(std::format("MINVACH-6{}", i), 1000 / 20 * i + 20);
+        //make(std::format("MINVACH-6{}", i), 1000 / 20 * i + 20);
     }
     auto &pol = mod.politics();
     pol["ORG_INVADERS"].aggressiveness = 1000;
@@ -288,6 +294,7 @@ int main(int argc, char *argv[]) {
     pol["ORG_INVADERS"]["ORG_HUNTERS"] = -1000;
     pol["ORG_INVADERS"]["ORG_FREE"] = -1000;
     pol["ORG_INVADERS"]["ORG_INVADERS"] = 1000;
+    //pol["ORG_INVADERS"]["ORG_PLAYER"] = 1000; // does not work
     /*mod.update_mechmind_group_configurations("location1.mmo", "MINVACH-666",
         cfg,
         cfg,

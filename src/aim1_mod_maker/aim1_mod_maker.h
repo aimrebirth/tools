@@ -178,6 +178,15 @@ struct bin_patcher {
         }
         v ^= value;
     }
+    static void replace_bin_in_file_raw(const path &fn, const std::string &from, const std::string &to) {
+        if (from.size() != to.size()) {
+            throw std::runtime_error{"mismatched size"};
+        }
+        primitives::templates2::mmap_file<uint8_t> f{fn, primitives::templates2::mmap_file<uint8_t>::rw{}};
+        while (auto p = memmem(f.p, f.sz, from)) {
+            memcpy(p, to.data(), to.size());
+        }
+    }
 };
 
 struct politics {
@@ -421,9 +430,16 @@ struct mod_maker {
             auto dst_txt = get_mod_dir() / txt.filename();
             copy_file_once(txt, dst_txt);
             txt = dst_txt;
-            replace_in_file_raw(txt, from, to);
+            replace_text_in_file_raw(txt, from, to);
             run_p4_tool("txt2script", txt);
             files_to_pak.insert(get_mod_dir() / txt.stem());
+            break;
+        }
+        case file_type::model: {
+            auto p = find_real_filename(fn);
+            log("replacing bin in file {} from '{}' to '{}'", p.string(), from, to);
+            bin_patcher::replace_bin_in_file_raw(p, from, to);
+            files_to_pak.insert(get_mod_dir() / p.stem());
             break;
         }
         default:
@@ -1349,6 +1365,18 @@ FF D7                   ; call    edi
             copy_file_once(p, dst);
             return dst;
         }
+        case file_type::model: {
+            if (fn.filename() == fn) {
+                fn = path{"Data"} / "Models" / fn;
+            }
+            auto p = find_file_in_paks(fn, "res3.pak", "res2.pak", "res0.pak");
+            if (!fs::exists(p)) {
+                throw SW_RUNTIME_ERROR("Cannot find file in archives: "s + fn.string());
+            }
+            auto dst = get_mod_dir() / p.filename();
+            copy_file_once(p, dst);
+            return dst;
+        }
         default:
             SW_UNIMPLEMENTED;
         }
@@ -1401,7 +1429,7 @@ FF D7                   ; call    edi
     path get_data_dir() const {
         return game_dir / "data";
     }
-    static void replace_in_file_raw(const path &fn, const std::string &from, const std::string &to) {
+    static void replace_text_in_file_raw(const path &fn, const std::string &from, const std::string &to) {
         log("replacing in file {} from '{}' to '{}'", fn.string(), from, to);
         auto f = read_file(fn);
         boost::replace_all(f, from, to);
