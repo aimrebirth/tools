@@ -42,6 +42,8 @@ patch_note(...)
 // patch note: Changes from 0.0.4
 // patch note: fix Finder-2 textures
 // patch note: add more translations. Use language_switcher.exe to change your language.
+// patch note: fix Scarab-1 engine fires
+// patch note: fix FIRST-114 glider type
 // patch note:
 // patch note: Changes from 0.0.3
 // patch note: add locale suffix to all quest databases (localized strings). Example: quest_ru_RU.*
@@ -78,6 +80,12 @@ int main(int argc, char *argv[]) {
     // patch note: General Notes
     // patch note: enabled WIN key during the game (Solant)
     mod.enable_win_key();
+    // patch note:
+
+    // patch note: Rocks Sector
+    // patch note: give to FIRST-114 glider of standard 4 like it is said in quests (lz)
+    mod.update_mech_group_configurations("location1.mmo", "FIRST-114", "CFG_FIRST_41");
+    mod.update_mech_group_configurations("location1.mmo", "FIRST-114.", "CFG_FIRST_41");
     // patch note:
 
     // patch note: Volcano Sector
@@ -164,8 +172,13 @@ int main(int argc, char *argv[]) {
     quest["ru_RU"]["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Особая нуль-броня";
     quest["en_US"]["INFORMATION"]["EQP_ZERO_ARMOR_S_SIN"]["NAME"] = "Special zero armor";
     // patch note:
+    //
+    // patch note: Configurations
+    // patch note: Panzers now user Standard-2 gliders properly (lz)
+    db["Конфигурации"]["CFG_TRANS_5"]["GLIDER"] = "GL_M2_C_BIGTRANS";
+    // patch note:
 
-    // patch note: MODELS
+    // patch note: Models
     // patch note: add Finder-2 model and textures from aim2 game (lz)
     mod.copy_from_aim2("MOD_GL_S3_PS_FINDER2");
     // patch note: fix MOD_GL_M1_C_TRANS model to make engine fires visible (lz)
