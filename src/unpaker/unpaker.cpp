@@ -131,7 +131,7 @@ void unpack_file(path fn, const Files &files_to_extract) {
                 None = 0x0,
                 RLE_2_bytes = 0x1,
                 RLE_1_byte = 0x2,
-                decode_algorithm_1 = 0x4, // not used
+                decode_algorithm_1 = 0x4, // not used, maybe lzo like in m2?
                 decode_algorithm_2 = 0x8,
             };
             auto in = s.p;
