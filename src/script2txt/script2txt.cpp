@@ -104,7 +104,9 @@ int main(int argc, char *argv[]) {
         func(p.string());
     } else if (fs::is_directory(p)) {
         auto files = enumerate_files_like(p, ".*\\.scr", false);
-        auto files2 = enumerate_files_like(p, ".*\\.QST", false);
+        auto files2 = enumerate_files_like(p, ".*\\.SCR", false);
+        files.insert(files2.begin(), files2.end());
+        files2 = enumerate_files_like(p, ".*\\.QST", false);
         files.insert(files2.begin(), files2.end());
         for (auto &f : files) {
             std::cout << "processing: " << f << "\n";
