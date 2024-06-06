@@ -1191,7 +1191,7 @@ private:
         // can write to mod dir
         auto logfn = get_mod_dir() / "log.txt";
         log_file(&logfn);
-        auto src_fn = get_mod_dir() / get_full_mod_name() += ".cpp";
+        auto src_fn = get_mod_dir() / get_full_mod_name() += path{loc.file_name()}.extension();
         fs::copy_file(loc.file_name(), src_fn, fs::copy_options::overwrite_existing);
         code_files_to_distribute.insert(src_fn);
         detect_tools();
