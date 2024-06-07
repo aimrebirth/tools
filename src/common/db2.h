@@ -330,11 +330,13 @@ struct db2 {
         // converts string to utf8
         // filters out values with empty name ""
         auto to_map(int cp) const {
-            auto prepare_string = [&](auto &&in) {
+            auto prepare_string = [&](auto &&in, bool trim = false) {
                 auto s = str2utf8(in, cp);
                 // we have some erroneous table values (records) with spaces
                 // we can trim only field values, but don't do it at the moment
-                //boost::trim(s);
+                if (trim) {
+                    boost::trim(s);
+                }
                 return s;
             };
 
@@ -377,7 +379,10 @@ struct db2 {
                             jv[fn] = *(float *)p;
                             break;
                         case db2::field_type::string:
-                            jv[fn] = boost::trim_copy(prepare_string((const char *)p)); // trim field value
+                            // also trim 'NAME' field value
+                            jv[fn] = prepare_string((const char *)p, fn == "NAME"s);
+                            // we cannot trim, some strings should end (and start?) with space
+                            //jv[fn] = boost::trim_copy(prepare_string((const char *)p)); // trim field value
                             break;
                         default:
                             throw std::logic_error{"bad type"};
