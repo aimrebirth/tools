@@ -356,6 +356,11 @@ struct db2 {
                         p += sizeof(db2::dat::field_value_base);
                         auto f = std::ranges::find_if(fields, [&](auto &f) { return f.id == vb->field_id; });
                         if (f == fields.end()) {
+                            if (vb->field_id == 0) {
+                                // de_DE quest has such one case
+                                p += vb->size;
+                                continue;
+                            }
                             throw std::logic_error{"unknown field"};
                         }
                         auto fn = prepare_string(f->name);
