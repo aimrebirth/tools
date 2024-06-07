@@ -29,8 +29,32 @@
 #include <span>
 #include <print>
 
-int main(int argc, char *argv[])
-{
+void copy_dbs() {
+    auto from_to = [](auto &&from, const std::string &to) {
+        path base = from;
+        base /= "data";
+        const path out = "d:/dev/ue/AIM/translations/aim1/";
+        db2 db{base / "quest"};
+        auto f = db.create();
+        f.open();
+        auto m = f.to_map(code_pages.at(to.substr(0,2)));
+        write_file(path{out} += "/quest_"s + to + ".json", m.to_json().dump(1));
+    };
+    from_to("h:/Games/AIM", "ru_RU");
+    for (auto &&lang : {
+        "cs_CZ",
+        "de_DE",
+        "en_US",
+        "et_EE",
+        "fr_FR",
+        }) {
+        from_to("h:/Games/AIM/1/dbs/"s + lang, lang);
+    }
+}
+
+int main(int argc, char *argv[]) {
+    //copy_dbs();
+
     cl::opt<path> db_fn(cl::Positional, cl::desc("<db file or json file to backwards conversion>"), cl::Required);
     cl::opt<int> codepage(cl::Positional, cl::desc("<codepage>"), cl::Required);
 
@@ -40,11 +64,12 @@ int main(int argc, char *argv[])
     fn = fs::absolute(fn);
     if (fn.extension() != ".json") {
         db2 db{fn};
-        auto f = db.open();
+        auto f = db.create();
+        f.open();
         auto m = f.to_map(codepage);
         write_file(path{fn} += ".json", m.to_json().dump(1));
     } else {
-        db2::files::db2_internal db;
+        db2::files_type::db2_internal db;
         db.load_from_json(fn);
         db.save(fn.parent_path() / fn.stem(), codepage);
     }
